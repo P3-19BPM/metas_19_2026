@@ -1,0 +1,33 @@
+--- Git e Configurações ---
+
+.git
+.gitignore
+.vscode
+README.md
+DEPLOY_GUIDE.md
+COMMIT_MESSAGE.txt
+
+--- Orquestração ---
+
+O docker-compose é usado NA VPS, não dentro da imagem
+
+docker-compose.yml
+
+--- Arquivos de Rascunho e Dados na Raiz ---
+
+Não precisamos copiar os JSONs soltos da raiz para a imagem
+
+arquivo_.json
+gdo_.html
+*.csv
+*.xlsx
+
+--- DADOS SENSÍVEIS (SEGURANÇA MÁXIMA) ---
+
+ISSO É O MAIS IMPORTANTE:
+
+Impede que os JSONs da sua máquina local entrem na imagem do DockerHub.
+
+A imagem ficará com a pasta 'data' vazia, esperando o Volume da VPS.
+
+public/data/*.json

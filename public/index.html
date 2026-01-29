@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gestão Operacional - 19º BPM</title>
+    
+    <!-- Bibliotecas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+
+    <!-- Configuração Visual -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pmmg: { gold: '#B3A369', goldLight: '#D4C9A0', red: '#AB2328', black: '#000000', gray: '#373435', bg: '#F3F4F6' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #B3A369; border-radius: 3px; }
+        .form-checkbox:checked { background-color: #B3A369; border-color: #B3A369; }
+    </style>
+
+    <!-- LÓGICA DA APLICAÇÃO -->
+    <script>
+        function appData() {
+            return {
+                // --- ESTADO ---
+                currentMeta: 'meta_imv',
+                mesesSelecionados: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
+                mesesLista: [
+                    {id: 'jan', label: 'Janeiro'}, {id: 'fev', label: 'Fevereiro'}, {id: 'mar', label: 'Março'},
+                    {id: 'abr', label: 'Abril'}, {id: 'mai', label: 'Maio'}, {id: 'jun', label: 'Junho'},
+                    {id: 'jul', label: 'Julho'}, {id: 'ago', label: 'Agosto'}, {id: 'set', label: 'Setembro'},
+                    {id: 'out', label: 'Outubro'}, {id: 'nov', label: 'Novembro'}, {id: 'dez', label: 'Dezembro'}
+                ],
+                filtroUnidade: 'todas',
+                loading: false,
+                erroCarregamento: null,
+                expandedUnidades: [], 
+                expandedPelotoes: [], 
+                
+                // --- CONFIGURAÇÃO DAS METAS ---
+                // Aponta para a pasta ./data/ onde os arquivos reais estarão na VPS
+                metasDisponiveis: [
+                    { id: 'meta_imv', nome: 'Mortes Violentas (IMV)', icon: 'fa-solid fa-person-falling-burst', arquivo: './data/arquivo_joson_meta_imv_subsetor.json' },
+                    { id: 'meta_icvpe', nome: 'Crimes Violentos Contra a Pessoa (ICVPe)', icon: 'fa-solid fa-mask', arquivo: './data/arquivo_joson_meta_icvpe_subsetor.json' },
+                    { id: 'meta_icvpa', nome: 'Crimes Violentos Contra o Patrimônio (ICVPa)', icon: 'fa-solid fa-gun', arquivo: './data/arquivo_joson_meta_icvpa_subsetor.json' },
+                    { id: 'meta_irtd', nome: 'Tráfico de Drogas (IRTD)', icon: 'fa-solid fa-cannabis', arquivo: null }
+                ],
+
+                dadosBase: { 'meta_imv': [], 'meta_icvpe': [], 'meta_icvpa': [], 'meta_irtd': [] },
+                dadosPLR_Processed: {},
+
+                // --- INICIALIZAÇÃO ---
+                async init() {
+                    console.log("Sistema Iniciado.");
+                    // 1. Carrega o arquivo unificado de PLR
+                    await this.carregarArquivoPLR();
+                    // 2. Carrega a meta inicial
+                    await this.carregarDadosLocalmente('meta_imv');
+                },
+
+                // --- CARREGAMENTO DO ARQUIVO PLR (NOVO) ---
+                async carregarArquivoPLR() {
+                    try {
+                        const response = await fetch('./data/metas_plr.json');
+                        if (!response.ok) {
+                            console.warn("Arquivo metas_plr.json não encontrado. Verifique a pasta data.");
+                            return;
+                        }
+                        // Lê como texto primeiro para limpar possíveis erros de vírgula
+                        let rawText = await response.text();
+                        rawText = rawText.replace(/\/\/.*$/gm, ""); // Remove comentários
+                        rawText = rawText.replace(/:\s*(\d+),(\d+)/g, ': $1.$2'); // Corrige 1,23 -> 1.23
+
+                        const json = JSON.parse(rawText);
+                        
+                        // Processa cada chave do JSON (meta_imv, meta_icvpa, etc)
+                        for (const [metaKey, dados] of Object.entries(json)) {
+                            this.dadosPLR_Processed[metaKey] = this.processarListaPLR(dados);
+                        }
+                    } catch (e) {
+                        console.error("Erro ao carregar metas_plr.json:", e);
+                    }
+                },
+
+                // Processa a lista de objetos da PLR para um Mapa por ID
+                processarListaPLR(lista) {
+                    const mapa = {};
+                    if (!Array.isArray(lista)) return mapa;
+
+                    lista.forEach(row => {
+                        if (row["CIA"] === "CIA") return;
+                        let id = String(row["CIA"]);
+                        // Normaliza ID (garante ponto)
+                        if (id.length === 5 && !id.includes('.')) {
+                            id = id.substring(0, 2) + '.' + id.substring(2);
+                        }
+                        mapa[id] = {
+                            jan: row["JAN"], fev: row["FEV"], mar: row["MAR"],
+                            abr: row["ABR"], mai: row["MAI"], jun: row["JUN"],
+                            jul: row["JUL"], ago: row["AGO"], set: row["SET"],
+                            out: row["OUT"], nov: row["NOV"], dez: row["DEZ"]
+                        };
+                    });
+                    return mapa;
+                },
+
+                // --- CARREGAMENTO DAS METAS (HIERÁRQUICAS) ---
+                async carregarDadosLocalmente(metaId) {
+                    const metaInfo = this.metasDisponiveis.find(m => m.id === metaId);
+                    if (!metaInfo || !metaInfo.arquivo) return;
+                    if (this.dadosBase[metaId].length > 0) return; 
+
+                    this.loading = true;
+                    this.erroCarregamento = null;
+
+                    try {
+                        const response = await fetch(metaInfo.arquivo);
+                        if (!response.ok) throw new Error("Arquivo não encontrado: " + metaInfo.arquivo);
+                        
+                        let rawText = await response.text();
+                        rawText = rawText.replace(/\/\/.*$/gm, "");
+                        rawText = rawText.replace(/:\s*(\d+),(\d+)/g, ': $1.$2');
+
+                        const jsonData = JSON.parse(rawText);
+                        this.dadosBase[metaId] = jsonData;
+                        
+                        if (jsonData.length > 0) this.expandedUnidades.push(jsonData[0].id);
+
+                    } catch (error) {
+                        console.error("Erro:", error);
+                        this.erroCarregamento = `Falha ao carregar ${metaInfo.nome}. Verifique se o arquivo está na pasta 'data'.`;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                // --- INTERFACE & FILTROS ---
+                toggleMes(mesId) {
+                    if (this.mesesSelecionados.includes(mesId)) this.mesesSelecionados = this.mesesSelecionados.filter(m => m !== mesId);
+                    else this.mesesSelecionados.push(mesId);
+                },
+                selecionarTodosMeses() { this.mesesSelecionados = this.mesesLista.map(m => m.id); },
+                limparMeses() { this.mesesSelecionados = []; },
+                getLabelMeses() {
+                    if (this.mesesSelecionados.length === 12) return 'Ano Completo (12)';
+                    if (this.mesesSelecionados.length === 0) return 'Selecione...';
+                    if (this.mesesSelecionados.length <= 3) return this.mesesSelecionados.map(m => m.toUpperCase()).join(', ');
+                    return `${this.mesesSelecionados.length} meses selecionados`;
+                },
+
+                // --- CÁLCULOS ---
+                getValorAcumulado(dadosObjeto) {
+                    if (!dadosObjeto) return 0;
+                    return this.mesesSelecionados.reduce((acc, mes) => {
+                        const val = dadosObjeto[mes] || dadosObjeto[mes.toUpperCase()] || 0;
+                        return acc + val;
+                    }, 0);
+                },
+
+                getValorPLR(unidadeId) {
+                    const mapaAtual = this.dadosPLR_Processed[this.currentMeta];
+                    if (!mapaAtual) return 0; 
+                    
+                    let idStr = String(unidadeId);
+                    let dados = mapaAtual[idStr];
+                    
+                    // Fallback de ID
+                    if (!dados) {
+                        if (idStr.length === 5 && !idStr.includes('.')) dados = mapaAtual[idStr.substring(0, 2) + '.' + idStr.substring(2)];
+                        else if (idStr.includes('.')) dados = mapaAtual[idStr.replace('.', '')];
+                    }
+                    if (!dados) return 0;
+                    return this.mesesSelecionados.reduce((acc, mes) => acc + (dados[mes] || dados[mes.toUpperCase()] || 0), 0);
+                },
+                
+                temPLR() { return !!this.dadosPLR_Processed[this.currentMeta]; },
+
+                calcularTaxa(valor, populacao) {
+                    let val = parseFloat(valor) || 0;
+                    let pop = parseFloat(populacao) || 0;
+                    if (pop === 0) return 0;
+                    return (val / pop) * 100000;
+                },
+
+                // Agregadores
+                getTotaisBPM() {
+                    let totalAbsoluto = 0, totalPop = 0, totalMetaPLR = 0;
+                    let unidades = this.dadosBase[this.currentMeta] || [];
+                    unidades.forEach(unidade => {
+                        const totais = this.getTotaisUnidade(unidade);
+                        totalAbsoluto += totais.absoluto;
+                        totalPop += totais.populacao;
+                        if (this.temPLR()) totalMetaPLR += this.getValorPLR(unidade.id);
+                    });
+                    return { absoluto: Math.round(totalAbsoluto * 100) / 100, populacao: totalPop, metaPLR: Math.round(totalMetaPLR * 100) / 100, taxa: this.calcularTaxa(totalAbsoluto, totalPop) };
+                },
+                getTotaisPelotao(pelotao) {
+                    let totalAbsoluto = 0, totalPop = 0;
+                    pelotao.setores.forEach(set => { totalAbsoluto += this.getValorAcumulado(set.dados); totalPop += parseFloat(set.dados.pop) || 0; });
+                    return { absoluto: Math.round(totalAbsoluto * 100) / 100, populacao: totalPop, taxa: this.calcularTaxa(totalAbsoluto, totalPop) };
+                },
+                getTotaisUnidade(unidade) {
+                    let totalAbsoluto = 0, totalPop = 0;
+                    unidade.pelotoes.forEach(pel => { pel.setores.forEach(set => { totalAbsoluto += this.getValorAcumulado(set.dados); totalPop += parseFloat(set.dados.pop) || 0; }); });
+                    return { absoluto: Math.round(totalAbsoluto * 100) / 100, populacao: totalPop, taxa: this.calcularTaxa(totalAbsoluto, totalPop) };
+                },
+                getTotaisGerais() {
+                    let totalAbsoluto = 0, totalPop = 0;
+                    this.dadosFiltrados.forEach(unidade => { const t = this.getTotaisUnidade(unidade); totalAbsoluto += t.absoluto; totalPop += t.populacao; });
+                    return { absoluto: Math.round(totalAbsoluto * 100) / 100, populacao: totalPop, taxa: this.calcularTaxa(totalAbsoluto, totalPop) };
+                },
+
+                // Getters
+                get dadosFiltrados() {
+                    let dados = this.dadosBase[this.currentMeta] || [];
+                    if (this.filtroUnidade !== 'todas') dados = dados.filter(u => u.unidade === this.filtroUnidade);
+                    return dados;
+                },
+                getUniqueUnidades() {
+                    const dados = this.dadosBase[this.currentMeta] || [];
+                    return [...new Set(dados.map(item => item.unidade))];
+                },
+                getNomeMetaAtual() { const m = this.metasDisponiveis.find(m => m.id === this.currentMeta); return m ? m.nome : 'Selecione'; },
+                mudarMeta(meta) { this.currentMeta = meta.id; this.filtroUnidade = 'todas'; if (meta.arquivo) this.carregarDadosLocalmente(meta.id); },
+                toggleUnidade(id) { if(this.expandedUnidades.includes(id)) this.expandedUnidades=this.expandedUnidades.filter(u=>u!==id); else this.expandedUnidades.push(id); },
+                togglePelotao(id) { if(this.expandedPelotoes.includes(id)) this.expandedPelotoes=this.expandedPelotoes.filter(p=>p!==id); else this.expandedPelotoes.push(id); },
+                formatNumber(num) { if(num===undefined||num===null||isNaN(num)) return '0'; if(Number.isInteger(num)) return num.toLocaleString('pt-BR'); return num.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:2}); }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden" x-data="appData()">
+    <!-- CABEÇALHO -->
+    <header class="bg-pmmg-black text-white shadow-lg z-30 flex-none border-b-4 border-pmmg-gold">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-pmmg-gold rounded flex items-center justify-center text-pmmg-black shadow-inner"><i class="fa-solid fa-shield-halved text-xl"></i></div>
+                <div><h1 class="text-lg font-bold tracking-wider leading-tight">GESTÃO OPERACIONAL</h1><p class="text-[10px] text-pmmg-gold font-semibold uppercase tracking-widest">19º BPM - PMMG</p></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden relative">
+        <!-- BARRA LATERAL -->
+        <nav class="bg-white md:w-64 flex-none border-r border-gray-200 flex md:flex-col absolute md:static top-0 w-full z-20 md:z-auto shadow-md md:shadow-none overflow-x-auto">
+            <div class="p-4 md:border-b border-gray-100 hidden md:block"><span class="text-xs font-bold text-gray-400 uppercase">Tipos de Metas</span></div>
+            <template x-for="(meta, index) in metasDisponiveis" :key="index">
+                <button @click="mudarMeta(meta)" class="flex items-center gap-3 px-6 py-4 md:py-3 text-sm font-medium transition-all whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-l-4 hover:bg-gray-50 flex-shrink-0" :class="currentMeta === meta.id ? 'border-pmmg-red text-pmmg-red bg-red-50' : 'border-transparent md:border-l-transparent text-gray-600 hover:text-pmmg-black border-b-transparent'">
+                    <i :class="meta.icon" class="text-lg opacity-80"></i><span x-text="meta.nome"></span>
+                </button>
+            </template>
+        </nav>
+
+        <!-- ÁREA PRINCIPAL -->
+        <main class="flex-1 overflow-y-auto bg-gray-100 p-4 pt-20 md:pt-4 relative w-full">
+            <div class="max-w-6xl mx-auto space-y-6">
+                <!-- Erro -->
+                <div x-show="erroCarregamento" x-cloak class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md mb-4"><p class="font-bold">Aviso:</p><p x-text="erroCarregamento"></p></div>
+
+                <!-- Painel Resumo -->
+                <div class="bg-white rounded-lg shadow-sm border-l-4 border-pmmg-gold p-4 md:p-6">
+                    <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
+                        <div class="flex-1 flex flex-col md:flex-row gap-6 md:items-center">
+                            <div class="shrink-0">
+                                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><span x-text="getNomeMetaAtual()"></span><span class="text-xs bg-pmmg-black text-pmmg-gold px-2 py-0.5 rounded uppercase">2026</span></h2>
+                                <p class="text-sm text-gray-500 mt-1">Indicadores por Nível Hierárquico</p>
+                            </div>
+                            <!-- Card 19 BPM -->
+                            <div class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center justify-around shadow-sm min-w-[280px]">
+                                <div class="text-center px-2"><span class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">19º BPM (Abs)</span><span class="block text-lg font-bold text-gray-800" x-text="formatNumber(getTotaisBPM().absoluto)"></span></div>
+                                <div class="h-8 w-px bg-gray-300"></div>
+                                <div class="text-center px-2"><span class="text-[10px] text-blue-500 uppercase font-bold tracking-wide">Meta (PLR)</span><span class="block text-lg font-bold text-blue-600" x-text="temPLR() ? formatNumber(getTotaisBPM().metaPLR) : '-'"></span></div>
+                                <div class="h-8 w-px bg-gray-300"></div>
+                                <div class="text-center px-2"><span class="text-[10px] text-pmmg-red uppercase font-bold tracking-wide">Taxa (100k)</span><span class="block text-lg font-bold text-pmmg-red" x-text="formatNumber(getTotaisBPM().taxa)"></span></div>
+                            </div>
+                        </div>
+                        <!-- Filtros -->
+                        <div class="flex flex-wrap gap-2 items-center shrink-0">
+                            <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                                <button @click="open = !open" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-pmmg-gold focus:border-pmmg-gold p-2.5 flex items-center justify-between min-w-[180px]"><span class="truncate mr-2" x-text="getLabelMeses()"></span><i class="fa-solid fa-chevron-down text-xs text-gray-500"></i></button>
+                                <div x-show="open" class="absolute top-full right-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow-lg z-50 p-3" x-transition>
+                                    <div class="flex justify-between mb-2 pb-2 border-b border-gray-100 items-center"><div class="flex gap-3"><button @click="selecionarTodosMeses()" class="text-xs text-pmmg-gold font-bold hover:underline">Todos</button><button @click="limparMeses()" class="text-xs text-gray-400 hover:text-red-500 hover:underline">Limpar</button></div><span class="text-xs text-gray-400">Acumulado</span></div>
+                                    <div class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto"><template x-for="mes in mesesLista" :key="mes.id"><label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded"><input type="checkbox" :value="mes.id" :checked="mesesSelecionados.includes(mes.id)" @change="toggleMes(mes.id)" class="form-checkbox h-4 w-4 text-pmmg-gold rounded focus:ring-pmmg-gold"><span class="text-sm text-gray-700" x-text="mes.label"></span></label></template></div>
+                                </div>
+                            </div>
+                            <select x-model="filtroUnidade" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-pmmg-gold focus:border-pmmg-gold block p-2.5 outline-none"><option value="todas">Todas Unidades</option><template x-for="unidade in getUniqueUnidades()" :key="unidade"><option :value="unidade" x-text="unidade"></option></template></select>
+                        </div>
+                    </div>
+                    <!-- Resumo Filtro -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+                        <div class="p-3 bg-gray-50 rounded border border-gray-100 hover:shadow-md transition"><p class="text-xs text-gray-500 uppercase font-semibold">Total (Filtro)</p><p class="text-2xl font-bold text-pmmg-black mt-1" x-text="formatNumber(getTotaisGerais().absoluto)"></p></div>
+                        <div class="p-3 bg-gray-50 rounded border border-gray-100 hover:shadow-md transition"><p class="text-xs text-gray-500 uppercase font-semibold">População Coberta</p><p class="text-2xl font-bold text-pmmg-black mt-1" x-text="formatNumber(getTotaisGerais().populacao)"></p></div>
+                        <div class="p-3 bg-red-50 rounded border border-red-100"><p class="text-xs text-pmmg-red uppercase font-semibold">Taxa Geral (100k)</p><div class="flex items-baseline gap-1 mt-1"><p class="text-2xl font-bold text-pmmg-red" x-text="formatNumber(getTotaisGerais().taxa)"></p><span class="text-[10px] text-red-400">/ 100 mil</span></div></div>
+                        <div class="p-3 bg-blue-50 rounded border border-blue-100"><p class="text-xs text-blue-700 uppercase font-semibold">Período</p><p class="text-sm font-bold text-blue-900 mt-2 truncate" x-text="getLabelMeses()"></p></div>
+                    </div>
+                </div>
+
+                <!-- Lista -->
+                <div x-show="loading" class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-3xl text-pmmg-gold"></i><p class="text-gray-500 mt-2 font-medium">Carregando...</p></div>
+                <div x-show="!loading" class="space-y-4">
+                    <template x-for="unidade in dadosFiltrados" :key="unidade.id">
+                        <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 transition hover:border-pmmg-gold">
+                            <div class="bg-gray-800 px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-700 transition select-none" @click="toggleUnidade(unidade.id)">
+                                <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-pmmg-gold text-white flex items-center justify-center font-bold text-xs shadow-md">CIA</div><h3 class="font-bold text-white text-sm md:text-base tracking-wide" x-text="unidade.unidade"></h3></div>
+                                <div class="flex items-center gap-4 text-right">
+                                    <div class="flex flex-col md:flex-row gap-4 text-xs">
+                                        <div><span class="text-gray-400 uppercase text-[10px]">Total</span><span class="block text-white font-bold text-sm" x-text="formatNumber(getTotaisUnidade(unidade).absoluto)"></span></div>
+                                        <div class="border-l border-gray-600 pl-4"><span class="text-gray-400 uppercase text-[10px]">Taxa</span><span class="block text-pmmg-gold font-bold text-sm" x-text="formatNumber(getTotaisUnidade(unidade).taxa)"></span></div>
+                                        <template x-if="temPLR()"><div class="border-l border-gray-600 pl-4"><span class="text-blue-300 uppercase text-[10px] font-bold">PLR (Meta)</span><span class="block text-blue-400 font-bold text-sm" x-text="formatNumber(getValorPLR(unidade.id))"></span></div></template>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-300 ml-2" :class="expandedUnidades.includes(unidade.id) ? 'rotate-180' : ''"></i>
+                                </div>
+                            </div>
+                            <div x-show="expandedUnidades.includes(unidade.id)" x-collapse class="bg-gray-50 border-t border-gray-200">
+                                <template x-for="pelotao in unidade.pelotoes" :key="pelotao.id">
+                                    <div class="border-b border-gray-200 last:border-0">
+                                        <div class="px-4 py-2 bg-gray-100 flex justify-between items-center cursor-pointer hover:bg-gray-200 transition pl-8 md:pl-12 select-none" @click="togglePelotao(pelotao.id)">
+                                            <div class="flex items-center gap-2"><i class="fa-solid fa-users text-pmmg-gold text-xs"></i><span class="font-semibold text-gray-700 text-sm" x-text="pelotao.nome"></span></div>
+                                            <div class="flex items-center gap-4"><div class="hidden sm:flex gap-3 text-xs text-gray-500"><div><span class="text-[9px] uppercase">Pop:</span><span class="font-bold" x-text="formatNumber(getTotaisPelotao(pelotao).populacao)"></span></div><div><span class="text-[9px] uppercase">Total:</span><span class="font-bold text-gray-700" x-text="formatNumber(getTotaisPelotao(pelotao).absoluto)"></span></div><div><span class="text-[9px] uppercase">Taxa:</span><span class="font-bold text-pmmg-red" x-text="formatNumber(getTotaisPelotao(pelotao).taxa)"></span></div></div><i class="fa-solid fa-chevron-right text-xs text-gray-400 transition-transform duration-300" :class="expandedPelotoes.includes(pelotao.id) ? 'rotate-90' : ''"></i></div>
+                                        </div>
+                                        <div x-show="expandedPelotoes.includes(pelotao.id)" x-collapse class="bg-white p-2 md:p-4">
+                                            <div class="overflow-x-auto rounded-lg border border-gray-100">
+                                                <table class="w-full text-sm text-left text-gray-500">
+                                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-4 py-3 rounded-tl-lg">Setor / Local</th><th class="px-4 py-3 text-center w-32">População</th><th class="px-4 py-3 text-center bg-pmmg-gold/10 text-pmmg-black w-32">Acumulado</th><th class="px-4 py-3 text-center bg-red-50 text-pmmg-red rounded-tr-lg w-32">Taxa (100k)</th></tr></thead>
+                                                    <tbody>
+                                                        <template x-for="setor in pelotao.setores" :key="setor.id">
+                                                            <tr class="border-b hover:bg-gray-50 transition"><td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap"><div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-pmmg-red"></div><span x-text="setor.local"></span></div></td><td class="px-4 py-3 text-center text-gray-400"><span x-text="formatNumber(parseFloat(setor.dados.pop))"></span></td><td class="px-4 py-3 text-center font-bold text-gray-800 bg-yellow-50/30"><span x-text="formatNumber(getValorAcumulado(setor.dados))"></span></td><td class="px-4 py-3 text-center font-bold text-pmmg-red bg-red-50/50"><span x-text="formatNumber(calcularTaxa(getValorAcumulado(setor.dados), setor.dados.pop))"></span></td></tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            <div class="mt-10 mb-4 text-center text-xs text-gray-400 font-mono">&copy; 2026 Polícia Militar de Minas Gerais - Setor de Inteligência</div>
+        </main>
+    </div>
+</body>
+</html>

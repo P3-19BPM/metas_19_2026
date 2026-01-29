@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  painel-metas:
+    # Sua imagem no DockerHub (que só tem o HTML/CSS/JS, sem dados)
+    image: seu-usuario/metas-19bpm:latest 
+    container_name: metas_19bpm
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      # O SEGREDO ESTÁ AQUI:
+      # Lado Esquerdo: Pasta na sua VPS onde você salvou os JSONs
+      # Lado Direito: Pasta dentro do container onde o HTML espera encontrar os dados
+      - /caminho/na/vps/gdo_dados:/usr/share/nginx/html/data
