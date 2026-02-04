@@ -139,3 +139,48 @@ git commit -m "chore(repo): atualizar regras de versionamento e artefato de supo
 git add documentacao.md comit.md
 git commit -m "docs(release): documentar fluxo de versionamento e publicação da v6"
 ```
+
+---
+
+## Commits pendentes (alterações atuais)
+
+## Commit 7
+
+### Título
+`feat(ppag): adicionar base e página de metas PPAG`
+
+### Arquivos deste commit
+- `public/data/metas_ppag.json`
+- `public/metas_ppag.html`
+
+### Detalhe do commit
+- Adiciona a base de dados de metas PPAG em JSON para consumo no frontend.
+- Inclui página HTML de referência do PPAG com estrutura e conteúdo operacional.
+- Prepara os insumos para integração da visualização PPAG ao painel principal.
+
+### Comando sugerido
+```bash
+git add public/data/metas_ppag.json public/metas_ppag.html
+git commit -m "feat(ppag): adicionar base e página de metas PPAG"
+```
+
+---
+
+## Commit 8
+
+### Título
+`feat(frontend): integrar PPAG ao painel principal e ajustar navegação`
+
+### Arquivos deste commit
+- `public/index.html`
+
+### Detalhe do commit
+- Integra o módulo PPAG ao `index.html` no padrão visual do sistema.
+- Ajusta navegação/sidebar para coexistência com os demais indicadores.
+- Consolida filtros e renderização para suportar os novos dados PPAG.
+
+### Comando sugerido
+```bash
+git add public/index.html
+git commit -m "feat(frontend): integrar PPAG ao painel principal e ajustar navegação"
+```

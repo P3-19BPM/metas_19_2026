@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Metas - PMMG</title>
+    <style>
+        :root { --blue: #003366; --gold: #f1c40f; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 0; font-size: 14px; }
+        
+        header { background: var(--blue); color: white; padding: 15px; text-align: center; }
+
+        /* Painel de Filtros */
+        .filter-panel { background: white; padding: 15px; margin: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; }
+        .filter-group label { font-weight: bold; color: var(--blue); font-size: 0.85rem; }
+        select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* Seleção de Meses (Checkboxes) */
+        .month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; border: 1px solid #eee; padding: 5px; border-radius: 4px; }
+        .month-grid label { font-size: 0.7rem; font-weight: normal; display: flex; align-items: center; gap: 3px; cursor: pointer; }
+
+        /* Cards e Abas */
+        .summary-container { display: flex; gap: 10px; padding: 0 10px; overflow-x: auto; }
+        .summary-card { background: white; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border-top: 3px solid var(--gold); }
+        .summary-card span { display: block; font-size: 1.2rem; font-weight: bold; color: var(--blue); }
+
+        .nav-tabs { display: flex; background: #002244; margin-top: 10px; position: sticky; top: 0; z-index: 100; overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: none; color: white; cursor: pointer; font-weight: bold; min-width: 130px; display: flex; flex-direction: column; align-items: center; font-size: 0.8rem; border-bottom: 3px solid transparent; }
+        .tab-btn span { font-size: 0.9rem; color: var(--gold); }
+        .tab-btn.active { border-bottom: 3px solid var(--gold); background: rgba(255,255,255,0.1); }
+
+        /* Tabela */
+        .container { padding: 10px; }
+        .table-wrapper { background: white; border-radius: 8px; overflow: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        th, td { padding: 10px; border: 1px solid #eee; text-align: center; }
+        th { background: #f8f9fa; color: var(--blue); }
+        .sticky-col { position: sticky; left: 0; background: white; font-weight: bold; text-align: left; border-right: 2px solid #ddd; z-index: 2; }
+        .meta-zero { background: #fff1f1; color: #d9534f; font-weight: bold; }
+        .total-row { background: #f0f0f0 !important; font-weight: bold; }
+        .header-content { 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 15px; 
+        padding: 10px;
+    }
+    .logo-pmmg {
+        width: 50px; /* Ajuste o tamanho conforme preferir */
+        height: auto;
+    }
+
+    /* Botão Flutuante de Dúvidas */
+    .help-btn { 
+        position: fixed; bottom: 20px; right: 20px; 
+        background: var(--pmmg-gold); color: var(--pmmg-blue); 
+        width: 50px; height: 50px; border-radius: 50%; 
+        border: none; font-size: 24px; font-weight: bold; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 2000;
+    }
+
+    /* Modal (Fundo escuro) */
+    .modal { 
+        display: none; position: fixed; z-index: 3000; 
+        left: 0; top: 0; width: 100%; height: 100%; 
+        background-color: rgba(0,0,0,0.7); backdrop-filter: blur(3px);
+    }
+
+    /* Conteúdo do Modal */
+    .modal-content { 
+        background-color: white; margin: 10% auto; padding: 20px; 
+        border-radius: 12px; width: 90%; max-width: 600px; 
+        max-height: 80vh; overflow-y: auto; position: relative;
+    }
+
+    .close-modal { position: absolute; right: 15px; top: 10px; font-size: 28px; cursor: pointer; color: #666; }
+
+    /* Estilo Accordion */
+    details { border-bottom: 1px solid #eee; padding: 10px 0; }
+    summary { font-weight: bold; color: var(--pmmg-blue); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    summary::after { content: '▶'; font-size: 0.8rem; transition: 0.3s; }
+    details[open] summary::after { transform: rotate(90deg); }
+    
+    .desc-box { padding: 10px; font-size: 0.9rem; line-height: 1.4; color: #444; background: #f9f9f9; border-left: 4px solid var(--pmmg-gold); margin-top: 5px; }
+    
+    /* Destaque para ESPECÍFICA */
+    .highlight-especifica { 
+        background-color: #fff3cd; color: #856404; 
+        font-weight: bold; padding: 2px 5px; border-radius: 4px;
+        text-transform: uppercase; border: 1px solid #ffeeba;
+    }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <img class="logo-pmmg" src="data:image/png;base64,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" alt="Logo 19º BPM">
+        <h3 style="margin:0">METAS PPAG 2026 - 19 BPM</h3>
+    </div>
+</header>
+
+<button class="help-btn" onclick="toggleModal(true)">?</button>
+
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="toggleModal(false)">&times;</span>
+        <h3 style="color:var(--pmmg-blue); border-bottom: 2px solid var(--pmmg-gold); padding-bottom: 10px;">
+            Guia de Naturezas e Utilização
+        </h3>
+        
+        <p style="font-size: 0.85rem; color: #666; font-style: italic;">
+            * Somente equipes do portfólio específico podem gerar estas naturezas.
+        </p>
+
+        <details>
+            <summary>Y07012 – Prev. Violência Doméstica (RpPM)</summary>
+            <div class="desc-box">
+                <span class="highlight-especifica">(ESPECÍFICA) RpPM</span>: Atividade de polícia ostensiva realizada pelas equipes de **Prevenção à Violência Doméstica**. Destinada a suprir demandas não atendidas pelo policiamento ordinário, com concentração de recursos em situações de violência contra a mulher.
+            </div>
+        </details>
+
+        <details>
+            <summary>Y15001 - Patrulha Escolar / Drogas</summary>
+            <div class="desc-box">
+                Realização de visitas a escolas e estabelecimentos de ensino. Foco na presença ostensiva para prevenir ações criminosas nos educandários envolvendo docentes e discentes.
+            </div>
+        </details>
+
+        <details>
+            <summary>Y15010 e Y07.014 - Zona Rural</summary>
+            <div class="desc-box">
+                <p><span class="highlight-especifica">(ESPECÍFICA) Y15010</span>: Presença real para fortalecer a interação com a população rural e prevenir infrações. Ex: Trabalho das **Patrulhas Rurais**.</p>
+                <p><strong>Y07014</strong>: Foco no contato e confiança junto ao campo e agronegócio, com missão distinta do policiamento ambiental.</p>
+            </div>
+        </details>
+
+        <details>
+            <summary>Y15020 - Ação em Área de Risco (GEPAR)</summary>
+            <div class="desc-box">
+                <span class="highlight-especifica">(ESPECÍFICA) GEPAR</span>: Ações preventivas em áreas urbanas de risco (aglomerados/favelas). Exclusivo para o trabalho do **Grupo Especializado de Patrulhamento em Áreas de Risco**.
+            </div>
+        </details>
+
+        <details>
+            <summary>Y15052 - Operação BSC</summary>
+            <div class="desc-box">
+                <span class="highlight-especifica">(ESPECÍFICA) BSC</span>: Atividades desenvolvidas por integrantes da **Base de Segurança Comunitária**. Requer preenchimento de formulários previstos em normas institucionais.
+            </div>
+        </details>
+    </div>
+</div>
+
+<div class="filter-panel">
+    <div class="filter-group">
+        <label>Operação:</label>
+        <select id="op-filter" onchange="processarTudo()">
+            <option value="TODAS">-- TODAS --</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>Buscar Nome (Unidade/Cidade):</label>
+        <input type="text" id="search-filter" placeholder="Ex: Teófilo Otoni..." oninput="processarTudo()">
+    </div>
+    <div class="filter-group">
+        <label>Meses visíveis:</label>
+        <div class="month-grid" id="month-filters">
+            </div>
+    </div>
+</div>
+
+<div class="summary-container">
+    <div class="summary-card">Municípios<span id="card-mun">0</span></div>
+    <div class="summary-card">Pelotões<span id="card-pel">0</span></div>
+    <div class="summary-card">Cias PM<span id="card-cia">0</span></div>
+</div>
+
+<div class="nav-tabs">
+    <button class="tab-btn" id="tab-MUN" onclick="changeTab('MUNICÍPIO')">MUNICÍPIOS <span id="val-MUN">0</span></button>
+    <button class="tab-btn active" id="tab-PEL" onclick="changeTab('PELOTAO')">PELOTÕES <span id="val-PEL">0</span></button>
+    <button class="tab-btn" id="tab-CIA" onclick="changeTab('CIA_PM')">CIAS PM <span id="val-CIA">0</span></button>
+</div>
+
+<div class="container">
+    <div class="table-wrapper" id="main-table"></div>
+</div>
+
+<script>
+
+    function toggleModal(show) {
+        document.getElementById('helpModal').style.display = show ? 'block' : 'none';
+    }
+
+    // Fechar ao clicar fora do modal
+    window.onclick = function(event) {
+        let modal = document.getElementById('helpModal');
+        if (event.target == modal) modal.style.display = "none";
+    }
+    
+    // --- DICIONÁRIO DE DADOS ---
+    const operacoes = {
+        municipios: [{ id: "Y07012", nome: "Y07012 – Operação de Prevenção a Violência Doméstica", dados: 
+        [{"MUNICÍPIO":"TEOFILO OTONI","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"MUNICÍPIO":"ITAMBACURI","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"NOVO CRUZEIRO","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"MUNICÍPIO":"ATALEIA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"CARAI","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"MALACACHETA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"CAMPANARIO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"CATUJI","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"FRANCISCOPOLIS","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"FREI GASPAR","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"ITAIPE","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"JAMPRUCA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"LADAINHA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"NOVA MODICA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"NOVO ORIENTE DE MINAS","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"OURO VERDE DE MINAS","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"PAVAO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"PESCADOR","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"POTE","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"SAO JOSE DO DIVINO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"SETUBINHA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+},
+{ id: "Y15001", nome: "Y15001 - Patrulha Escolar", dados: 
+[{"MUNICÍPIO":"TEOFILO OTONI","JAN":12,"FEV":12,"MAR":12,"ABR":12,"MAI":12,"JUN":12,"JUL":12,"AGO":12,"SET":12,"OUT":12,"NOV":12,"DEZ":12,"TOTAL":144},{"MUNICÍPIO":"ITAMBACURI","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"MUNICÍPIO":"NOVO CRUZEIRO","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"MUNICÍPIO":"ATALEIA","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"MUNICÍPIO":"CARAI","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"MUNICÍPIO":"MALACACHETA","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"MUNICÍPIO":"CAMPANARIO","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"CATUJI","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"FRANCISCOPOLIS","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"FREI GASPAR","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"ITAIPE","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"JAMPRUCA","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"LADAINHA","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"NOVA MODICA","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"NOVO ORIENTE DE MINAS","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"OURO VERDE DE MINAS","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"PAVAO","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"PESCADOR","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"POTE","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"SAO JOSE DO DIVINO","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"SETUBINHA","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24}]
+},
+{ id: "Y15010 - Y07014", nome: "Y15010 - Operação em Zona Rural", dados: 
+[{"MUNICÍPIO":"TEOFILO OTONI","JAN":14,"FEV":14,"MAR":14,"ABR":14,"MAI":14,"JUN":14,"JUL":14,"AGO":14,"SET":14,"OUT":14,"NOV":14,"DEZ":14,"TOTAL":168},{"MUNICÍPIO":"ITAMBACURI","JAN":2,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":46},{"MUNICÍPIO":"NOVO CRUZEIRO","JAN":2,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":46},{"MUNICÍPIO":"ATALEIA","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"MUNICÍPIO":"CARAI","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"MALACACHETA","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"CAMPANARIO","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"CATUJI","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"FRANCISCOPOLIS","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"FREI GASPAR","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"ITAIPE","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"JAMPRUCA","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"LADAINHA","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"NOVA MODICA","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"NOVO ORIENTE DE MINAS","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"OURO VERDE DE MINAS","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"PAVAO","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"PESCADOR","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"POTE","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"SAO JOSE DO DIVINO","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23},{"MUNICÍPIO":"SETUBINHA","JAN":1,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":23}]
+ },
+{ id: "Y15020 - GEPAR", nome: "Y15020 - Ação/Operação em Área de Risco", dados: 
+[{"MUNICÍPIO":"TEOFILO OTONI","JAN":31,"FEV":28,"MAR":31,"ABR":30,"MAI":31,"JUN":30,"JUL":31,"AGO":31,"SET":30,"OUT":31,"NOV":30,"DEZ":31,"TOTAL":365},{"MUNICÍPIO":"ITAMBACURI","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"NOVO CRUZEIRO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"ATALEIA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"CARAI","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"MALACACHETA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"CAMPANARIO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"CATUJI","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"FRANCISCOPOLIS","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"FREI GASPAR","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"ITAIPE","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"JAMPRUCA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"LADAINHA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"NOVA MODICA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"NOVO ORIENTE DE MINAS","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"OURO VERDE DE MINAS","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"PAVAO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"PESCADOR","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"POTE","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"SAO JOSE DO DIVINO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"SETUBINHA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+ },
+{ id: "Y15052 - BSC", nome: "Y15052 - Operação da Base de Segurança Comunitária", dados: 
+[{"MUNICÍPIO":"TEOFILO OTONI","JAN":29,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":29},{"MUNICÍPIO":"ITAMBACURI","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"NOVO CRUZEIRO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"ATALEIA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"CARAI","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"MALACACHETA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"CAMPANARIO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"CATUJI","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"FRANCISCOPOLIS","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"FREI GASPAR","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"ITAIPE","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"JAMPRUCA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"LADAINHA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"NOVA MODICA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"NOVO ORIENTE DE MINAS","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"OURO VERDE DE MINAS","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"PAVAO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"PESCADOR","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"POTE","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"SAO JOSE DO DIVINO","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"MUNICÍPIO":"SETUBINHA","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+}], // Cole aqui quando tiver os 5 de municípios
+        cias: [
+{ id: "Y07012", nome: "Y07012 – Operação de Prevenção a Violência Doméstica", dados: 
+[{"CIA_PM":"42 CIA PM","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"CIA_PM":"47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"232 CIA PM","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48}]
+ },
+{ id: "Y15001", nome: "Y15001 - Patrulha Escolar", dados: 
+[{"CIA_PM":"42 CIA PM","JAN":10,"FEV":10,"MAR":10,"ABR":10,"MAI":10,"JUN":10,"JUL":10,"AGO":10,"SET":10,"OUT":10,"NOV":10,"DEZ":10,"TOTAL":120},{"CIA_PM":"47 CIA PM","JAN":6,"FEV":6,"MAR":6,"ABR":6,"MAI":6,"JUN":6,"JUL":6,"AGO":6,"SET":6,"OUT":6,"NOV":6,"DEZ":6,"TOTAL":72},{"CIA_PM":"155 CIA PM","JAN":22,"FEV":22,"MAR":22,"ABR":22,"MAI":22,"JUN":22,"JUL":22,"AGO":22,"SET":22,"OUT":22,"NOV":22,"DEZ":22,"TOTAL":264},{"CIA_PM":"232 CIA PM","JAN":24,"FEV":24,"MAR":24,"ABR":24,"MAI":24,"JUN":24,"JUL":24,"AGO":24,"SET":24,"OUT":24,"NOV":24,"DEZ":24,"TOTAL":288}]
+  },
+
+{ id: "Y15010 - Y07014", nome: "Y15010 - Operação em Zona Rural", dados: 
+[{"CIA_PM":"42 CIA PM","JAN":16,"FEV":18,"MAR":18,"ABR":18,"MAI":18,"JUN":18,"JUL":18,"AGO":18,"SET":18,"OUT":18,"NOV":18,"DEZ":18,"TOTAL":214},{"CIA_PM":"47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"155 CIA PM","JAN":11,"FEV":20,"MAR":20,"ABR":20,"MAI":20,"JUN":20,"JUL":20,"AGO":20,"SET":20,"OUT":20,"NOV":20,"DEZ":20,"TOTAL":231},{"CIA_PM":"232 CIA PM","JAN":10,"FEV":20,"MAR":20,"ABR":20,"MAI":20,"JUN":20,"JUL":20,"AGO":20,"SET":20,"OUT":20,"NOV":20,"DEZ":20,"TOTAL":230}]
+},
+
+{ id: "Y15020 - GEPAR", nome: "Y15020 - Ação/Operação em Área de Risco", dados: 
+[{"CIA_PM":"42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"47 CIA PM","JAN":31,"FEV":28,"MAR":31,"ABR":30,"MAI":31,"JUN":30,"JUL":31,"AGO":31,"SET":30,"OUT":31,"NOV":30,"DEZ":31,"TOTAL":365},{"CIA_PM":"155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+},
+
+{ id: "Y15052 - BSC", nome: "Y15052 - Operação da Base de Segurança Comunitária", dados:
+[{"CIA_PM":"42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"47 CIA PM","JAN":29,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":29},{"CIA_PM":"155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+}],       // Cole aqui quando tiver os 5 de CIAs
+        pelotoes: [
+            { 
+                id: "Y07012", 
+                nome: "Y07012 – Operação de Prevenção a Violência Doméstica", 
+                dados: [{"PELOTAO":"1 PEL/42 CIA PM","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"PELOTAO":"2 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"1 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"1 PEL/155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"1 PEL/232 CIA PM","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"PELOTAO":"2 PEL/232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+            },
+            { 
+                id: "Y15001", 
+                nome: "Y15001 - Patrulha Escolar", 
+                dados: [{"PELOTAO":"1 PEL/42 CIA PM","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"PELOTAO":"2 PEL/42 CIA PM","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"PELOTAO":"3 PEL/42 CIA PM","JAN":6,"FEV":6,"MAR":6,"ABR":6,"MAI":6,"JUN":6,"JUL":6,"AGO":6,"SET":6,"OUT":6,"NOV":6,"DEZ":6,"TOTAL":72},{"PELOTAO":"1 PEL/47 CIA PM","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"PELOTAO":"2 PEL/47 CIA PM","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"PELOTAO":"3 PEL/47 CIA PM","JAN":2,"FEV":2,"MAR":2,"ABR":2,"MAI":2,"JUN":2,"JUL":2,"AGO":2,"SET":2,"OUT":2,"NOV":2,"DEZ":2,"TOTAL":24},{"PELOTAO":"1 PEL/155 CIA PM","JAN":16,"FEV":16,"MAR":16,"ABR":16,"MAI":16,"JUN":16,"JUL":16,"AGO":16,"SET":16,"OUT":16,"NOV":16,"DEZ":16,"TOTAL":192},{"PELOTAO":"2 PEL/155 CIA PM","JAN":6,"FEV":6,"MAR":6,"ABR":6,"MAI":6,"JUN":6,"JUL":6,"AGO":6,"SET":6,"OUT":6,"NOV":6,"DEZ":6,"TOTAL":72},{"PELOTAO":"1 PEL/232 CIA PM","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"PELOTAO":"2 PEL/232 CIA PM","JAN":8,"FEV":8,"MAR":8,"ABR":8,"MAI":8,"JUN":8,"JUL":8,"AGO":8,"SET":8,"OUT":8,"NOV":8,"DEZ":8,"TOTAL":96},{"PELOTAO":"3 PEL/232 CIA PM","JAN":12,"FEV":12,"MAR":12,"ABR":12,"MAI":12,"JUN":12,"JUL":12,"AGO":12,"SET":12,"OUT":12,"NOV":12,"DEZ":12,"TOTAL":144}]
+            },
+            { 
+                id: "Y15010", 
+                nome: "Y15010 - Operação em Zona Rural", 
+                dados: [{"PELOTAO":"1 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/42 CIA PM","JAN":16,"FEV":18,"MAR":18,"ABR":18,"MAI":18,"JUN":18,"JUL":18,"AGO":18,"SET":18,"OUT":18,"NOV":18,"DEZ":18,"TOTAL":214},{"PELOTAO":"1 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"1 PEL/155 CIA PM","JAN":8,"FEV":16,"MAR":16,"ABR":16,"MAI":16,"JUN":16,"JUL":16,"AGO":16,"SET":16,"OUT":16,"NOV":16,"DEZ":16,"TOTAL":184},{"PELOTAO":"2 PEL/155 CIA PM","JAN":3,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":47},{"PELOTAO":"1 PEL/232 CIA PM","JAN":2,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":46},{"PELOTAO":"2 PEL/232 CIA PM","JAN":3,"FEV":6,"MAR":6,"ABR":6,"MAI":6,"JUN":6,"JUL":6,"AGO":6,"SET":6,"OUT":6,"NOV":6,"DEZ":6,"TOTAL":69},{"PELOTAO":"3 PEL/232 CIA PM","JAN":5,"FEV":10,"MAR":10,"ABR":10,"MAI":10,"JUN":10,"JUL":10,"AGO":10,"SET":10,"OUT":10,"NOV":10,"DEZ":10,"TOTAL":115}]
+            },
+            { 
+                id: "Y15020", 
+                nome: "Y15020 - Ação/Operação em Área de Risco", 
+                dados: [{"PELOTAO":"1 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"1 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/47 CIA PM","JAN":31,"FEV":28,"MAR":31,"ABR":30,"MAI":31,"JUN":30,"JUL":31,"AGO":31,"SET":30,"OUT":31,"NOV":30,"DEZ":31,"TOTAL":365},{"PELOTAO":"1 PEL/155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"1 PEL/232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+            },
+            { 
+                id: "Y15052", 
+                nome: "Y15052 - Operação da Base de Segurança Comunitária", 
+                dados: [{"PELOTAO":"1 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"1 PEL/47 CIA PM","JAN":29,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":29},{"PELOTAO":"2 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"1 PEL/155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"1 PEL/232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"2 PEL/232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"PELOTAO":"3 PEL/232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+            }
+        ]
+    };
+
+    let currentLevel = 'PELOTAO';
+    const mesesLista = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+
+    // Iniciar Checkboxes de Meses
+    const mGrid = document.getElementById('month-filters');
+    mesesLista.forEach(m => {
+        mGrid.innerHTML += `<label><input type="checkbox" class="month-check" value="${m}" checked onchange="processarTudo()"> ${m}</label>`;
+    });
+
+    function getFiltros() {
+        return {
+            opId: document.getElementById('op-filter').value,
+            busca: document.getElementById('search-filter').value.toUpperCase(),
+            mesesAtivos: Array.from(document.querySelectorAll('.month-check:checked')).map(c => c.value)
+        };
+    }
+
+    function consolidar(nivel, filtros) {
+        const key = nivel === 'MUNICÍPIO' ? 'municipios' : (nivel === 'PELOTAO' ? 'pelotoes' : 'cias');
+        let totalFiltro = 0;
+        let mapa = {};
+
+        let ops = operacoes[key] || [];
+        if (filtros.opId !== "TODAS") ops = ops.filter(o => o.id === filtros.opId);
+
+        ops.forEach(op => {
+            op.dados.forEach(item => {
+                let nome = item[nivel];
+                if (nome.indexOf(filtros.busca) === -1) return;
+
+                if (!mapa[nome]) {
+                    mapa[nome] = { nome: nome, totalCalculado: 0 };
+                    mesesLista.forEach(m => mapa[nome][m] = 0);
+                }
+
+                filtros.mesesAtivos.forEach(m => {
+                    let v = item[m] || 0;
+                    mapa[nome][m] += v;
+                    mapa[nome].totalCalculado += v;
+                    totalFiltro += v;
+                });
+            });
+        });
+        return { dados: Object.values(mapa), totalAbsoluto: totalFiltro };
+    }
+
+    function processarTudo() {
+        const f = getFiltros();
+        
+        // Atualizar Resumos e Abas
+        const rMUN = consolidar('MUNICÍPIO', f);
+        const rPEL = consolidar('PELOTAO', f);
+        const rCIA = consolidar('CIA_PM', f);
+
+        document.getElementById('card-mun').innerText = rMUN.totalAbsoluto;
+        document.getElementById('card-pel').innerText = rPEL.totalAbsoluto;
+        document.getElementById('card-cia').innerText = rCIA.totalAbsoluto;
+        
+        document.getElementById('val-MUN').innerText = rMUN.totalAbsoluto;
+        document.getElementById('val-PEL').innerText = rPEL.totalAbsoluto;
+        document.getElementById('val-CIA').innerText = rCIA.totalAbsoluto;
+
+        // Renderizar Tabela do Nível Atual
+        const rAtual = consolidar(currentLevel, f);
+        renderTable(rAtual.dados, f.mesesAtivos);
+    }
+
+    function renderTable(dados, mesesAtivos) {
+        let html = `<table><thead><tr><th class="sticky-col">${currentLevel}</th>`;
+        mesesAtivos.forEach(m => html += `<th>${m}</th>`);
+        html += `<th>TOTAL</th></tr></thead><tbody>`;
+
+        dados.forEach(linha => {
+            html += `<tr><td class="sticky-col">${linha.nome}</td>`;
+            mesesAtivos.forEach(m => html += `<td class="${linha[m] === 0 ? 'meta-zero' : ''}">${linha[m]}</td>`);
+            html += `<td class="total-row">${linha.totalCalculado}</td></tr>`;
+        });
+
+        html += `</tbody></table>`;
+        document.getElementById('main-table').innerHTML = html;
+    }
+
+    function changeTab(nivel) {
+        currentLevel = nivel;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + (nivel === 'MUNICÍPIO' ? 'MUN' : nivel.substring(0,3))).classList.add('active');
+        
+        // Atualizar lista de operações no seletor baseado no nível
+        const select = document.getElementById('op-filter');
+        const key = nivel === 'MUNICÍPIO' ? 'municipios' : (nivel === 'PELOTAO' ? 'pelotoes' : 'cias');
+        const opAtual = select.value;
+        select.innerHTML = '<option value="TODAS">-- TODAS --</option>';
+        (operacoes[key] || []).forEach(o => {
+            select.innerHTML += `<option value="${o.id}" ${o.id === opAtual ? 'selected' : ''}>${o.nome}</option>`;
+        });
+
+        processarTudo();
+    }
+
+    // Inicialização
+    changeTab('PELOTAO');
+</script>
+</body>
+</html>
