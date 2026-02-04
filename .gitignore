@@ -1,21 +1,25 @@
+
+
+
 --- IDE e Sistema ---
+
 .vscode/
 .idea/
-.DS_StoreThumbs.db
+.DS_Store
+Thumbs.db
 
---- Dados Sensíveis e Temporários ---Ignora todos os JSONs na raiz (parecem ser arquivos de trabalho/rascunho)
+--- Arquivos Temporários na Raiz ---
 
-arquivo_*.json*
-.csv*
-.xlsx
+Ignora os arquivos que estão soltos na raiz (já que você moveu para public/data)
 
---- Arquivos de Rascunho HTML ---Ignora versões antigas ou de teste do painel
-
+arquivo_*.json
+*.csv
+*.xlsx
 gdo_unico_metas.html
 arquivo_json.html
 
---- Dados Reais da Aplicação ---Ignora os dados dentro da pasta pública para não commitar metas reaisA ideia é ter apenas um arquivo de exemplo ou a pasta vazia no Git
+--- Pasta de Dados ---
 
-public/data/*.json
+Liberado para commit (conforme sua decisão)
 
-Exceção: Se você quiser manter um arquivo de exemplo ("dummy"), descomente abaixo:!public/data/exemplo_layout.json
+Se quiser ignorar no futuro, adicione: public/data/*.json
