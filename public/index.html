@@ -55,15 +55,24 @@
                 // --- CONFIGURAÇÃO DAS METAS ---
                 // Agora apontam para a pasta local ./data/ que está dentro da imagem
                 metasDisponiveis: [
-                    { id: 'meta_imv', nome: 'Mortes Violentas (IMV)', icon: 'fa-solid fa-person-falling-burst', arquivo: './data/arquivo_joson_meta_imv_subsetor.json' },
-                    { id: 'meta_icvpe', nome: 'Crimes Violentos Pessoa (ICVPe)', icon: 'fa-solid fa-mask', arquivo: './data/arquivo_joson_meta_icvpe_subsetor.json' },
-                    { id: 'meta_icvpa', nome: 'Crimes Violentos Patrimônio (ICVPa)', icon: 'fa-solid fa-gun', arquivo: './data/arquivo_joson_meta_icvpa_subsetor.json' },
-                    { id: 'meta_irtd', nome: 'Tráfico de Drogas (IRTD)', icon: 'fa-solid fa-cannabis', arquivo: './data/arquivo_joson_meta_irtd_subsetor.json' }
+                    { id: 'meta_imv', nome: 'Mortes Violentas (IMV)', icon: 'fa-solid fa-person-falling-burst', arquivo: './data/arquivo_joson_meta_imv_subsetor.json', grupo: 'resultado_gdo' },
+                    { id: 'meta_icvpe', nome: 'Crimes Violentos Pessoa (ICVPe)', icon: 'fa-solid fa-mask', arquivo: './data/arquivo_joson_meta_icvpe_subsetor.json', grupo: 'resultado_gdo' },
+                    { id: 'meta_icvpa', nome: 'Crimes Violentos Patrimônio (ICVPa)', icon: 'fa-solid fa-gun', arquivo: './data/arquivo_joson_meta_icvpa_subsetor.json', grupo: 'resultado_gdo' },
+                    { id: 'meta_irtd', nome: 'Tráfico de Drogas (IRTD)', icon: 'fa-solid fa-cannabis', arquivo: './data/arquivo_joson_meta_irtd_subsetor.json', grupo: 'plano_acao' },
+                    { id: 'meta_ppag', nome: 'Metas PPAG', icon: 'fa-solid fa-chart-line', arquivo: './data/metas_ppag.json', grupo: 'plano_proximidade' }
                 ],
 
-                dadosBase: { 'meta_imv': [], 'meta_icvpe': [], 'meta_icvpa': [], 'meta_irtd': [] },
+                dadosBase: { 'meta_imv': [], 'meta_icvpe': [], 'meta_icvpa': [], 'meta_irtd': [], 'meta_ppag': [] },
                 dadosPLR_Processed: {},
                 metasIRTDDetalhadas: { unidade: {}, pelotao: {}, setor: {} },
+                ppagData: { municipios: [], cias: [], pelotoes: [] },
+                ppagNivel: 'PELOTAO',
+                ppagOperacaoFiltro: 'TODAS',
+                ppagBusca: '',
+                ppagTotais: { MUNICIPIO: 0, PELOTAO: 0, CIA_PM: 0 },
+                ppagTotalAtual: 0,
+                ppagTabela: [],
+                ppagInfoOpen: false,
 
                 // --- INICIALIZAÇÃO ---
                 async init() {
@@ -127,7 +136,8 @@
                 async carregarDadosLocalmente(metaId) {
                     const metaInfo = this.metasDisponiveis.find(m => m.id === metaId);
                     if (!metaInfo || !metaInfo.arquivo) return;
-                    if (this.dadosBase[metaId].length > 0) return; 
+                    if (metaId === 'meta_ppag' && (this.ppagData.pelotoes || []).length > 0) { this.processarPPAG(); return; }
+                    if (metaId !== 'meta_ppag' && this.dadosBase[metaId].length > 0) return; 
 
                     this.loading = true;
                     this.erroCarregamento = null;
@@ -147,7 +157,7 @@
                         const jsonData = JSON.parse(rawText);
                         const dadosProcessados = metaId === 'meta_irtd'
                             ? this.construirEstruturaIRTD(jsonData)
-                            : jsonData;
+                            : (metaId === 'meta_ppag' ? [] : jsonData);
 
                         this.dadosBase[metaId] = dadosProcessados;
 
@@ -155,7 +165,12 @@
                             this.dadosPLR_Processed.meta_irtd = this.processarMetasIRTD(jsonData);
                         }
 
-                        if (dadosProcessados.length > 0 && this.expandedUnidades.length === 0) {
+                        if (metaId === 'meta_ppag') {
+                            this.ppagData = this.normalizarPPAG(jsonData);
+                            this.processarPPAG();
+                        }
+
+                        if (metaId !== 'meta_ppag' && dadosProcessados.length > 0 && this.expandedUnidades.length === 0) {
                             this.expandedUnidades.push(dadosProcessados[0].id);
                         }
                         console.log("✅ Dados carregados com sucesso.");
@@ -172,9 +187,10 @@
                 toggleMes(mesId) {
                     if (this.mesesSelecionados.includes(mesId)) this.mesesSelecionados = this.mesesSelecionados.filter(m => m !== mesId);
                     else this.mesesSelecionados.push(mesId);
+                    if (this.currentMeta === 'meta_ppag') this.processarPPAG();
                 },
-                selecionarTodosMeses() { this.mesesSelecionados = this.mesesLista.map(m => m.id); },
-                limparMeses() { this.mesesSelecionados = []; },
+                selecionarTodosMeses() { this.mesesSelecionados = this.mesesLista.map(m => m.id); if (this.currentMeta === 'meta_ppag') this.processarPPAG(); },
+                limparMeses() { this.mesesSelecionados = []; if (this.currentMeta === 'meta_ppag') this.processarPPAG(); },
                 getLabelMeses() {
                     if (this.mesesSelecionados.length === 12) return 'Ano Completo (12)';
                     if (this.mesesSelecionados.length === 0) return 'Selecione...';
@@ -281,15 +297,19 @@
                 },
 
                 temMeta() {
-                    return this.currentMeta === 'meta_irtd' || this.temPLR();
+                    return this.currentMeta === 'meta_irtd' || this.currentMeta === 'meta_ppag' || this.temPLR();
                 },
 
                 getMetaLabel() {
-                    return this.currentMeta === 'meta_irtd' ? 'Meta (Anual)' : 'Meta (PLR)';
+                    if (this.currentMeta === 'meta_irtd') return 'Meta (Anual)';
+                    if (this.currentMeta === 'meta_ppag') return 'Total PPAG';
+                    return 'Meta (PLR)';
                 },
 
                 getMetaUnidade(unidadeId) {
-                    return this.currentMeta === 'meta_irtd' ? this.getMetaIRTDUnidade(unidadeId) : this.getValorPLR(unidadeId);
+                    if (this.currentMeta === 'meta_irtd') return this.getMetaIRTDUnidade(unidadeId);
+                    if (this.currentMeta === 'meta_ppag') return 0;
+                    return this.getValorPLR(unidadeId);
                 },
 
                 getMetaBPM() {
@@ -297,6 +317,7 @@
                         const unidades = this.dadosBase[this.currentMeta] || [];
                         return unidades.reduce((acc, unidade) => acc + this.getMetaIRTDUnidade(unidade.id), 0);
                     }
+                    if (this.currentMeta === 'meta_ppag') return this.ppagTotalAtual || 0;
                     return this.getTotaisBPM().metaPLR;
                 },
 
@@ -343,6 +364,96 @@
                             }]
                         };
                     });
+                },
+
+
+                normalizarPPAG(jsonData) {
+                    return {
+                        municipios: Array.isArray(jsonData?.municipios) ? jsonData.municipios : [],
+                        cias: Array.isArray(jsonData?.cias) ? jsonData.cias : [],
+                        pelotoes: Array.isArray(jsonData?.pelotoes) ? jsonData.pelotoes : []
+                    };
+                },
+
+                getPPAGMesesAtivos() {
+                    const mapa = { jan: 'JAN', fev: 'FEV', mar: 'MAR', abr: 'ABR', mai: 'MAI', jun: 'JUN', jul: 'JUL', ago: 'AGO', set: 'SET', out: 'OUT', nov: 'NOV', dez: 'DEZ' };
+                    return this.mesesSelecionados.map(m => mapa[m]).filter(Boolean);
+                },
+
+                getPPAGChaveColecao() {
+                    if (this.ppagNivel === 'MUNICIPIO') return 'municipios';
+                    if (this.ppagNivel === 'CIA_PM') return 'cias';
+                    return 'pelotoes';
+                },
+
+                getPPAGOperacoesDisponiveis() {
+                    return this.ppagData[this.getPPAGChaveColecao()] || [];
+                },
+                getCampoMunicipioPPAG(item) {
+                    const keys = Object.keys(item || {});
+                    const found = keys.find(k => String(k).toUpperCase().includes('MUNIC'));
+                    return found || 'MUNICIPIO';
+                },
+
+                getValorNivelPPAG(item) {
+                    if (this.ppagNivel === 'MUNICIPIO') return item[this.getCampoMunicipioPPAG(item)] || '';
+                    if (this.ppagNivel === 'CIA_PM') return item['CIA_PM'] || '';
+                    return item['PELOTAO'] || item['PELOT?O'] || '';
+                },
+
+                processarPPAG() {
+
+                    const mesesAtivos = this.getPPAGMesesAtivos();
+                    const busca = (this.ppagBusca || '').toUpperCase();
+
+                    const consolidar = (nivel) => {
+                        const chave = nivel === 'MUNICIPIO' ? 'municipios' : (nivel === 'CIA_PM' ? 'cias' : 'pelotoes');
+                        let ops = this.ppagData[chave] || [];
+                        if (this.ppagOperacaoFiltro !== 'TODAS') ops = ops.filter(op => op.id === this.ppagOperacaoFiltro);
+
+                        const mapa = {};
+                        let total = 0;
+                        ops.forEach(op => {
+                            (op.dados || []).forEach(item => {
+                                let nome;
+                                if (nivel === 'MUNICIPIO') nome = item[this.getCampoMunicipioPPAG(item)] || '';
+                                else if (nivel === 'CIA_PM') nome = item['CIA_PM'] || '';
+                                else nome = item['PELOTAO'] || item['PELOT?O'] || '';
+
+                                if (!nome) return;
+                                if (busca && !String(nome).toUpperCase().includes(busca)) return;
+
+                                if (!mapa[nome]) {
+                                    mapa[nome] = { nome, totalCalculado: 0 };
+                                    mesesAtivos.forEach(m => mapa[nome][m] = 0);
+                                }
+
+                                mesesAtivos.forEach(m => {
+                                    const valor = parseFloat(item[m]) || 0;
+                                    mapa[nome][m] += valor;
+                                    mapa[nome].totalCalculado += valor;
+                                    total += valor;
+                                });
+                            });
+                        });
+
+                        return { lista: Object.values(mapa), total };
+                    };
+
+                    const mun = consolidar('MUNICIPIO');
+                    const pel = consolidar('PELOTAO');
+                    const cia = consolidar('CIA_PM');
+                    const atual = consolidar(this.ppagNivel);
+
+                    this.ppagTotais = { MUNICIPIO: mun.total, PELOTAO: pel.total, CIA_PM: cia.total };
+                    this.ppagTabela = atual.lista;
+                    this.ppagTotalAtual = atual.total;
+                },
+
+                mudarNivelPPAG(nivel) {
+                    this.ppagNivel = nivel;
+                    this.ppagOperacaoFiltro = 'TODAS';
+                    this.processarPPAG();
                 },
 
                 getValorPLR(unidadeId) {
@@ -419,16 +530,33 @@
                 },
 
                 get dadosFiltrados() {
+                    if (this.currentMeta === 'meta_ppag') return [];
                     let dados = this.dadosBase[this.currentMeta] || [];
                     if (this.filtroUnidade !== 'todas') dados = dados.filter(u => u.unidade === this.filtroUnidade);
                     return dados;
                 },
                 getUniqueUnidades() {
+                    if (this.currentMeta === 'meta_ppag') return [];
                     const dados = this.dadosBase[this.currentMeta] || [];
                     return [...new Set(dados.map(item => item.unidade))];
                 },
+                getMetasPorGrupo(grupoId) { return this.metasDisponiveis.filter(meta => meta.grupo === grupoId); },
                 getNomeMetaAtual() { const m = this.metasDisponiveis.find(m => m.id === this.currentMeta); return m ? m.nome : 'Selecione'; },
-                mudarMeta(meta) { this.currentMeta = meta.id; this.filtroUnidade = 'todas'; if (meta.arquivo) this.carregarDadosLocalmente(meta.id); },
+                mudarMeta(meta) {
+                    this.currentMeta = meta.id;
+                    this.filtroUnidade = 'todas';
+                    if (meta.id === 'meta_ppag') {
+                        this.ppagNivel = 'PELOTAO';
+                        this.ppagOperacaoFiltro = 'TODAS';
+                        this.ppagBusca = '';
+                    }
+                    if (meta.arquivo) {
+                        this.carregarDadosLocalmente(meta.id);
+                    }
+                    if (meta.id === 'meta_ppag' && (this.ppagData.pelotoes || []).length > 0) {
+                        this.processarPPAG();
+                    }
+                },
                 toggleUnidade(id) { if(this.expandedUnidades.includes(id)) this.expandedUnidades=this.expandedUnidades.filter(u=>u!==id); else this.expandedUnidades.push(id); },
                 togglePelotao(id) { if(this.expandedPelotoes.includes(id)) this.expandedPelotoes=this.expandedPelotoes.filter(p=>p!==id); else this.expandedPelotoes.push(id); },
                 formatNumber(num) { if(num===undefined||num===null||isNaN(num)) return '0'; if(Number.isInteger(num)) return num.toLocaleString('pt-BR'); return num.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:2}); }
@@ -458,13 +586,37 @@
     <div class="flex flex-1 overflow-hidden relative">
         
         <!-- SIDEBAR -->
-        <nav class="bg-white md:w-64 flex-none border-r border-gray-200 flex md:flex-col absolute md:static top-0 w-full z-20 md:z-auto shadow-md md:shadow-none overflow-x-auto">
+        <nav class="bg-white md:w-72 flex-none border-r border-gray-200 flex md:flex-col absolute md:static top-0 w-full z-20 md:z-auto shadow-md md:shadow-none overflow-x-auto">
             <div class="p-4 md:border-b border-gray-100 hidden md:block"><span class="text-xs font-bold text-gray-400 uppercase">Tipos de Metas</span></div>
-            <template x-for="(meta, index) in metasDisponiveis" :key="index">
-                <button @click="mudarMeta(meta)" class="flex items-center gap-3 px-6 py-4 md:py-3 text-sm font-medium transition-all whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-l-4 hover:bg-gray-50 flex-shrink-0" :class="currentMeta === meta.id ? 'border-pmmg-red text-pmmg-red bg-red-50' : 'border-transparent md:border-l-transparent text-gray-600 hover:text-pmmg-black border-b-transparent'">
+
+            <div class="hidden md:block px-4 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Metas de Resultado do GDO</div>
+            <template x-for="meta in getMetasPorGrupo('resultado_gdo')" :key="meta.id">
+                <button @click="mudarMeta(meta)" class="flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 hover:bg-gray-50" :class="currentMeta === meta.id ? 'border-pmmg-red text-pmmg-red bg-red-50' : 'border-transparent text-gray-600 hover:text-pmmg-black'">
                     <i :class="meta.icon" class="text-lg opacity-80"></i><span x-text="meta.nome"></span>
                 </button>
             </template>
+
+            <div class="hidden md:block px-4 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Metas do Plano de A&ccedil;&atilde;o</div>
+            <template x-for="meta in getMetasPorGrupo('plano_acao')" :key="meta.id">
+                <button @click="mudarMeta(meta)" class="flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 hover:bg-gray-50" :class="currentMeta === meta.id ? 'border-pmmg-red text-pmmg-red bg-red-50' : 'border-transparent text-gray-600 hover:text-pmmg-black'">
+                    <i :class="meta.icon" class="text-lg opacity-80"></i><span x-text="meta.nome"></span>
+                </button>
+            </template>
+
+            <div class="hidden md:block px-4 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Metas do Plano de Proximidade</div>
+            <template x-for="meta in getMetasPorGrupo('plano_proximidade')" :key="meta.id">
+                <button @click="mudarMeta(meta)" class="flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 hover:bg-gray-50" :class="currentMeta === meta.id ? 'border-pmmg-red text-pmmg-red bg-red-50' : 'border-transparent text-gray-600 hover:text-pmmg-black'">
+                    <i :class="meta.icon" class="text-lg opacity-80"></i><span x-text="meta.nome"></span>
+                </button>
+            </template>
+
+            <div class="md:hidden p-2 flex gap-2 overflow-x-auto">
+                <template x-for="meta in metasDisponiveis" :key="`m-${meta.id}`">
+                    <button @click="mudarMeta(meta)" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded border whitespace-nowrap" :class="currentMeta === meta.id ? 'bg-pmmg-black text-pmmg-gold border-pmmg-black' : 'bg-white text-gray-600 border-gray-300'">
+                        <i :class="meta.icon"></i><span x-text="meta.nome"></span>
+                    </button>
+                </template>
+            </div>
         </nav>
 
         <!-- CONTEÚDO -->
@@ -476,9 +628,115 @@
                     <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Atenção:</p>
                     <p x-text="erroCarregamento"></p>
                 </div>
+                <div x-show="currentMeta === 'meta_ppag' && !loading" class="bg-white rounded-lg shadow-sm border-l-4 border-pmmg-gold p-4 md:p-6 space-y-5">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-xl font-bold text-gray-800">Metas PPAG</h2>
+                                <button @click="ppagInfoOpen = true" class="w-7 h-7 rounded-full bg-pmmg-gold text-pmmg-black text-xs font-bold shadow hover:brightness-95" title="Guia das naturezas">?</button>
+                            </div>
+                            <p class="text-sm text-gray-500">Vis&atilde;o consolidada por n&iacute;vel operacional</p>
+                        </div>
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-center min-w-[180px]">
+                            <span class="text-[10px] text-blue-500 uppercase font-bold tracking-wide" x-text="getMetaLabel()"></span>
+                            <span class="block text-2xl font-bold text-blue-600" x-text="formatNumber(getMetaBPM())"></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="p-3 bg-gray-50 rounded border"><p class="text-xs text-gray-500 uppercase font-semibold">Munic&iacute;pios</p><p class="text-2xl font-bold text-gray-800" x-text="formatNumber(ppagTotais.MUNICIPIO)"></p></div>
+                        <div class="p-3 bg-gray-50 rounded border"><p class="text-xs text-gray-500 uppercase font-semibold">Pelot&otilde;es</p><p class="text-2xl font-bold text-gray-800" x-text="formatNumber(ppagTotais.PELOTAO)"></p></div>
+                        <div class="p-3 bg-gray-50 rounded border"><p class="text-xs text-gray-500 uppercase font-semibold">Cias PM</p><p class="text-2xl font-bold text-gray-800" x-text="formatNumber(ppagTotais.CIA_PM)"></p></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="md:col-span-2 flex flex-wrap gap-2">
+                            <button @click="mudarNivelPPAG('MUNICIPIO')" class="px-3 py-2 text-xs font-semibold rounded border" :class="ppagNivel === 'MUNICIPIO' ? 'bg-pmmg-black text-pmmg-gold border-pmmg-black' : 'bg-white text-gray-600 border-gray-300'">Munic&iacute;pios</button>
+                            <button @click="mudarNivelPPAG('PELOTAO')" class="px-3 py-2 text-xs font-semibold rounded border" :class="ppagNivel === 'PELOTAO' ? 'bg-pmmg-black text-pmmg-gold border-pmmg-black' : 'bg-white text-gray-600 border-gray-300'">Pelot&otilde;es</button>
+                            <button @click="mudarNivelPPAG('CIA_PM')" class="px-3 py-2 text-xs font-semibold rounded border" :class="ppagNivel === 'CIA_PM' ? 'bg-pmmg-black text-pmmg-gold border-pmmg-black' : 'bg-white text-gray-600 border-gray-300'">Cias PM</button>
+                        </div>
+                        <input x-model="ppagBusca" @input="processarPPAG()" type="text" placeholder="Buscar..." class="bg-gray-50 border border-gray-300 text-sm rounded p-2.5 outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <select x-model="ppagOperacaoFiltro" @change="processarPPAG()" class="bg-gray-50 border border-gray-300 text-sm rounded p-2.5 outline-none">
+                            <option value="TODAS">Todas Opera&ccedil;&otilde;es</option>
+                            <template x-for="op in getPPAGOperacoesDisponiveis()" :key="op.id">
+                                <option :value="op.id" x-text="op.nome"></option>
+                            </template>
+                        </select>
+                        <div class="p-2.5 bg-blue-50 border border-blue-100 rounded text-sm text-blue-800 font-semibold">
+                            Per&iacute;odo: <span x-text="getLabelMeses()"></span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border border-gray-100">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3">N&iacute;vel</th>
+                                    <template x-for="mes in getPPAGMesesAtivos()" :key="mes"><th class="px-4 py-3 text-center" x-text="mes"></th></template>
+                                    <th class="px-4 py-3 text-center">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="linha in ppagTabela" :key="linha.nome">
+                                    <tr class="border-b hover:bg-gray-50 transition">
+                                        <td class="px-4 py-3 font-medium text-gray-900" x-text="linha.nome"></td>
+                                        <template x-for="mes in getPPAGMesesAtivos()" :key="`${linha.nome}-${mes}`">
+                                            <td class="px-4 py-3 text-center" x-text="formatNumber(linha[mes] || 0)"></td>
+                                        </template>
+                                        <td class="px-4 py-3 text-center font-bold text-gray-800" x-text="formatNumber(linha.totalCalculado || 0)"></td>
+                                    </tr>
+                                </template>
+                                <tr x-show="ppagTabela.length === 0"><td class="px-4 py-3 text-center text-gray-400" :colspan="getPPAGMesesAtivos().length + 2">Sem dados para os filtros selecionados.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="ppagInfoOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="ppagInfoOpen = false">
+                    <div class="w-full max-w-3xl max-h-[85vh] overflow-y-auto bg-white rounded-xl shadow-2xl border-t-4 border-pmmg-gold p-5 md:p-6">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <h3 class="text-lg font-bold text-gray-800">Guia de Naturezas e Utiliza&ccedil;&atilde;o</h3>
+                            <button @click="ppagInfoOpen = false" class="w-8 h-8 rounded-full border text-gray-600 hover:bg-gray-100">&times;</button>
+                        </div>
+
+                        <p class="text-xs text-gray-500 italic mb-4">* Somente equipes do portf&oacute;lio espec&iacute;fico podem gerar estas naturezas.</p>
+
+                        <details class="border-b py-3">
+                            <summary class="cursor-pointer font-semibold text-gray-800">Y07012 - Prev. Viol&ecirc;ncia Dom&eacute;stica (RpPM)</summary>
+                            <div class="mt-2 p-3 bg-yellow-50 border-l-4 border-pmmg-gold text-sm text-gray-700">(ESPEC&Iacute;FICA) RpPM: Atividade de pol&iacute;cia ostensiva realizada pelas equipes de Preven&ccedil;&atilde;o &agrave; Viol&ecirc;ncia Dom&eacute;stica, para demandas n&atilde;o atendidas pelo policiamento ordin&aacute;rio.</div>
+                        </details>
+
+                        <details class="border-b py-3">
+                            <summary class="cursor-pointer font-semibold text-gray-800">Y15001 - Patrulha Escolar / Drogas</summary>
+                            <div class="mt-2 p-3 bg-gray-50 border-l-4 border-gray-300 text-sm text-gray-700">Visitas a escolas e estabelecimentos de ensino com foco preventivo e presen&ccedil;a ostensiva.</div>
+                        </details>
+
+                        <details class="border-b py-3">
+                            <summary class="cursor-pointer font-semibold text-gray-800">Y15010 e Y07014 - Zona Rural</summary>
+                            <div class="mt-2 p-3 bg-gray-50 border-l-4 border-gray-300 text-sm text-gray-700">
+                                <p><strong>(ESPEC&Iacute;FICA) Y15010:</strong> Presen&ccedil;a real para fortalecer intera&ccedil;&atilde;o com a popula&ccedil;&atilde;o rural e prevenir infra&ccedil;&otilde;es.</p>
+                                <p class="mt-2"><strong>Y07014:</strong> Contato e confian&ccedil;a junto ao campo e agroneg&oacute;cio, com miss&atilde;o distinta do policiamento ambiental.</p>
+                            </div>
+                        </details>
+
+                        <details class="border-b py-3">
+                            <summary class="cursor-pointer font-semibold text-gray-800">Y15020 - A&ccedil;&atilde;o em &Aacute;rea de Risco (GEPAR)</summary>
+                            <div class="mt-2 p-3 bg-yellow-50 border-l-4 border-pmmg-gold text-sm text-gray-700">(ESPEC&Iacute;FICA) GEPAR: A&ccedil;&otilde;es preventivas em &aacute;reas urbanas de risco, exclusivas do Grupo Especializado de Patrulhamento em &Aacute;reas de Risco.</div>
+                        </details>
+
+                        <details class="py-3">
+                            <summary class="cursor-pointer font-semibold text-gray-800">Y15052 - Opera&ccedil;&atilde;o BSC</summary>
+                            <div class="mt-2 p-3 bg-yellow-50 border-l-4 border-pmmg-gold text-sm text-gray-700">(ESPEC&Iacute;FICA) BSC: Atividades da Base de Seguran&ccedil;a Comunit&aacute;ria, com preenchimento dos formul&aacute;rios previstos em norma.</div>
+                        </details>
+                    </div>
+                </div>
 
                 <!-- Painel Resumo e Filtros -->
-                <div class="bg-white rounded-lg shadow-sm border-l-4 border-pmmg-gold p-4 md:p-6">
+
+                <div x-show="currentMeta !== 'meta_ppag'" class="bg-white rounded-lg shadow-sm border-l-4 border-pmmg-gold p-4 md:p-6">
                     
                     <!-- LINHA 1: Título e Cards de Resumo BPM -->
                     <div class="flex flex-col xl:flex-row justify-between xl:items-center gap-6 mb-6">
@@ -541,7 +799,7 @@
                 <div x-show="loading" class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-3xl text-pmmg-gold"></i><p class="text-gray-500 mt-2 font-medium">Carregando...</p></div>
                 
                 <!-- Lista de Unidades -->
-                <div x-show="!loading" class="space-y-4">
+                <div x-show="!loading && currentMeta !== 'meta_ppag'" class="space-y-4">
                     <template x-for="unidade in dadosFiltrados" :key="unidade.id">
                         <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 transition hover:border-pmmg-gold">
                             <div class="bg-gray-800 px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-700 transition select-none" @click="toggleUnidade(unidade.id)">
