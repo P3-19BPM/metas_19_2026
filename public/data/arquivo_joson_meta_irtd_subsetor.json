@@ -1,0 +1,83 @@
+{
+  "indicador": "IRTD",
+  "descricao": "Indicador de Resposta ao Tráfico de Drogas",
+  "plano": "Plano de Ação 2026",
+  "tipo_meta": "anual",
+  "unidades": [
+    {
+      "unidade": "42 CIA PM",
+      "id": "19.42",
+      "pelotoes": [
+        { "nome": "1 PEL/42 CIA PM", "id": "19.42.1", "meta_anual": 85 },
+        { "nome": "2 PEL/42 CIA PM", "id": "19.42.2", "meta_anual": 0 },
+        { "nome": "3 PEL/42 CIA PM", "id": "19.42.3", "meta_anual": 15 }
+      ]
+    },
+    {
+      "unidade": "47 CIA PM",
+      "id": "19.47",
+      "pelotoes": [
+        { "nome": "1 PEL/47 CIA PM", "id": "19.47.1", "meta_anual": 85 },
+        { "nome": "2 PEL/47 CIA PM", "id": "19.47.2", "meta_anual": 0 },
+        { "nome": "3 PEL/47 CIA PM", "id": "19.47.3", "meta_anual": 0 }
+      ]
+    },
+    {
+      "unidade": "155 CIA PM",
+      "id": "19.155",
+      "pelotoes": [
+        { "nome": "1 PEL/155 CIA PM", "id": "19.155.1", "meta_anual": 45 },
+        { "nome": "2 PEL/155 CIA PM", "id": "19.155.2", "meta_anual": 14 }
+      ]
+    },
+    {
+      "unidade": "232 CIA PM",
+      "id": "19.232",
+      "pelotoes": [
+        { "nome": "1 PEL/232 CIA PM", "id": "19.232.1", "meta_anual": 16 },
+        { "nome": "2 PEL/232 CIA PM", "id": "19.232.2", "meta_anual": 19 },
+        { "nome": "3 PEL/232 CIA PM", "id": "19.232.3", "meta_anual": 42 }
+      ]
+    },
+
+    {
+      "unidade": "74 CIA TM",
+      "id": "19.74",
+      "tipo": "tm",
+      "meta_anual": 160
+    },
+
+    {
+      "unidade": "TEOFILO OTONI",
+      "id": "19.000",
+      "meta_anual": 345
+    },
+
+    {
+      "unidade": "MUNICIPIOS",
+      "tipo": "territorial",
+      "locais": [
+        { "nome": "ATALEIA", "id": "19.155.2.1", "meta_anual": 9 },
+        { "nome": "CAMPANARIO", "id": "19.155.1.3", "meta_anual": 5 },
+        { "nome": "CARAI", "id": "19.232.2.1", "meta_anual": 9 },
+        { "nome": "CATUJI", "id": "19.232.2.2", "meta_anual": 5 },
+        { "nome": "FRANCISCOPOLIS", "id": "19.232.3.2", "meta_anual": 5 },
+        { "nome": "FREI GASPAR", "id": "19.155.1.2", "meta_anual": 5 },
+        { "nome": "ITAIPE", "id": "19.232.2.3", "meta_anual": 5 },
+        { "nome": "ITAMBACURI", "id": "19.155.1.1", "meta_anual": 16 },
+        { "nome": "JAMPRUCA", "id": "19.155.1.4", "meta_anual": 5 },
+        { "nome": "LADAINHA", "id": "19.232.3.5", "meta_anual": 5 },
+        { "nome": "MALACACHETA", "id": "19.232.3.1", "meta_anual": 16 },
+        { "nome": "NOVA MODICA", "id": "19.155.1.5", "meta_anual": 5 },
+        { "nome": "NOVO CRUZEIRO", "id": "19.232.1", "meta_anual": 16 },
+        { "nome": "NOVO ORIENTE DE MINAS", "id": "19.42.3.2", "meta_anual": 8 },
+        { "nome": "OURO VERDE DE MINAS", "id": "19.155.2.2", "meta_anual": 5 },
+        { "nome": "PAVAO", "id": "19.42.3.3", "meta_anual": 7 },
+        { "nome": "PESCADOR", "id": "19.155.1.6", "meta_anual": 5 },
+        { "nome": "POTE", "id": "19.232.3.4", "meta_anual": 11 },
+        { "nome": "SAO JOSE DO DIVINO", "id": "19.155.1.7", "meta_anual": 4 },
+        { "nome": "SETUBINHA", "id": "19.232.3.3", "meta_anual": 5 }
+      ]
+    }
+  ]
+}

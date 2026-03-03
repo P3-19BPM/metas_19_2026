@@ -1,0 +1,19 @@
+
+{ id: "Y07012", nome: "Y07012 – Operação de Prevenção a Violência Doméstica", dados: 
+[{"CIA_PM":"42 CIA PM","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48},{"CIA_PM":"47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"232 CIA PM","JAN":4,"FEV":4,"MAR":4,"ABR":4,"MAI":4,"JUN":4,"JUL":4,"AGO":4,"SET":4,"OUT":4,"NOV":4,"DEZ":4,"TOTAL":48}]
+ },
+{ id: "Y15001", nome: "Y15001 - Patrulha Escolar", dados: 
+[{"CIA_PM":"42 CIA PM","JAN":10,"FEV":10,"MAR":10,"ABR":10,"MAI":10,"JUN":10,"JUL":10,"AGO":10,"SET":10,"OUT":10,"NOV":10,"DEZ":10,"TOTAL":120},{"CIA_PM":"47 CIA PM","JAN":6,"FEV":6,"MAR":6,"ABR":6,"MAI":6,"JUN":6,"JUL":6,"AGO":6,"SET":6,"OUT":6,"NOV":6,"DEZ":6,"TOTAL":72},{"CIA_PM":"155 CIA PM","JAN":22,"FEV":22,"MAR":22,"ABR":22,"MAI":22,"JUN":22,"JUL":22,"AGO":22,"SET":22,"OUT":22,"NOV":22,"DEZ":22,"TOTAL":264},{"CIA_PM":"232 CIA PM","JAN":24,"FEV":24,"MAR":24,"ABR":24,"MAI":24,"JUN":24,"JUL":24,"AGO":24,"SET":24,"OUT":24,"NOV":24,"DEZ":24,"TOTAL":288}]
+  },
+
+{ id: "Y15010 - Y07014", nome: "Y15010 - Operação em Zona Rural", dados: 
+[{"CIA_PM":"42 CIA PM","JAN":16,"FEV":18,"MAR":18,"ABR":18,"MAI":18,"JUN":18,"JUL":18,"AGO":18,"SET":18,"OUT":18,"NOV":18,"DEZ":18,"TOTAL":214},{"CIA_PM":"47 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"155 CIA PM","JAN":11,"FEV":20,"MAR":20,"ABR":20,"MAI":20,"JUN":20,"JUL":20,"AGO":20,"SET":20,"OUT":20,"NOV":20,"DEZ":20,"TOTAL":231},{"CIA_PM":"232 CIA PM","JAN":10,"FEV":20,"MAR":20,"ABR":20,"MAI":20,"JUN":20,"JUL":20,"AGO":20,"SET":20,"OUT":20,"NOV":20,"DEZ":20,"TOTAL":230}]
+},
+
+{ id: "Y15020 - GEPAR", nome: "Y15020 - Ação/Operação em Área de Risco", dados: 
+[{"CIA_PM":"42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"47 CIA PM","JAN":31,"FEV":28,"MAR":31,"ABR":30,"MAI":31,"JUN":30,"JUL":31,"AGO":31,"SET":30,"OUT":31,"NOV":30,"DEZ":31,"TOTAL":365},{"CIA_PM":"155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+},
+
+{ id: "Y15052 - BSC", nome: "Y15052 - Operação da Base de Segurança Comunitária", dados:
+[{"CIA_PM":"42 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"47 CIA PM","JAN":29,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":29},{"CIA_PM":"155 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0},{"CIA_PM":"232 CIA PM","JAN":0,"FEV":0,"MAR":0,"ABR":0,"MAI":0,"JUN":0,"JUL":0,"AGO":0,"SET":0,"OUT":0,"NOV":0,"DEZ":0,"TOTAL":0}]
+}
