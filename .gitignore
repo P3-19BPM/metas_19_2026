@@ -1,25 +1,56 @@
-
-
-
---- IDE e Sistema ---
-
-.vscode/
-.idea/
+# OS / editor
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
 
---- Arquivos Temporários na Raiz ---
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+.eggs/
+*.egg-info/
 
-Ignora os arquivos que estão soltos na raiz (já que você moveu para public/data)
+# Virtual environments (including this project's env)
+venvMETAS/
+.venv/
+venv/
+env/
+ENV/
 
-arquivo_*.json
+# Environment / secrets
+.env
+.env.*
+!.env.example
+api/.env
+agent/.env
+
+# Logs / local runtime files
+*.log
+*.pid
+*.tmp
+*.bak
+
+# Databases / local data artifacts
+*.sqlite
+*.sqlite3
+*.db
+/data/*.db
+/gdo_data/
+
+# Local exports / large generated files
 *.csv
 *.xlsx
-gdo_unico_metas.html
-arquivo_json.html
+*.zip
+agent/output/
 
---- Pasta de Dados ---
-
-Liberado para commit (conforme sua decisão)
-
-Se quiser ignorar no futuro, adicione: public/data/*.json
+# Optional local tooling
+.ipynb_checkpoints/

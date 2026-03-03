@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -16,6 +16,7 @@
     <meta name="theme-color" content="#000000">
         <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Charts/Map moved to /analises.html (keep metas page lightweight) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Alpine.js (Deferido) -->
@@ -61,6 +62,11 @@
                     { id: 'meta_irtd', nome: 'Tráfico de Drogas (IRTD)', icon: 'fa-solid fa-cannabis', arquivo: './data/arquivo_joson_meta_irtd_subsetor.json', grupo: 'plano_acao' },
                     { id: 'meta_ppag', nome: 'Metas PPAG', icon: 'fa-solid fa-chart-line', arquivo: './data/metas_ppag.json', grupo: 'plano_proximidade' }
                 ],
+                kpiTargets: {
+                    meta_imv: { bpm: 37, plr: null, direction: 'lower' },
+                    meta_icvpe: { bpm: 46, plr: null, direction: 'lower' },
+                    meta_icvpa: { bpm: 80, plr: null, direction: 'lower' }
+                },
 
                 dadosBase: { 'meta_imv': [], 'meta_icvpe': [], 'meta_icvpa': [], 'meta_irtd': [], 'meta_ppag': [] },
                 dadosPLR_Processed: {},
@@ -73,13 +79,82 @@
                 ppagTotalAtual: 0,
                 ppagTabela: [],
                 ppagInfoOpen: false,
+                
+                // --- MONITORAMENTO API/AGENT ---
+                apiBaseUrl: localStorage.getItem('metasApiBaseUrl') || window.location.origin,
+                adminToken: localStorage.getItem('metasAdminToken') || '',
+                statusLoading: false,
+                statusError: null,
+                statusPolling: null,
+                statusModalOpen: false,
+                updateModalOpen: false,
+                updateFeedback: '',
+                updateForm: { run_mode: 'all', scriptsText: '' },
+                scriptGroupsOpen: {},
+                scriptsCatalog: [
+                    'indicadores_resultado_gdo/BD_IMV.sql',
+                    'indicadores_resultado_gdo/BD_ICVPe.sql',
+                    'indicadores_resultado_gdo/BD_ICVPa.sql',
+                    'indicador_plano_acao/BD_IRTD.sql',
+                    'indicador_plano_acao/BD_PL.sql',
+                    'indicador_proximidade/BD_POG.sql',
+                    'indicador_interacao_comunitaria/BD_MRPP_INT_CUM.sql',
+                    'indicador_interacao_comunitaria/BD_RC_INT_CUM.sql',
+                    'indicador_interacao_comunitaria/BD_VCP_INT_CUM.sql',
+                    'indicador_interacao_comunitaria/BD_VTC_DENOMINADOR_INT_CUM.sql',
+                    'indicador_interacao_comunitaria/BD_VTC_NUMERADOR_INT_CUM.sql',
+                    'indicador_interacao_comunitaria/BD_VT_DENOMINADOR_INT_CUM.sql',
+                    'indicador_interacao_comunitaria/BD_VT_NUMERADOR_INT_CUM.sql'
+                ],
+                agentMonitor: {
+                    online: false,
+                    agentId: '-',
+                    lastSeen: null,
+                    onlineSince: null,
+                    lastJobStatus: '-',
+                    lastJobFinishedAt: null,
+                    lastJobId: null
+                },
+                imvApiLoading: false,
+                imvApiErro: null,
+                imvKpiResumo: { total_realizado: 0, last_update: null, unidades: [] },
+                imvKpiMensal: [],
+                irtdKpiMensal: [],
+                irtdKpiAnoRef: null,
+                irtdResultadoAnalise: 0,
+                irtdResultadoLoading: false,
+                irtdResultadoErro: null,
+                imvChart: null,
+                kpiNivel: 'CIA_PM',
+                kpiUnidadeId: '',
+                kpiUnidades: [],
+                kpiUnitsLoading: false,
+                kpiMesFiltro: 0,
+                detalhesOpen: false,
+                detalhesTab: 'visao',
+                detalhesChart: null,
+                detalhesGauge: null,
+                detalhesMap: null,
+                detalhesLayer: null,
+                detalhesGeoJson: null,
+                detalhesLoading: false,
+                detalhesErro: null,
 
                 // --- INICIALIZAÇÃO ---
                 async init() {
+                    // Em producao, evita usar base local salva anteriormente no navegador.
+                    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+                    const base = (this.apiBaseUrl || '').trim();
+                    if (!isLocalHost && (base.includes('127.0.0.1') || base.includes('localhost'))) {
+                        this.apiBaseUrl = window.location.origin;
+                        localStorage.setItem('metasApiBaseUrl', this.apiBaseUrl);
+                    }
                     console.log("🚀 Iniciando Painel PMMG v5...");
                     try {
                         await this.carregarArquivoPLR();
                         await this.carregarDadosLocalmente('meta_imv');
+                        await this.carregarStatusOperacional();
+                        await this.carregarResultadoAnaliseIrtd(true);
                     } catch (e) {
                         console.error("Erro fatal na inicialização:", e);
                         this.erroCarregamento = "Erro crítico ao iniciar aplicação: " + e.message;
@@ -187,10 +262,19 @@
                 toggleMes(mesId) {
                     if (this.mesesSelecionados.includes(mesId)) this.mesesSelecionados = this.mesesSelecionados.filter(m => m !== mesId);
                     else this.mesesSelecionados.push(mesId);
+                    this.recalcularResultadoAnaliseIrtd();
                     if (this.currentMeta === 'meta_ppag') this.processarPPAG();
                 },
-                selecionarTodosMeses() { this.mesesSelecionados = this.mesesLista.map(m => m.id); if (this.currentMeta === 'meta_ppag') this.processarPPAG(); },
-                limparMeses() { this.mesesSelecionados = []; if (this.currentMeta === 'meta_ppag') this.processarPPAG(); },
+                selecionarTodosMeses() {
+                    this.mesesSelecionados = this.mesesLista.map(m => m.id);
+                    this.recalcularResultadoAnaliseIrtd();
+                    if (this.currentMeta === 'meta_ppag') this.processarPPAG();
+                },
+                limparMeses() {
+                    this.mesesSelecionados = [];
+                    this.recalcularResultadoAnaliseIrtd();
+                    if (this.currentMeta === 'meta_ppag') this.processarPPAG();
+                },
                 getLabelMeses() {
                     if (this.mesesSelecionados.length === 12) return 'Ano Completo (12)';
                     if (this.mesesSelecionados.length === 0) return 'Selecione...';
@@ -553,12 +637,652 @@
                     if (meta.arquivo) {
                         this.carregarDadosLocalmente(meta.id);
                     }
+                    if (meta.id === 'meta_irtd') {
+                        this.carregarResultadoAnaliseIrtd();
+                    }
                     if (meta.id === 'meta_ppag' && (this.ppagData.pelotoes || []).length > 0) {
                         this.processarPPAG();
                     }
                 },
                 toggleUnidade(id) { if(this.expandedUnidades.includes(id)) this.expandedUnidades=this.expandedUnidades.filter(u=>u!==id); else this.expandedUnidades.push(id); },
                 togglePelotao(id) { if(this.expandedPelotoes.includes(id)) this.expandedPelotoes=this.expandedPelotoes.filter(p=>p!==id); else this.expandedPelotoes.push(id); },
+
+                // --- STATUS API/AGENT ---
+                getApiUrl(path) {
+                    const base = (this.apiBaseUrl || '').trim().replace(/\/$/, '');
+                    return `${base}${path}`;
+                },
+                getAdminHeaders() {
+                    const headers = { 'Content-Type': 'application/json' };
+                    if ((this.adminToken || '').trim()) headers['X-Admin-Token'] = this.adminToken.trim();
+                    return headers;
+                },
+                formatDateTime(isoValue) {
+                    if (!isoValue) return '-';
+                    const dt = new Date(isoValue);
+                    if (Number.isNaN(dt.getTime())) return '-';
+                    return dt.toLocaleString('pt-BR');
+                },
+                getAgentStatusLabel() {
+                    return this.agentMonitor.online ? 'PC Online' : 'PC Offline';
+                },
+                getAgentStatusClass() {
+                    return this.agentMonitor.online
+                        ? 'bg-green-100 text-green-700 border-green-200'
+                        : 'bg-red-100 text-red-700 border-red-200';
+                },
+                iniciarPollingStatus() {
+                    if (this.statusPolling) clearInterval(this.statusPolling);
+                    this.statusPolling = setInterval(() => { this.carregarStatusOperacional(true); }, 30000);
+                },
+                async carregarStatusOperacional(silent = false) {
+                    if (!silent) this.statusLoading = true;
+                    this.statusError = null;
+                    try {
+                        const response = await fetch(this.getApiUrl('/status'), {
+                            method: 'GET',
+                            headers: this.getAdminHeaders()
+                        });
+                        if (!response.ok) throw new Error(`Falha ao consultar status (${response.status})`);
+                        const data = await response.json();
+                        const agent = data?.agent || null;
+                        const lastJob = data?.last_job || null;
+                        this.agentMonitor = {
+                            online: (agent?.status || '').toLowerCase() === 'online',
+                            agentId: agent?.agent_id || '-',
+                            lastSeen: agent?.last_seen || null,
+                            onlineSince: agent?.online_since || null,
+                            lastJobStatus: lastJob?.status || '-',
+                            lastJobFinishedAt: lastJob?.finished_at || null,
+                            lastJobId: lastJob?.id || null
+                        };
+                    } catch (e) {
+                        this.statusError = e.message || 'Erro ao buscar status';
+                    } finally {
+                        if (!silent) this.statusLoading = false;
+                    }
+                },
+                openUpdateModal() {
+                    this.updateFeedback = '';
+                    this.garantirAcordeoesScripts();
+                    this.updateModalOpen = true;
+                },
+                openStatusModal() {
+                    this.statusModalOpen = true;
+                    this.carregarStatusOperacional();
+                },
+                closeStatusModal() {
+                    this.statusModalOpen = false;
+                },
+                closeUpdateModal() {
+                    this.updateModalOpen = false;
+                },
+                normalizeScriptsList() {
+                    const raw = (this.updateForm.scriptsText || '').replace(/;/g, ',');
+                    return [...new Set(raw.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean))];
+                },
+                getNomeGrupoScript(rawGroup) {
+                    const aliases = {
+                        'indicadores_resultado_gdo': 'GDO',
+                        'indicador_plano_acao': 'PL',
+                        'indicador_interacao_comunitaria': 'GDI',
+                        'indicador_proximidade': 'PPAG'
+                    };
+                    return aliases[rawGroup] || rawGroup.toUpperCase();
+                },
+                getOrdemGrupoScript(groupLabel) {
+                    const ordem = { GDO: 1, PL: 2, GDI: 3, PPAG: 4 };
+                    return ordem[groupLabel] || 99;
+                },
+                getScriptsAgrupadosLista() {
+                    const grupos = {};
+                    (this.scriptsCatalog || []).forEach(path => {
+                        const parts = String(path || '').split('/');
+                        if (parts.length < 2) return;
+                        const rawGroup = parts[0];
+                        const groupLabel = this.getNomeGrupoScript(rawGroup);
+                        if (!grupos[groupLabel]) grupos[groupLabel] = [];
+                        grupos[groupLabel].push(path);
+                    });
+                    return Object.entries(grupos)
+                        .map(([groupLabel, scripts]) => ({ groupLabel, scripts: scripts.sort() }))
+                        .sort((a, b) => {
+                            const orderDiff = this.getOrdemGrupoScript(a.groupLabel) - this.getOrdemGrupoScript(b.groupLabel);
+                            return orderDiff !== 0 ? orderDiff : a.groupLabel.localeCompare(b.groupLabel, 'pt-BR');
+                        });
+                },
+                garantirAcordeoesScripts() {
+                    this.getScriptsAgrupadosLista().forEach(grupo => {
+                        if (this.scriptGroupsOpen[grupo.groupLabel] === undefined) {
+                            this.scriptGroupsOpen[grupo.groupLabel] = true;
+                        }
+                    });
+                },
+                toggleAcordeaoGrupo(groupLabel) {
+                    this.scriptGroupsOpen[groupLabel] = !this.scriptGroupsOpen[groupLabel];
+                },
+                isScriptSelecionado(scriptPath) {
+                    return this.normalizeScriptsList().includes(scriptPath);
+                },
+                toggleScriptCatalog(scriptPath) {
+                    const current = this.normalizeScriptsList();
+                    const exists = current.includes(scriptPath);
+                    const updated = exists ? current.filter(s => s !== scriptPath) : [...current, scriptPath];
+                    this.updateForm.scriptsText = updated.join('\n');
+                },
+                isGrupoSelecionadoCompleto(grupo) {
+                    const current = this.normalizeScriptsList();
+                    return (grupo?.scripts || []).length > 0 && grupo.scripts.every(s => current.includes(s));
+                },
+                toggleGrupoScripts(grupo) {
+                    const current = this.normalizeScriptsList();
+                    const grupoScripts = grupo?.scripts || [];
+                    const completo = this.isGrupoSelecionadoCompleto(grupo);
+                    const updated = completo
+                        ? current.filter(s => !grupoScripts.includes(s))
+                        : [...new Set([...current, ...grupoScripts])];
+                    this.updateForm.scriptsText = updated.join('\n');
+                },
+                async solicitarAtualizacao() {
+                    this.updateFeedback = '';
+                    try {
+                        await this.carregarStatusOperacional();
+                        if (!this.agentMonitor.online) {
+                            this.updateFeedback = 'PC offline. Ligue o PC fisico na P3/19º BPM e tente novamente.';
+                            return;
+                        }
+                        localStorage.setItem('metasApiBaseUrl', this.apiBaseUrl || '');
+                        localStorage.setItem('metasAdminToken', this.adminToken || '');
+                        const payload = {
+                            run_mode: this.updateForm.run_mode,
+                            scripts: this.updateForm.run_mode === 'all' ? [] : this.normalizeScriptsList()
+                        };
+                        const response = await fetch(this.getApiUrl('/jobs/manual'), {
+                            method: 'POST',
+                            headers: this.getAdminHeaders(),
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data?.detail || `Erro ${response.status}`);
+                        this.updateFeedback = `Solicitação enviada. Job #${data.job_id}.`;
+                        await this.carregarStatusOperacional();
+                    } catch (e) {
+                        this.updateFeedback = `Falha ao solicitar atualização: ${e.message || e}`;
+                    }
+                },
+
+                getIndicadorApiAtual() {
+                    const mapa = { meta_imv: 'BD_IMV', meta_icvpe: 'BD_ICVPe', meta_icvpa: 'BD_ICVPa' };
+                    return mapa[this.currentMeta] || 'BD_IMV';
+                },
+                getKpiNivelLabel(nivel) {
+                    const mapa = { CIA_PM: 'Cia PM', PELOTAO: 'Pelotão', SETOR: 'Setor', SUBSETOR: 'SubSetor', MUNICIPIO: 'Município' };
+                    return mapa[nivel] || nivel;
+                },
+                getKpiDateRange() {
+                    const ano = this.getAnoAtual();
+                    let dateFrom = `${ano}-01-01`;
+                    let dateTo = `${ano}-12-31`;
+                    if (this.kpiMesFiltro) {
+                        const mes = Number(this.kpiMesFiltro);
+                        const lastDay = new Date(ano, mes, 0).getDate();
+                        const mesStr = String(mes).padStart(2, '0');
+                        dateFrom = `${ano}-${mesStr}-01`;
+                        dateTo = `${ano}-${mesStr}-${String(lastDay).padStart(2, '0')}`;
+                    }
+                    return { dateFrom, dateTo, ano };
+                },
+                getKpiMesLabel(mesId) {
+                    if (!mesId || mesId === 0) return 'Ano completo';
+                    const m = this.mesesLista.find(x => x.id === mesId);
+                    return m ? m.label : 'Mês';
+                },
+                async carregarKpiUnidades() {
+                    this.kpiUnitsLoading = true;
+                    try {
+                        const indicador = this.getIndicadorApiAtual();
+                        const ano = this.getAnoAtual();
+                        const resp = await fetch(this.getApiUrl(`/kpi/units?indicador=${encodeURIComponent(indicador)}&nivel=${encodeURIComponent(this.kpiNivel)}&date_from=${ano}-01-01&date_to=${ano}-12-31`));
+                        if (!resp.ok) throw new Error(`Lista de unidades indisponível (${resp.status})`);
+                        const data = await resp.json();
+                        this.kpiUnidades = Array.isArray(data?.unidades) ? data.unidades : [];
+                    } catch (e) {
+                        this.kpiUnidades = [];
+                    } finally {
+                        this.kpiUnitsLoading = false;
+                    }
+                },
+                getKpiConfig() {
+                    const base = { bpm: null, plr: null, direction: 'higher' };
+                    const cfg = this.kpiTargets[this.currentMeta] || {};
+                    return { ...base, ...cfg };
+                },
+                getKpiMetaBpm() {
+                    const cfg = this.getKpiConfig();
+                    if (cfg.bpm !== null && cfg.bpm !== undefined) return Number(cfg.bpm) || 0;
+                    const fallback = this.getMetaBPM();
+                    return Number(fallback) || 0;
+                },
+                getKpiMetaBpmLabel() {
+                    return this.kpiMesFiltro ? 'Meta BPM (Mensal)' : 'Meta BPM (Max)';
+                },
+                getKpiMetaBpmLineLabel() {
+                    // In charts we always plot a monthly series (variable or derived).
+                    return 'Meta BPM (Mensal)';
+                },
+                getPlrMapForCurrentMeta() {
+                    return this.dadosPLR_Processed?.[this.currentMeta] || null;
+                },
+                getPlrMesValue(dados, mesId) {
+                    if (!dados || !mesId) return 0;
+                    const mes = this.mesesLista.find(m => m.id === mesId);
+                    const key = mes?.id || '';
+                    if (!key) return 0;
+                    return Number(dados[key] || dados[key.toUpperCase()] || 0);
+                },
+                getPlrMonthlySeries() {
+                    // Returns 12 values (Jan..Dez) from metas_plr.json when available.
+                    // Works reliably at CIA_PM level (selected CIA or sum of all CIAs).
+                    const mapa = this.getPlrMapForCurrentMeta();
+                    if (!mapa) return null;
+                    const meses = this.mesesLista.map(m => m.id); // jan..dez
+                    const series = new Array(12).fill(0);
+
+                    const addDados = (dados) => {
+                        if (!dados) return;
+                        meses.forEach((mesKey, idx) => {
+                            series[idx] += Number(dados[mesKey] || dados[mesKey.toUpperCase()] || 0);
+                        });
+                    };
+
+                    if (this.kpiNivel === 'CIA_PM' && this.kpiUnidadeId) {
+                        const idNormalizado = this.normalizarId(this.kpiUnidadeId);
+                        const dados = mapa[idNormalizado] || mapa[String(this.kpiUnidadeId)] || mapa[idNormalizado?.replace('.', '')];
+                        addDados(dados);
+                        return series;
+                    }
+
+                    if (this.kpiNivel === 'CIA_PM' && !this.kpiUnidadeId) {
+                        Object.values(mapa).forEach(addDados);
+                        return series;
+                    }
+
+                    return null;
+                },
+                getMetaBpmMonthlySeries() {
+                    // Derives a non-linear monthly distribution for Meta BPM using PLR monthly weights when possible.
+                    // This makes the meta line vary by month while preserving the annual BPM cap.
+                    const annual = Number(this.getKpiMetaBpm() || 0);
+                    if (!annual || annual <= 0) return new Array(12).fill(0);
+
+                    const plr = this.getPlrMonthlySeries();
+                    if (!plr) {
+                        // Fallback: equal split when we don't have PLR weights for this level.
+                        return new Array(12).fill(annual / 12);
+                    }
+                    const sum = plr.reduce((a, b) => a + (Number(b) || 0), 0);
+                    if (!sum) return new Array(12).fill(annual / 12);
+                    return plr.map(v => (annual * (Number(v) || 0)) / sum);
+                },
+                getKpiMetaBpmEffective() {
+                    if (!this.kpiMesFiltro) return Number(this.getKpiMetaBpm() || 0);
+                    const idx = Number(this.kpiMesFiltro) - 1;
+                    const series = this.getMetaBpmMonthlySeries();
+                    return Number(series?.[idx] || 0);
+                },
+                getKpiMetaPlrEffective() {
+                    if (!this.kpiMesFiltro) return Number(this.getKpiMetaPlr() || 0);
+                    const idx = Number(this.kpiMesFiltro) - 1;
+                    const series = this.getPlrMonthlySeries();
+                    if (series) return Number(series?.[idx] || 0);
+                    return Number(this.getKpiMetaPlr() || 0);
+                },
+                getKpiMetaPlr() {
+                    const cfg = this.getKpiConfig();
+                    if (cfg.plr !== null && cfg.plr !== undefined) return Number(cfg.plr) || 0;
+                    if (this.kpiNivel === 'CIA_PM' && this.kpiUnidadeId) {
+                        if (this.kpiMesFiltro) {
+                            const mapa = this.getPlrMapForCurrentMeta();
+                            if (!mapa) return 0;
+                            const idNormalizado = this.normalizarId(this.kpiUnidadeId);
+                            const dados = mapa[idNormalizado] || mapa[String(this.kpiUnidadeId)] || mapa[idNormalizado?.replace('.', '')];
+                            return this.getPlrMesValue(dados, this.kpiMesFiltro);
+                        }
+                        return Number(this.getValorPLR?.(this.kpiUnidadeId) || 0);
+                    }
+                    if (this.kpiMesFiltro) {
+                        const mapa = this.getPlrMapForCurrentMeta();
+                        if (!mapa) return 0;
+                        let total = 0;
+                        Object.values(mapa).forEach(dados => { total += this.getPlrMesValue(dados, this.kpiMesFiltro); });
+                        return total;
+                    }
+                    if (this.temPLR && this.temPLR()) {
+                        const total = this.getTotaisBPM?.().metaPLR;
+                        return Number(total) || 0;
+                    }
+                    return 0;
+                },
+                isKpiLowerBetter() {
+                    return (this.getKpiConfig().direction || '').toLowerCase() === 'lower';
+                },
+                getAnoAtual() { return new Date().getFullYear(); },
+                async carregarResultadoAnaliseIrtd(force = false) {
+                    if (this.currentMeta !== 'meta_irtd' && !force) return;
+                    const ano = this.getAnoAtual();
+                    if (!force && this.irtdKpiAnoRef === ano && Array.isArray(this.irtdKpiMensal) && this.irtdKpiMensal.length === 12) {
+                        this.recalcularResultadoAnaliseIrtd();
+                        return;
+                    }
+                    this.irtdResultadoLoading = true;
+                    this.irtdResultadoErro = null;
+                    try {
+                        const indicador = 'BD_IRTD';
+                        const resp = await fetch(this.getApiUrl(`/kpi/monthly?indicador=${encodeURIComponent(indicador)}&nivel=CIA_PM&ano=${ano}`));
+                        if (!resp.ok) throw new Error(`Resultado IRTD indisponível (${resp.status})`);
+                        const data = await resp.json();
+                        const vals = new Array(12).fill(0);
+                        const series = Array.isArray(data?.series) ? data.series : [];
+                        series.forEach((r) => {
+                            const idx = Number(r?.mes || 0) - 1;
+                            if (idx >= 0 && idx < 12) vals[idx] = Number(r?.valor_realizado || 0);
+                        });
+                        this.irtdKpiMensal = vals;
+                        this.irtdKpiAnoRef = ano;
+                        this.recalcularResultadoAnaliseIrtd();
+                    } catch (e) {
+                        this.irtdResultadoErro = e.message || String(e);
+                        this.irtdResultadoAnalise = 0;
+                    } finally {
+                        this.irtdResultadoLoading = false;
+                    }
+                },
+                recalcularResultadoAnaliseIrtd() {
+                    const selecionados = new Set(this.mesesSelecionados || []);
+                    const meses = Array.isArray(this.mesesLista) ? this.mesesLista : [];
+                    let total = 0;
+                    meses.forEach((m, idx) => {
+                        if (!selecionados.has(m?.id)) return;
+                        total += Number((this.irtdKpiMensal || [])[idx] || 0);
+                    });
+                    this.irtdResultadoAnalise = total;
+                },
+                getResultadoAnaliseIrtd() {
+                    return Number(this.irtdResultadoAnalise || 0);
+                },
+                getPercentualCumprimentoImv() {
+                    const meta = this.getKpiMetaBpmEffective();
+                    const real = this.imvKpiResumo?.total_realizado || 0;
+                    if (!meta || meta <= 0) return 0;
+                    if (this.isKpiLowerBetter()) {
+                        if (real <= meta) return 100;
+                        return Math.max(0, (meta / real) * 100);
+                    }
+                    return (real / meta) * 100;
+                },
+                getSemaforoClasseImv() {
+                    const meta = this.getKpiMetaBpmEffective();
+                    const metaPlr = this.getKpiMetaPlrEffective();
+                    const real = this.imvKpiResumo?.total_realizado || 0;
+                    if (!meta || meta <= 0) return 'bg-gray-100 text-gray-700 border-gray-200';
+                    if (this.isKpiLowerBetter()) {
+                        if (real <= meta) return 'bg-green-100 text-green-700 border-green-200';
+                        if (metaPlr > 0 && real <= metaPlr) return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                        if (metaPlr > 0) return 'bg-red-100 text-red-700 border-red-200';
+                        if (real <= meta * 1.1) return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                        return 'bg-red-100 text-red-700 border-red-200';
+                    }
+                    if (real >= meta) return 'bg-green-100 text-green-700 border-green-200';
+                    if (real >= meta * 0.9) return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                    return 'bg-red-100 text-red-700 border-red-200';
+                },
+                getSemaforoTextoImv() {
+                    const meta = this.getKpiMetaBpmEffective();
+                    const metaPlr = this.getKpiMetaPlrEffective();
+                    const real = this.imvKpiResumo?.total_realizado || 0;
+                    if (!meta || meta <= 0) return 'Sem Meta';
+                    if (this.isKpiLowerBetter()) {
+                        if (real <= meta) return 'Dentro da Meta (BPM)';
+                        if (metaPlr > 0 && real <= metaPlr) return 'Alerta (PLR)';
+                        if (metaPlr > 0) return 'Fora da Meta';
+                        if (real <= meta * 1.1) return 'Alerta';
+                        return 'Fora da Meta';
+                    }
+                    if (real >= meta) return 'Dentro da Meta';
+                    if (real >= meta * 0.9) return 'Alerta';
+                    return 'Fora da Meta';
+                },
+                async carregarPainelImvApi() {
+                    this.imvApiLoading = true;
+                    this.imvApiErro = null;
+                    try {
+                        const indicador = this.getIndicadorApiAtual();
+                        const { dateFrom, dateTo, ano } = this.getKpiDateRange();
+                        const unidadeParam = this.kpiUnidadeId ? `&unidade_id=${encodeURIComponent(this.kpiUnidadeId)}` : '';
+                        const s = await fetch(this.getApiUrl(`/kpi/summary?indicador=${encodeURIComponent(indicador)}&nivel=${encodeURIComponent(this.kpiNivel)}&date_from=${dateFrom}&date_to=${dateTo}${unidadeParam}`));
+                        if (!s.ok) throw new Error(`Resumo KPI indisponivel (${s.status})`);
+                        this.imvKpiResumo = await s.json();
+                        // Monthly series is useful for charts. If user picked a month, we can still keep full-year series
+                        // and slice client-side, but we avoid extra traffic by fetching only when needed.
+                        const needMonthly = !this.kpiMesFiltro; // for month filter we already show single month
+                        if (needMonthly) {
+                            const m = await fetch(this.getApiUrl(`/kpi/monthly?indicador=${encodeURIComponent(indicador)}&nivel=${encodeURIComponent(this.kpiNivel)}&ano=${ano}${unidadeParam}`));
+                            if (!m.ok) throw new Error(`Serie mensal indisponivel (${m.status})`);
+                            const mj = await m.json();
+                            this.imvKpiMensal = Array.isArray(mj?.series) ? mj.series : [];
+                        }
+                        this.$nextTick(() => this.renderizarGraficoImv());
+                    } catch (e) {
+                        this.imvApiErro = e.message || String(e);
+                    } finally {
+                        this.imvApiLoading = false;
+                    }
+                },
+                renderizarGraficoImv() {
+                    const canvas = document.getElementById('imv-sqlite-chart');
+                    if (!canvas || typeof Chart === 'undefined') return;
+                    let labels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                    let serie = labels.map((_, idx) => {
+                        const r = (this.imvKpiMensal || []).find(s => Number(s.mes) === idx + 1);
+                        return r ? Number(r.valor_realizado || 0) : 0;
+                    });
+                    let metaSerie = this.getMetaBpmMonthlySeries();
+                    let plrSerie = this.getPlrMonthlySeries();
+                    if (this.kpiMesFiltro) {
+                        const mesIdx = Number(this.kpiMesFiltro) - 1;
+                        labels = [labels[mesIdx]];
+                        // When filtering by a month, summary already represents the selected month.
+                        // Avoid depending on the monthly series fetch.
+                        serie = [Number(this.imvKpiResumo?.total_realizado || 0)];
+                        metaSerie = [Number(metaSerie?.[mesIdx] || 0)];
+                        plrSerie = plrSerie ? [Number(plrSerie?.[mesIdx] || 0)] : null;
+                    }
+                    if (this.imvChart) this.imvChart.destroy();
+                    const ctx = canvas.getContext('2d');
+                    const grad = ctx.createLinearGradient(0, 0, 0, 260);
+                    grad.addColorStop(0, 'rgba(239,68,68,0.95)');
+                    grad.addColorStop(1, 'rgba(239,68,68,0.15)');
+                    const datasets = [
+                        { type: 'bar', label: 'Resultado', data: serie, backgroundColor: grad, borderColor: 'rgba(239,68,68,0.95)', borderWidth: 1, borderRadius: 10, barThickness: 26, maxBarThickness: 28 },
+                        { type: 'line', label: this.getKpiMetaBpmLineLabel(), data: metaSerie, borderColor: 'rgba(17,24,39,0.9)', backgroundColor: 'rgba(17,24,39,0.9)', tension: 0.25, pointRadius: 3, borderDash: [6, 4] }
+                    ];
+                    if (plrSerie) {
+                        const sumPlr = plrSerie.reduce((a, b) => a + (Number(b) || 0), 0);
+                        if (sumPlr > 0) {
+                            datasets.push({ type: 'line', label: this.kpiMesFiltro ? 'Meta PLR (Mensal)' : 'Meta PLR', data: plrSerie, borderColor: 'rgba(59,130,246,0.9)', backgroundColor: 'rgba(59,130,246,0.9)', tension: 0.25, pointRadius: 3 });
+                        }
+                    }
+                    this.imvChart = new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(15,23,42,0.06)' } }, x: { grid: { display: false } } } }
+                    });
+                },
+                abrirDetalhes() {
+                    this.detalhesOpen = true;
+                    this.detalhesErro = null;
+                    this.$nextTick(() => {
+                        this.carregarDetalhes();
+                    });
+                },
+                fecharDetalhes() {
+                    this.detalhesOpen = false;
+                },
+                async carregarDetalhes() {
+                    this.detalhesLoading = true;
+                    this.detalhesErro = null;
+                    try {
+                        await this.carregarPainelImvApi();
+                        this.renderizarDetalhesChart();
+                        this.renderizarDetalhesGauge();
+                        await this.renderizarDetalhesMapa();
+                    } catch (e) {
+                        this.detalhesErro = e.message || String(e);
+                    } finally {
+                        this.detalhesLoading = false;
+                    }
+                },
+                baixarRedsCsv() {
+                    const indicador = this.getIndicadorApiAtual();
+                    const { dateFrom, dateTo } = this.getKpiDateRange();
+                    const params = new URLSearchParams();
+                    params.set('indicador', indicador);
+                    params.set('date_from', dateFrom);
+                    params.set('date_to', dateTo);
+                    if (this.kpiNivel) params.set('nivel', this.kpiNivel);
+                    if (this.kpiUnidadeId) params.set('unidade_id', this.kpiUnidadeId);
+                    if ((this.adminToken || '').trim()) params.set('admin_token', (this.adminToken || '').trim());
+                    const url = this.getApiUrl(`/reds/export?${params.toString()}`);
+                    window.open(url, '_blank');
+                },
+                renderizarDetalhesChart() {
+                    const canvas = document.getElementById('detalhes-chart');
+                    if (!canvas || typeof Chart === 'undefined') return;
+                    let labels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                    let serie = labels.map((_, idx) => {
+                        const r = (this.imvKpiMensal || []).find(s => Number(s.mes) === idx + 1);
+                        return r ? Number(r.valor_realizado || 0) : 0;
+                    });
+                    let metaSerie = this.getMetaBpmMonthlySeries();
+                    let plrSerie = this.getPlrMonthlySeries();
+                    if (this.kpiMesFiltro) {
+                        const mesIdx = Number(this.kpiMesFiltro) - 1;
+                        labels = [labels[mesIdx]];
+                        serie = [Number(this.imvKpiResumo?.total_realizado || 0)];
+                        metaSerie = [Number(metaSerie?.[mesIdx] || 0)];
+                        plrSerie = plrSerie ? [Number(plrSerie?.[mesIdx] || 0)] : null;
+                    }
+                    if (this.detalhesChart) this.detalhesChart.destroy();
+                    const ctx = canvas.getContext('2d');
+                    const grad = ctx.createLinearGradient(0, 0, 0, 260);
+                    grad.addColorStop(0, 'rgba(239,68,68,0.95)');
+                    grad.addColorStop(0.7, 'rgba(239,68,68,0.35)');
+                    grad.addColorStop(1, 'rgba(239,68,68,0.08)');
+                    const datasets = [
+                        { type: 'bar', label: 'Resultado', data: serie, backgroundColor: grad, borderColor: 'rgba(239,68,68,0.95)', borderWidth: 1, borderRadius: 12, barThickness: 34, maxBarThickness: 36 },
+                        { type: 'line', label: this.getKpiMetaBpmLineLabel(), data: metaSerie, borderColor: '#b45309', backgroundColor: '#b45309', tension: 0.2, pointRadius: 3, borderDash: [6, 4] }
+                    ];
+                    if (plrSerie) {
+                        const sumPlr = plrSerie.reduce((a, b) => a + (Number(b) || 0), 0);
+                        if (sumPlr > 0) {
+                            datasets.push({ type: 'line', label: this.kpiMesFiltro ? 'Meta PLR (Mensal)' : 'Meta PLR', data: plrSerie, borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.2, pointRadius: 3 });
+                        }
+                    }
+                    this.detalhesChart = new Chart(canvas, {
+                        type: 'bar',
+                        data: { labels, datasets },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(15,23,42,0.06)' } }, x: { grid: { display: false } } } }
+                    });
+                },
+                renderizarDetalhesGauge() {
+                    const canvas = document.getElementById('detalhes-gauge');
+                    if (!canvas || typeof Chart === 'undefined') return;
+                    if (this.detalhesGauge) this.detalhesGauge.destroy();
+                    const real = Number(this.imvKpiResumo?.total_realizado || 0);
+                    const meta = Number(this.getKpiMetaBpmEffective() || 0);
+                    const plr = Number(this.getKpiMetaPlrEffective() || 0);
+                    let value = meta > 0 ? Math.min(1, real / meta) : 0;
+                    if (this.isKpiLowerBetter()) value = meta > 0 ? Math.min(1, real / meta) : 0;
+                    const ctx = canvas.getContext('2d');
+                    this.detalhesGauge = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Atingido', 'Restante'],
+                            datasets: [{
+                                data: [value, 1 - value],
+                                backgroundColor: ['#16a34a', '#e5e7eb'],
+                                borderWidth: 0,
+                                cutout: '70%'
+                            }]
+                        },
+                        options: {
+                            rotation: -90,
+                            circumference: 180,
+                            plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                        }
+                    });
+                },
+                async renderizarDetalhesMapa() {
+                    const mapEl = document.getElementById('detalhes-map');
+                    if (!mapEl || typeof L === 'undefined') return;
+                    if (!this.detalhesMap) {
+                        this.detalhesMap = L.map(mapEl, { zoomControl: true }).setView([-18.5, -41.7], 8);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 18,
+                            attribution: ''
+                        }).addTo(this.detalhesMap);
+                    }
+                    if (!this.detalhesGeoJson) {
+                        const resp = await fetch('./data/mapas/SubSetores_19BPM_GeoJSON.json');
+                        this.detalhesGeoJson = await resp.json();
+                    }
+                    const indicador = this.getIndicadorApiAtual();
+                    const { dateFrom, dateTo } = this.getKpiDateRange();
+                    const nivel = this.kpiNivel;
+                    const unitsResp = await fetch(this.getApiUrl(`/kpi/units?indicador=${encodeURIComponent(indicador)}&nivel=${encodeURIComponent(nivel)}&date_from=${dateFrom}&date_to=${dateTo}&limit=2000`));
+                    const unitsData = await unitsResp.json();
+                    const valuesMap = {};
+                    (unitsData?.unidades || []).forEach(u => {
+                        valuesMap[String(u.unidade_id)] = Number(u.total_realizado || 0);
+                    });
+                    const getKey = (props) => {
+                        if (!props) return '';
+                        if (nivel === 'SUBSETOR') return String(props.SUB_SETOR || props.SUBSETOR || props.name || '');
+                        if (nivel === 'SETOR') return String(props.SETOR || '');
+                        if (nivel === 'PELOTAO') return String(props.PELOTAO || '');
+                        if (nivel === 'CIA_PM') return String(props.CIA_PM || '');
+                        if (nivel === 'MUNICIPIO') return String(props.CD_MUNICIP || props.NM_MUN || props.municipio || '');
+                        return String(props.SUB_SETOR || props.name || '');
+                    };
+                    const getColor = (val) => {
+                        const meta = Number(this.getKpiMetaBpmEffective() || 0);
+                        const plr = Number(this.getKpiMetaPlrEffective() || 0);
+                        if (meta > 0 && this.isKpiLowerBetter()) {
+                            if (val <= meta) return '#16a34a';
+                            if (plr > 0 && val <= plr) return '#f59e0b';
+                            return '#dc2626';
+                        }
+                        return '#3b82f6';
+                    };
+                    if (this.detalhesLayer) this.detalhesLayer.remove();
+                    this.detalhesLayer = L.geoJSON(this.detalhesGeoJson, {
+                        style: (feature) => {
+                            const key = getKey(feature.properties);
+                            const val = valuesMap[key] || 0;
+                            return { color: '#111827', weight: 1, fillColor: getColor(val), fillOpacity: 0.55 };
+                        },
+                        onEachFeature: (feature, layer) => {
+                            const key = getKey(feature.properties);
+                            const val = valuesMap[key] || 0;
+                            const label = feature.properties?.NM_MUN || feature.properties?.municipio || feature.properties?.CIA_PM || feature.properties?.PELOTAO || feature.properties?.SETOR || feature.properties?.SUB_SETOR || key;
+                            layer.bindTooltip(`${label}<br/>Valor: ${val}`, { sticky: true });
+                        }
+                    }).addTo(this.detalhesMap);
+                    this.detalhesMap.fitBounds(this.detalhesLayer.getBounds(), { padding: [10, 10] });
+                },
                 formatNumber(num) { if(num===undefined||num===null||isNaN(num)) return '0'; if(Number.isInteger(num)) return num.toLocaleString('pt-BR'); return num.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:2}); }
             }));
         });
@@ -570,13 +1294,27 @@
     <!-- HEADER -->
     <header class="bg-pmmg-black text-white shadow-lg z-30 flex-none border-b-4 border-pmmg-gold">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
+            <div @click="openStatusModal()" class="flex items-center gap-3 cursor-pointer hover:opacity-95 transition" title="Abrir status da integracao">
                 <div class="w-10 h-10 bg-pmmg-gold rounded flex items-center justify-center text-pmmg-black shadow-inner overflow-hidden">
                     <img src="./imagens/Icones_logo_19bpm/android-chrome-192x192.png" alt="Logo 19?? BPM" class="w-8 h-8 object-contain">
                 </div>
                 <div>
                     <h1 class="text-lg font-bold tracking-wider leading-tight">METAS 19º bpm - 2026</h1>
                     <p class="text-[10px] text-pmmg-gold font-semibold uppercase tracking-widest">19º BPM - PMMG</p>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center gap-2">
+                <a
+                    id="auth-admin-link-index"
+                    href="/admin_users.html"
+                    class="hidden px-3 py-2 rounded border border-pmmg-gold/40 text-pmmg-gold text-xs font-semibold hover:bg-pmmg-gold/10 transition"
+                    title="Painel do Administrador"
+                >
+                    Admin
+                </a>
+                <div id="auth-user-badge-index" class="hidden md:flex flex-col px-3 py-1 rounded border border-white/10 bg-white/5 text-right">
+                    <span id="auth-user-name-index" class="text-[11px] font-semibold leading-tight text-white"></span>
+                    <span id="auth-user-meta-index" class="text-[10px] leading-tight text-pmmg-gold"></span>
                 </div>
             </div>
         </div>
@@ -596,11 +1334,52 @@
                 </button>
             </template>
 
+            <div class="hidden md:block px-4 pt-6 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Análises (Resultado x Meta)</div>
+            <a class="flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 border-transparent text-gray-600 hover:text-pmmg-black hover:bg-gray-50"
+               href="./analises.html?indicador=meta_imv">
+                <i class="fa-solid fa-chart-column text-lg opacity-80"></i><span>IMV - Análises</span>
+            </a>
+            <a class="flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 border-transparent text-gray-600 hover:text-pmmg-black hover:bg-gray-50"
+               href="./analises.html?indicador=meta_icvpe">
+                <i class="fa-solid fa-chart-column text-lg opacity-80"></i><span>ICVPe - Análises</span>
+            </a>
+            <a class="flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 border-transparent text-gray-600 hover:text-pmmg-black hover:bg-gray-50"
+               href="./analises.html?indicador=meta_icvpa">
+                <i class="fa-solid fa-chart-column text-lg opacity-80"></i><span>ICVPa - Análises</span>
+            </a>
+
+            <div id="sidebar-mapa-intranet-section-index" class="hidden">
+                <div class="px-4 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Intranet</div>
+                <a
+                    id="sidebar-mapa-intranet-card-index"
+                    class="hidden md:flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 border-transparent text-gray-600 hover:text-pmmg-black hover:bg-gray-50"
+                    href="/intranet_mapa_comando.html"
+                    title="Mapa de Comando Territorial (Intranet)"
+                >
+                    <i class="fa-solid fa-map-location-dot text-lg opacity-80"></i>
+                    <span>Mapa de Comando</span>
+                </a>
+            </div>
+
             <div class="hidden md:block px-4 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Metas do Plano de A&ccedil;&atilde;o</div>
             <template x-for="meta in getMetasPorGrupo('plano_acao')" :key="meta.id">
-                <button @click="mudarMeta(meta)" class="flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 hover:bg-gray-50" :class="currentMeta === meta.id ? 'border-pmmg-red text-pmmg-red bg-red-50' : 'border-transparent text-gray-600 hover:text-pmmg-black'">
-                    <i :class="meta.icon" class="text-lg opacity-80"></i><span x-text="meta.nome"></span>
-                </button>
+                <div>
+                    <button @click="mudarMeta(meta)" class="flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 hover:bg-gray-50 w-full text-left" :class="currentMeta === meta.id ? 'border-pmmg-red text-pmmg-red bg-red-50' : 'border-transparent text-gray-600 hover:text-pmmg-black'">
+                        <i :class="meta.icon" class="text-lg opacity-80"></i>
+                        <span class="flex flex-col leading-tight">
+                            <span x-text="meta.nome"></span>
+                            <template x-if="meta.id === 'meta_irtd'">
+                                <span class="text-[10px] font-semibold text-gray-400" :class="currentMeta === 'meta_irtd' ? 'text-pmmg-red/70' : 'text-gray-400'" x-text="`Resultado: ${irtdResultadoLoading ? '...' : formatNumber(getResultadoAnaliseIrtd())}`"></span>
+                            </template>
+                        </span>
+                    </button>
+                    <template x-if="meta.id === 'meta_irtd'">
+                        <a href="./analises.html?indicador=meta_irtd" class="flex items-center gap-2 pl-14 pr-6 py-2 text-[11px] font-semibold text-blue-700 hover:text-blue-800 hover:bg-blue-50 border-l-4 border-transparent">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+                            <span>Acompanhe o resultado</span>
+                        </a>
+                    </template>
+                </div>
             </template>
 
             <div class="hidden md:block px-4 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Metas do Plano de Proximidade</div>
@@ -612,10 +1391,32 @@
 
             <div class="md:hidden p-2 flex gap-2 overflow-x-auto">
                 <template x-for="meta in metasDisponiveis" :key="`m-${meta.id}`">
-                    <button @click="mudarMeta(meta)" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded border whitespace-nowrap" :class="currentMeta === meta.id ? 'bg-pmmg-black text-pmmg-gold border-pmmg-black' : 'bg-white text-gray-600 border-gray-300'">
-                        <i :class="meta.icon"></i><span x-text="meta.nome"></span>
-                    </button>
+                    <div class="flex flex-col">
+                        <button @click="mudarMeta(meta)" class="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded border whitespace-nowrap" :class="currentMeta === meta.id ? 'bg-pmmg-black text-pmmg-gold border-pmmg-black' : 'bg-white text-gray-600 border-gray-300'">
+                            <i :class="meta.icon"></i>
+                            <span class="flex flex-col leading-tight text-left">
+                                <span x-text="meta.nome"></span>
+                                <template x-if="meta.id === 'meta_irtd'">
+                                    <span class="text-[10px] font-semibold text-gray-400" :class="currentMeta === 'meta_irtd' ? 'text-pmmg-gold/80' : 'text-gray-400'" x-text="`Resultado: ${irtdResultadoLoading ? '...' : formatNumber(getResultadoAnaliseIrtd())}`"></span>
+                                </template>
+                            </span>
+                        </button>
+                        <template x-if="meta.id === 'meta_irtd'">
+                            <a href="./analises.html?indicador=meta_irtd" class="mt-1 px-3 py-1.5 text-[10px] font-semibold rounded border border-blue-200 text-blue-700 bg-blue-50 whitespace-nowrap inline-flex items-center gap-1">
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                <span>Acompanhe o resultado</span>
+                            </a>
+                        </template>
+                    </div>
                 </template>
+                <a
+                    id="sidebar-mapa-intranet-mobile-index"
+                    href="/intranet_mapa_comando.html"
+                    class="hidden items-center gap-2 px-3 py-2 text-xs font-semibold rounded border whitespace-nowrap bg-white text-gray-600 border-gray-300"
+                    title="Mapa de Comando Territorial (Intranet)"
+                >
+                    <i class="fa-solid fa-map-location-dot"></i><span>Mapa de Comando</span>
+                </a>
             </div>
         </nav>
 
@@ -623,6 +1424,45 @@
         <main class="flex-1 overflow-y-auto bg-gray-100 p-4 pt-20 md:pt-4 relative w-full">
             <div class="max-w-6xl mx-auto space-y-6">
                 
+                <div x-show="false" class="bg-white rounded-lg shadow-sm border-l-4 border-pmmg-black p-4 md:p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800">Status da Integracao (API + PC)</h2>
+                            <p class="text-sm text-gray-500">Monitoramento do agente local e atualizacao do banco</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button @click="carregarStatusOperacional()" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">Atualizar status</button>
+                            <button @click="openUpdateModal()" class="px-3 py-2 text-xs font-semibold rounded border bg-pmmg-black text-pmmg-gold border-pmmg-black hover:brightness-110">Atualizar dados</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-4">
+                        <div class="p-3 rounded border" :class="getAgentStatusClass()">
+                            <p class="text-xs uppercase font-semibold">Agent</p>
+                            <p class="text-lg font-bold" x-text="getAgentStatusLabel()"></p>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded border">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Agent ID</p>
+                            <p class="text-sm font-bold text-gray-800" x-text="agentMonitor.agentId"></p>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded border">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Ultimo job</p>
+                            <p class="text-sm font-bold text-gray-800" x-text="agentMonitor.lastJobId ? ('#' + agentMonitor.lastJobId + ' - ' + agentMonitor.lastJobStatus) : '-'"></p>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded border">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Ultima atualizacao</p>
+                            <p class="text-sm font-bold text-gray-800" x-text="formatDateTime(agentMonitor.lastJobFinishedAt)"></p>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-gray-500 mt-3">Ultimo heartbeat: <span class="font-semibold" x-text="formatDateTime(agentMonitor.lastSeen)"></span></p>
+                    <p x-show="statusLoading" class="text-xs text-blue-600 mt-1">Consultando status...</p>
+                    <p x-show="statusError" class="text-xs text-red-600 mt-1" x-text="statusError"></p>
+                </div>
+
+
+                <!-- Analises (Resultado x Meta) moved to /analises.html -->
+
                 <!-- AVISO DE ERRO VISUAL -->
                 <div x-show="erroCarregamento" x-cloak class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md mb-4">
                     <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Atenção:</p>
@@ -695,6 +1535,113 @@
                     </div>
                 </div>
 
+                <div x-show="statusModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="closeStatusModal()">
+                    <div class="w-full max-w-4xl bg-white rounded-xl shadow-2xl border-t-4 border-pmmg-black p-5 md:p-6">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <h3 class="text-lg font-bold text-gray-800">Status da Integracao (API + PC)</h3>
+                            <button @click="closeStatusModal()" class="w-8 h-8 rounded-full border text-gray-600 hover:bg-gray-100">&times;</button>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-3">Monitoramento do agente local e atualizacao do banco</p>
+
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <button @click="carregarStatusOperacional()" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">Atualizar status</button>
+                            <button @click="openUpdateModal()" class="px-3 py-2 text-xs font-semibold rounded border bg-pmmg-black text-pmmg-gold border-pmmg-black hover:brightness-110">Atualizar dados</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-2">
+                            <div class="p-3 rounded border" :class="getAgentStatusClass()">
+                                <p class="text-xs uppercase font-semibold">Agent</p>
+                                <p class="text-lg font-bold" x-text="getAgentStatusLabel()"></p>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded border">
+                                <p class="text-xs text-gray-500 uppercase font-semibold">Agent ID</p>
+                                <p class="text-sm font-bold text-gray-800" x-text="agentMonitor.agentId"></p>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded border">
+                                <p class="text-xs text-gray-500 uppercase font-semibold">Ultimo job</p>
+                                <p class="text-sm font-bold text-gray-800" x-text="agentMonitor.lastJobId ? ('#' + agentMonitor.lastJobId + ' - ' + agentMonitor.lastJobStatus) : '-'"></p>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded border">
+                                <p class="text-xs text-gray-500 uppercase font-semibold">Ultima atualizacao</p>
+                                <p class="text-sm font-bold text-gray-800" x-text="formatDateTime(agentMonitor.lastJobFinishedAt)"></p>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-gray-500 mt-3">Ultimo heartbeat: <span class="font-semibold" x-text="formatDateTime(agentMonitor.lastSeen)"></span></p>
+                        <p x-show="statusLoading" class="text-xs text-blue-600 mt-1">Consultando status...</p>
+                        <p x-show="statusError" class="text-xs text-red-600 mt-1" x-text="statusError"></p>
+                    </div>
+                </div>
+
+                <div x-show="updateModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="closeUpdateModal()">
+                    <div class="w-full max-w-2xl bg-white rounded-xl shadow-2xl border-t-4 border-pmmg-gold p-5 md:p-6">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <h3 class="text-lg font-bold text-gray-800">Solicitar atualizacao de dados</h3>
+                            <button @click="closeUpdateModal()" class="w-8 h-8 rounded-full border text-gray-600 hover:bg-gray-100">&times;</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">API Base URL</label>
+                                <input x-model="apiBaseUrl" type="text" placeholder="http://127.0.0.1:8181" class="w-full bg-gray-50 border border-gray-300 text-sm rounded p-2.5 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Admin Token (se houver)</label>
+                                <input x-model="adminToken" type="password" class="w-full bg-gray-50 border border-gray-300 text-sm rounded p-2.5 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Modo de execucao</label>
+                            <select x-model="updateForm.run_mode" class="w-full bg-gray-50 border border-gray-300 text-sm rounded p-2.5 outline-none">
+                                <option value="all">Rodar todos os scripts</option>
+                                <option value="selected">Selecionar scripts</option>
+                            </select>
+                        </div>
+
+                        <div x-show="updateForm.run_mode === 'selected'" class="mt-3">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Scripts (um por linha ou separados por virgula)</label>
+                            <textarea x-model="updateForm.scriptsText" rows="5" placeholder="indicadores_resultado_gdo/BD_IMV.sql&#10;indicadores_resultado_gdo/BD_ICVPe.sql" class="w-full bg-gray-50 border border-gray-300 text-sm rounded p-2.5 outline-none"></textarea>
+                            <div class="mt-2 max-h-56 overflow-y-auto border border-gray-200 rounded p-2 bg-gray-50 space-y-2">
+                                <p class="text-[11px] font-semibold text-gray-500 uppercase">Catalogo por pasta</p>
+                                <template x-for="grupo in getScriptsAgrupadosLista()" :key="grupo.groupLabel">
+                                    <div class="bg-white border border-gray-200 rounded">
+                                        <div class="px-2 py-2 flex items-center justify-between gap-2">
+                                            <button type="button" class="text-sm font-bold text-gray-700 flex items-center gap-2" @click="toggleAcordeaoGrupo(grupo.groupLabel)">
+                                                <i class="fa-solid" :class="scriptGroupsOpen[grupo.groupLabel] ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                                                <span x-text="grupo.groupLabel"></span>
+                                            </button>
+                                            <label class="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer">
+                                                <input type="checkbox" class="rounded border-gray-300 text-pmmg-black focus:ring-pmmg-gold"
+                                                    :checked="isGrupoSelecionadoCompleto(grupo)"
+                                                    @change="toggleGrupoScripts(grupo)">
+                                                <span>Selecionar todos</span>
+                                            </label>
+                                        </div>
+                                        <div x-show="scriptGroupsOpen[grupo.groupLabel]" x-transition.opacity.duration.150ms class="px-2 pb-2 grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                                            <template x-for="scriptPath in grupo.scripts" :key="scriptPath">
+                                                <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer hover:bg-gray-50 rounded p-1">
+                                                    <input type="checkbox" class="rounded border-gray-300 text-pmmg-black focus:ring-pmmg-gold"
+                                                        :checked="isScriptSelecionado(scriptPath)"
+                                                        @change="toggleScriptCatalog(scriptPath)">
+                                                    <span x-text="scriptPath.split('/').slice(-1)[0].replace('.sql','')"></span>
+                                                </label>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <p x-show="updateFeedback" class="mt-3 text-sm" :class="updateFeedback.includes('Falha') ? 'text-red-600' : 'text-green-700'" x-text="updateFeedback"></p>
+
+                        <div class="mt-4 flex justify-end gap-2">
+                            <button @click="closeUpdateModal()" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">Fechar</button>
+                            <button @click="solicitarAtualizacao()" class="px-3 py-2 text-xs font-semibold rounded border bg-pmmg-black text-pmmg-gold border-pmmg-black hover:brightness-110">Confirmar solicitacao</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div x-show="ppagInfoOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="ppagInfoOpen = false">
                     <div class="w-full max-w-3xl max-h-[85vh] overflow-y-auto bg-white rounded-xl shadow-2xl border-t-4 border-pmmg-gold p-5 md:p-6">
                         <div class="flex items-start justify-between gap-3 mb-3">
@@ -760,6 +1707,13 @@
                                 <div class="text-center px-2">
                                     <span class="text-[10px] text-blue-500 uppercase font-bold tracking-wide" x-text="getMetaLabel()"></span>
                                     <span class="block text-xl font-bold text-blue-600" x-text="temMeta() ? formatNumber(getMetaBPM()) : '-'"></span>
+                                    <template x-if="currentMeta === 'meta_irtd'">
+                                        <div class="mt-1">
+                                            <span class="block text-[10px] uppercase tracking-wide text-gray-500 font-bold">Resultado Análise</span>
+                                            <span class="block text-sm font-bold text-gray-800" x-text="irtdResultadoLoading ? 'Carregando...' : formatNumber(getResultadoAnaliseIrtd())"></span>
+                                            <span x-show="irtdResultadoErro" class="block text-[10px] text-red-600 mt-0.5" x-text="irtdResultadoErro"></span>
+                                        </div>
+                                    </template>
                                 </div>
                                 <template x-if="currentMeta !== 'meta_irtd'"><div class="h-10 w-px bg-gray-300"></div></template>
                                 <template x-if="currentMeta !== 'meta_irtd'">
@@ -814,7 +1768,7 @@
                                 </div>
                             </div>
                             <!-- Pelotões -->
-                            <div x-show="expandedUnidades.includes(unidade.id)" x-collapse class="bg-gray-50 border-t border-gray-200">
+                            <div x-show="expandedUnidades.includes(unidade.id)" x-transition.opacity.duration.150ms class="bg-gray-50 border-t border-gray-200">
                                 <template x-for="pelotao in unidade.pelotoes" :key="pelotao.id">
                                     <div class="border-b border-gray-200 last:border-0">
                                         <div class="px-4 py-2 bg-gray-100 flex justify-between items-center cursor-pointer hover:bg-gray-200 transition pl-8 md:pl-12 select-none" @click="togglePelotao(pelotao.id)">
@@ -822,7 +1776,7 @@
                                             <div class="flex items-center gap-4"><div class="hidden sm:flex gap-3 text-xs text-gray-500"><template x-if="currentMeta !== 'meta_irtd'"><div><span class="text-[9px] uppercase">Pop:</span><span class="font-bold" x-text="formatNumber(getTotaisPelotao(pelotao).populacao)"></span></div></template><template x-if="currentMeta !== 'meta_irtd'"><div><span class="text-[9px] uppercase">Total:</span><span class="font-bold text-gray-700" x-text="formatNumber(getTotaisPelotao(pelotao).absoluto)"></span></div></template><template x-if="currentMeta !== 'meta_irtd'"><div><span class="text-[9px] uppercase">Taxa:</span><span class="font-bold text-pmmg-red" x-text="formatNumber(getTotaisPelotao(pelotao).taxa)"></span></div></template><template x-if="currentMeta === 'meta_irtd'"><div><span class="text-[9px] uppercase">Meta:</span><span class="font-bold text-blue-600" x-text="formatNumber(getMetaIRTDPelotao(pelotao.id))"></span></div></template></div><i class="fa-solid fa-chevron-right text-xs text-gray-400 transition-transform duration-300" :class="expandedPelotoes.includes(pelotao.id) ? 'rotate-90' : ''"></i></div>
                                         </div>
                                         <!-- Setores -->
-                                        <div x-show="expandedPelotoes.includes(pelotao.id)" x-collapse class="bg-white p-2 md:p-4">
+                                        <div x-show="expandedPelotoes.includes(pelotao.id)" x-transition.opacity.duration.150ms class="bg-white p-2 md:p-4">
                                             <div class="overflow-x-auto rounded-lg border border-gray-100">
                                                 <table class="w-full text-sm text-left text-gray-500">
                                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-4 py-3 rounded-tl-lg">Setor / Local</th><template x-if="currentMeta !== 'meta_irtd'"><th class="px-4 py-3 text-center w-32">Populacao</th></template><template x-if="currentMeta !== 'meta_irtd'"><th class="px-4 py-3 text-center bg-pmmg-gold/10 text-pmmg-black w-32">Acumulado</th></template><template x-if="currentMeta === 'meta_irtd'"><th class="px-4 py-3 text-center bg-blue-50 text-blue-700 w-32">Meta</th></template><template x-if="currentMeta !== 'meta_irtd'"><th class="px-4 py-3 text-center bg-red-50 text-pmmg-red rounded-tr-lg w-32">Taxa (100k)</th></template></tr></thead>
@@ -844,5 +1798,48 @@
             <div class="mt-10 mb-4 text-center text-xs text-gray-400 font-mono">&copy; 2026 Polícia Militar de Minas Gerais - Setor de Inteligência</div>
         </main>
     </div>
+    <script>
+        (async function loadAuthUserBadgeIndex() {
+            try {
+                const r = await fetch('/auth/me', { credentials: 'same-origin' });
+                if (!r.ok) return;
+                const data = await r.json();
+                const u = (data || {}).user || {};
+                const badge = document.getElementById('auth-user-badge-index');
+                const nameEl = document.getElementById('auth-user-name-index');
+                const metaEl = document.getElementById('auth-user-meta-index');
+                const adminLink = document.getElementById('auth-admin-link-index');
+                const mapaLinkDesktop = document.getElementById('sidebar-mapa-intranet-card-index');
+                const mapaSectionDesktop = document.getElementById('sidebar-mapa-intranet-section-index');
+                const mapaLinkMobile = document.getElementById('sidebar-mapa-intranet-mobile-index');
+                if (!badge || !nameEl || !metaEl) return;
+                const currentHost = String(window.location.hostname || '').toLowerCase();
+                const onCloudHost = currentHost === 'meta.19bpm.mmpg.cloud';
+                const onDevHost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(currentHost);
+                const isAuthenticated = !!data.authenticated;
+                if ((onCloudHost || onDevHost) && isAuthenticated) {
+                    if (mapaSectionDesktop) mapaSectionDesktop.classList.remove('hidden');
+                    if (mapaSectionDesktop) mapaSectionDesktop.classList.add('md:block');
+                    if (mapaLinkDesktop) mapaLinkDesktop.classList.remove('hidden');
+                    if (mapaLinkMobile) mapaLinkMobile.classList.remove('hidden');
+                    if (mapaLinkMobile) mapaLinkMobile.classList.add('inline-flex');
+                }
+                const nome = String(u.nome || u.username || '').trim();
+                const nr = String(u.numero_policia || u.username || '').trim();
+                const ptgr = String(u.posto_graduacao || '').trim();
+                const lot = String(u.unidade_setor || '').trim();
+                if (!nome && !nr) return;
+                nameEl.textContent = [ptgr, nome].filter(Boolean).join(' - ') || nome || nr;
+                metaEl.textContent = [nr ? `NR PM ${nr}` : '', lot || 'Sem lota??o'].filter(Boolean).join(' | ');
+                badge.classList.remove('hidden');
+                if (adminLink && (String(u.perfil || '').toLowerCase() === 'admin' || data.source === 'legacy_env')) {
+                    adminLink.classList.remove('hidden');
+                }
+            } catch (_) {}
+        })();
+    </script>
+
 </body>
 </html>
+
+

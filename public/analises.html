@@ -1,0 +1,2579 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analises - Resultado x Meta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-100 text-gray-800" x-data="page()" x-init="$nextTick(() => init())">
+  <header class="bg-black text-white border-b-4 border-[#B3A369]">
+    <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-[#B3A369] rounded flex items-center justify-center text-black shadow-inner overflow-hidden">
+          <img src="./imagens/Icones_logo_19bpm/android-chrome-192x192.png" alt="Logo 19º BPM" class="w-8 h-8 object-contain">
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-wider leading-tight">METAS 19º bpm - 2026</h1>
+          <p class="text-[10px] text-[#B3A369] font-semibold uppercase tracking-widest">19º BPM - PMMG</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="auth-user-badge-analises" class="hidden md:flex flex-col px-3 py-1 rounded border border-white/15 bg-white/5">
+          <span id="auth-user-name-analises" class="text-[11px] font-semibold leading-tight text-white"></span>
+          <span id="auth-user-meta-analises" class="text-[10px] leading-tight text-[#B3A369]"></span>
+        </div>
+        <a
+          id="auth-admin-link-analises"
+          href="/admin_users.html"
+          class="hidden text-xs font-semibold bg-[#B3A369] text-black rounded px-3 py-1 hover:brightness-110"
+        >Admin</a>
+        <a href="/" class="text-xs font-semibold text-[#B3A369] hover:underline">Voltar ao painel</a>
+        <button @click="configOpen=true" class="text-xs font-semibold bg-white/10 hover:bg-white/20 rounded px-3 py-1">Config</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 space-y-4">
+    <div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-gray-100 p-5">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-bold" x-text="titulo"></h1>
+          <p class="text-sm text-gray-500">Analises dedicadas: resultado x meta, performance, variacao e exportacao de REDS.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button @click="switchIndicador('meta_imv')" class="px-3 py-2 text-xs font-semibold rounded border"
+            :class="indicadorMeta === 'meta_imv' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">IMV</button>
+          <button @click="switchIndicador('meta_icvpe')" class="px-3 py-2 text-xs font-semibold rounded border"
+            :class="indicadorMeta === 'meta_icvpe' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">ICVPe</button>
+          <button @click="switchIndicador('meta_icvpa')" class="px-3 py-2 text-xs font-semibold rounded border"
+            :class="indicadorMeta === 'meta_icvpa' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">ICVPa</button>
+          <button @click="switchIndicador('meta_irtd')" class="px-3 py-2 text-xs font-semibold rounded border"
+            :class="indicadorMeta === 'meta_irtd' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">IRTD</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-gray-100 p-5 space-y-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <div class="text-sm font-semibold text-gray-700">Filtros e ações</div>
+          <p x-show="!filtrosOpen" class="text-xs text-gray-500 mt-0.5">Clique em <span class="font-semibold">Abrir filtros</span> para ajustar ano, nivel, unidade e periodo.</p>
+        </div>
+        <button @click="filtrosOpen = !filtrosOpen" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">
+          <span x-text="filtrosOpen ? 'Ocultar filtros' : 'Abrir filtros'"></span>
+        </button>
+      </div>
+
+      <div x-show="filtrosOpen" x-transition>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <p class="text-xs text-gray-500 uppercase font-semibold">API Base URL</p>
+          <input x-model="apiBaseUrl" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" placeholder="https://meta.19bpm.mmpg.cloud" />
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Admin Token (opcional)</p>
+          <input x-model="adminToken" type="password" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" placeholder="token" />
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Ano</p>
+          <input x-model.number="ano" type="number" min="2000" max="2100" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Nível</p>
+          <select x-model="kpiNivel" @change="kpiUnidadeId=''; mapSelectedKey=''; carregarUnidades(); atualizar()" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none">
+            <option value="CIA_PM">Cia PM</option>
+            <option value="PELOTAO">Pelotão</option>
+            <option value="SETOR">Setor</option>
+            <option value="SUBSETOR">SubSetor</option>
+            <option value="MUNICIPIO">Município</option>
+          </select>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm md:col-span-2">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Unidade</p>
+          <select x-model="kpiUnidadeId" @change="atualizar()" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none">
+            <option value="">Todas</option>
+            <template x-for="u in unidades" :key="u.unidade_id">
+              <option :value="u.unidade_id" x-text="unitLabel(u)"></option>
+            </template>
+          </select>
+          <p x-show="unidadesLoading" class="text-[10px] text-gray-400 mt-1">Carregando unidades...</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Período</p>
+          <select x-model="periodoModo" @change="if(periodoModo==='ano'){mesFiltro=0}else if(!mesFiltro){mesFiltro=new Date().getMonth()+1}; atualizar()" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none">
+            <option value="ano">Ano completo</option>
+            <option value="mes">Mês específico</option>
+            <option value="acumulado">Acumulado até mês</option>
+          </select>
+          <select x-show="periodoModo !== 'ano'" x-model.number="mesFiltro" @change="atualizar()" class="mt-2 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none">
+            <option :value="1">Jan</option><option :value="2">Fev</option><option :value="3">Mar</option><option :value="4">Abr</option>
+            <option :value="5">Mai</option><option :value="6">Jun</option><option :value="7">Jul</option><option :value="8">Ago</option>
+            <option :value="9">Set</option><option :value="10">Out</option><option :value="11">Nov</option><option :value="12">Dez</option>
+          </select>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm md:col-span-2">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Ações</p>
+          <div class="mt-1 flex flex-wrap gap-2">
+            <button @click="atualizar()" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">Atualizar</button>
+            <button @click="abrirDetalhes()" class="px-3 py-2 text-xs font-semibold rounded border bg-black text-[#B3A369] border-black hover:brightness-110">Detalhes</button>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Resultado</p>
+          <p class="text-2xl font-bold text-gray-800" x-text="formatNumber(resumo.total_realizado || 0)"></p>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <p class="text-xs text-gray-500 uppercase font-semibold" x-text="metaBpmCardLabel()"></p>
+          <p class="text-2xl font-bold text-blue-700" x-text="formatNumber(metaBpmAtual())"></p>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm" x-show="kpiNivel === 'CIA_PM' && temPlrIndicador()">
+          <p class="text-xs text-gray-500 uppercase font-semibold" x-text="metaPlrCardLabel()"></p>
+          <p class="text-2xl font-bold text-blue-700" x-text="formatNumber(metaPlrAtual())"></p>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Cumprimento</p>
+          <p class="text-2xl font-bold text-gray-800" x-text="formatNumber(cumprimento) + '%'"></p>
+        </div>
+        <div class="p-3 rounded-xl border shadow-sm" :class="statusClass">
+          <p class="text-xs uppercase font-semibold">Status</p>
+          <p class="text-2xl font-bold" x-text="statusText"></p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Variação vs Meta BPM</p>
+          <p class="text-2xl font-bold" :class="varMetaClass" x-text="varMetaLabel"></p>
+          <p class="text-[10px] text-gray-400 mt-1" x-text="varMetaHint"></p>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm" x-show="kpiNivel === 'CIA_PM' && temPlrIndicador()">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Variação vs PLR</p>
+          <p class="text-2xl font-bold" :class="varPlrClass" x-text="varPlrLabel"></p>
+          <p class="text-[10px] text-gray-400 mt-1" x-text="varPlrHint"></p>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm md:col-span-2">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Observação</p>
+          <p class="text-xs text-gray-500 mt-2" x-text="observacaoMetasTexto()"></p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:col-span-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-semibold text-gray-700">Evolução Mensal</h4>
+            <span class="text-[11px] text-gray-400" x-text="periodoLabel()"></span>
+          </div>
+          <div id="chart-main" class="h-64 mt-3"></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-lg p-3 flex flex-col items-center justify-start">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">Velocímetro</h4>
+          <div class="w-80 h-52 -mt-1">
+            <div id="gauge-main" class="w-full h-full"></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:col-span-3" x-show="showCiaComparativoChart()">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-semibold text-gray-700" x-text="ciaComparativoTitulo()"></h4>
+          </div>
+          <div id="chart-cia-presos" class="h-72 mt-3"></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:col-span-3">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">Mapa Tático</h4>
+          <div id="map-main" class="h-72 w-full rounded-xl border border-gray-100"></div>
+        </div>
+      </div>
+
+      <p x-show="loading" class="text-xs text-blue-600">Carregando...</p>
+      <p x-show="erro" class="text-xs text-red-600" x-text="erro"></p>
+    </div>
+
+    <!-- Modal detalhes -->
+    <div x-show="detalhesOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="bg-white w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-black to-gray-900 text-white">
+          <div>
+            <h3 class="text-lg font-bold">Detalhes do Indicador</h3>
+            <p class="text-xs text-[#B3A369]" x-text="titulo + ' • ' + kpiNivel"></p>
+          </div>
+          <button @click="detalhesOpen=false" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white">✕</button>
+        </div>
+        <div class="px-6 pt-4">
+          <div class="flex flex-wrap gap-2 text-xs font-semibold">
+            <button
+              @click="detalhesTab='export'"
+              class="px-3 py-2 rounded-lg border"
+              :class="detalhesTab === 'export' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">
+              Exportacao
+            </button>
+            <button
+              @click="detalhesTab='imv'; carregarRedsImv()"
+              class="px-3 py-2 rounded-lg border"
+              :class="detalhesTab === 'imv' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+              :title="'Analise por ocorrencia ' + siglaIndicadorAtual()">
+              <span x-text="siglaIndicadorAtual() + ' - Analise de Crime'"></span>
+            </button>
+          </div>
+        </div>
+        <div class="p-6">
+          <div x-show="detalhesTab === 'export'" x-transition>
+            <div class="flex flex-wrap gap-2">
+              <button @click="exportarRedsCsv()" class="px-3 py-2 text-xs font-bold rounded-lg bg-gray-900 text-white hover:bg-black">Exportar REDS (CSV)</button>
+            </div>
+          </div>
+          <div x-show="detalhesTab === 'imv'" x-transition>
+              <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="text-xs text-gray-500">
+                    Periodo: <span class="font-semibold" x-text="dateRange().dateFrom + ' a ' + dateRange().dateTo"></span>
+                  </div>
+                  <div class="flex gap-2">
+                    <button @click="carregarRedsImv()" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">Atualizar crimes</button>
+                  </div>
+                </div>
+                <div x-show="redsLoading" class="text-xs text-blue-600" x-text="'Carregando ocorrencias ' + siglaIndicadorAtual() + '...'"></div>
+                <div x-show="redsError" class="text-xs text-red-600" x-text="redsError"></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                    <div class="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                      <div class="px-4 py-3 border-b bg-gray-50">
+                        <div class="flex items-center justify-between">
+                          <h4 class="text-sm font-semibold text-gray-700" x-text="'Ocorrencias ' + siglaIndicadorAtual()"></h4>
+                          <span class="text-[11px] text-gray-500">Registros: <span class="font-semibold" x-text="redsRows ? redsRows.length : 0"></span></span>
+                        </div>
+                        <div class="text-[10px] text-gray-400 mt-1" x-show="redsFetchedAt">Ultima consulta: <span x-text="redsFetchedAt"></span></div>
+                      </div>
+                    <div class="max-h-[420px] overflow-auto">
+                      <table class="w-full text-xs text-left text-gray-600">
+                        <thead class="bg-gray-100 text-[11px] uppercase tracking-wide text-gray-500">
+                          <tr>
+                            <th class="px-3 py-2">Numero</th>
+                            <th class="px-3 py-2">Data/Hora</th>
+                            <th class="px-3 py-2">Natureza</th>
+                            <th class="px-3 py-2">Municipio</th>
+                            <th class="px-3 py-2 text-center">Status</th>
+                            <th class="px-3 py-2 text-right">Acoes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <template x-for="(r, idx) in redsRows" :key="crimeKey(r, idx)">
+                            <tr class="border-b hover:bg-gray-50 transition">
+                              <td class="px-3 py-2 font-semibold text-gray-800" x-text="r.numero_ocorrencia || '-'"></td>
+                              <td class="px-3 py-2" x-text="formatDateTime(r.data_hora_fato)"></td>
+                              <td class="px-3 py-2" x-text="r.natureza_descricao || '-'"></td>
+                              <td class="px-3 py-2" x-text="r.municipio_nome || '-'"></td>
+                              <td class="px-3 py-2 text-center">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                                  :class="temAnalise(r, idx) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+                                  x-text="temAnalise(r, idx) ? 'Analisado' : 'Pendente'">
+                                </span>
+                              </td>
+                              <td class="px-3 py-2 text-right">
+                                <button @click="selecionarCrime(r, idx)" class="px-2 py-1 text-[11px] font-semibold rounded border border-gray-300 hover:bg-gray-50">Selecionar</button>
+                              </td>
+                            </tr>
+                          </template>
+                          <tr x-show="!redsLoading && (!redsRows || redsRows.length === 0)">
+                              <td colspan="6" class="px-3 py-4 text-center text-gray-400" x-text="'Nenhuma ocorrencia ' + siglaIndicadorAtual() + ' no periodo. Verifique a URL da API e o periodo.'"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="px-4 py-3 border-b bg-gray-50">
+                      <h4 class="text-sm font-semibold text-gray-700">Formulario de Analise</h4>
+                      <p class="text-[11px] text-gray-500" x-show="selectedCrime">
+                        Ocorrencia: <span class="font-semibold" x-text="selectedCrime?.numero_ocorrencia || '-'"></span>
+                      </p>
+                    </div>
+                    <div class="p-4 space-y-3">
+                      <template x-if="!selectedCrime">
+                        <div class="text-xs text-gray-500">Selecione uma ocorrencia na tabela para analisar.</div>
+                      </template>
+                      <template x-if="selectedCrime">
+                        <div class="space-y-3">
+                          <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center gap-2 text-xs text-gray-700">
+                              <input type="checkbox" class="form-checkbox h-4 w-4 text-pmmg-gold rounded" x-model="analysisForm.autor_identificado">
+                              Autor identificado
+                            </label>
+                            <label class="flex items-center gap-2 text-xs text-gray-700">
+                              <input type="checkbox" class="form-checkbox h-4 w-4 text-pmmg-gold rounded" x-model="analysisForm.foto_autor">
+                              Foto do autor
+                            </label>
+                          </div>
+                          <div>
+                            <label class="text-xs font-semibold text-gray-600">Quantos autores</label>
+                            <input type="number" min="1" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" x-model.number="analysisForm.qtd_autores">
+                          </div>
+                          <div>
+                            <label class="text-xs font-semibold text-gray-600">Como evadiram</label>
+                            <input type="text" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" placeholder="Ex: veiculo, a pe, motocicleta" x-model="analysisForm.evadiram">
+                          </div>
+                          <div>
+                            <label class="text-xs font-semibold text-gray-600">Nome(s) dos autores</label>
+                            <textarea rows="2" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" placeholder="Nomes completos ou identificacoes" x-model="analysisForm.nomes_autores"></textarea>
+                          </div>
+                          <div>
+                            <label class="text-xs font-semibold text-gray-600">Observacoes</label>
+                            <textarea rows="2" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" placeholder="Detalhes relevantes" x-model="analysisForm.observacoes"></textarea>
+                          </div>
+                          <div>
+                            <label class="text-xs font-semibold text-gray-600">Arquivos / Fotos</label>
+                            <input type="file" multiple class="mt-1 w-full text-xs" @change="handleFileUpload($event)">
+                            <div class="mt-2 space-y-1" x-show="analysisForm.anexos && analysisForm.anexos.length">
+                              <template x-for="(a, aidx) in analysisForm.anexos" :key="a.id">
+                                <div class="flex items-center justify-between gap-2 text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1">
+                                  <div class="truncate">
+                                    <span class="font-semibold" x-text="a.name"></span>
+                                  </div>
+                                  <div class="flex gap-1">
+                                    <button class="px-2 py-0.5 rounded border border-gray-300 hover:bg-white" @click="abrirAnexo(aidx)">Abrir</button>
+                                    <button class="px-2 py-0.5 rounded border border-gray-300 hover:bg-white" @click="removerAnexo(aidx)">Remover</button>
+                                  </div>
+                                </div>
+                              </template>
+                            </div>
+                          </div>
+                          <div class="flex items-center gap-2">
+                            <button @click="salvarAnalise()" class="px-3 py-2 text-xs font-semibold rounded border bg-black text-[#B3A369] border-black hover:brightness-110">Salvar analise</button>
+                            <button @click="limparAnalise()" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">Limpar</button>
+                            <span class="text-[11px] text-gray-500" x-text="analiseMsg"></span>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal anexos (16:9) -->
+    <div x-show="anexoOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b bg-gradient-to-r from-black to-gray-900 text-white">
+          <div>
+            <h3 class="text-sm font-bold">Arquivo da Ocorrencia</h3>
+            <p class="text-[11px] text-[#B3A369]" x-text="anexoAtual?.name || ''"></p>
+          </div>
+          <button @click="anexoOpen=false" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white">✕</button>
+        </div>
+        <div class="p-4">
+          <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center">
+            <template x-if="anexoAtual && anexoAtual.type && anexoAtual.type.startsWith('image/')">
+              <img :src="anexoAtual.dataUrl" class="w-full h-full object-contain transition duration-500" />
+            </template>
+            <template x-if="anexoAtual && anexoAtual.type === 'application/pdf'">
+              <iframe :src="anexoAtual.dataUrl" class="w-full h-full"></iframe>
+            </template>
+            <template x-if="!anexoAtual || (!anexoAtual.type || (!anexoAtual.type.startsWith('image/') && anexoAtual.type !== 'application/pdf'))">
+              <div class="text-xs text-gray-300">Visualizacao indisponivel para este arquivo.</div>
+            </template>
+            <button @click="slideAnexo(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white">‹</button>
+            <button @click="slideAnexo(1)" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white">›</button>
+          </div>
+          <div class="mt-3 flex items-center justify-between text-xs text-gray-500">
+            <span x-text="(anexoIndex + 1) + ' / ' + (analysisForm.anexos ? analysisForm.anexos.length : 0)"></span>
+            <span x-text="anexoAtual?.type || ''"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config modal -->
+    <div x-show="configOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-black to-gray-900 text-white">
+          <div>
+            <h3 class="text-lg font-bold">Configuração</h3>
+            <p class="text-xs text-[#B3A369]">Salva no LocalStorage</p>
+          </div>
+          <button @click="configOpen=false" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white">✕</button>
+        </div>
+        <div class="p-6 space-y-3">
+          <div>
+            <div class="text-xs font-bold text-gray-500 uppercase">API Base URL</div>
+            <input x-model="apiBaseUrl" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" />
+          </div>
+          <div>
+            <div class="text-xs font-bold text-gray-500 uppercase">Admin Token</div>
+            <input x-model="adminToken" type="password" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" />
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button @click="configOpen=false" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">Fechar</button>
+            <button @click="salvarConfig()" class="px-3 py-2 text-xs font-semibold rounded border bg-black text-[#B3A369] border-black hover:brightness-110">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function page() {
+      return {
+        configOpen: false,
+        detalhesOpen: false,
+        detalhesTab: 'export',
+        filtrosOpen: false,
+        apiBaseUrl: localStorage.getItem('metasApiBaseUrl') || window.location.origin,
+        adminToken: localStorage.getItem('metasAdminToken') || '',
+        ano: new Date().getFullYear(),
+        indicadorMeta: 'meta_imv',
+        indicadorApi: 'BD_IMV',
+        titulo: 'IMV - Mortes Violentas',
+        kpiNivel: 'CIA_PM',
+        kpiUnidadeId: '',
+        periodoModo: 'ano',
+        mesFiltro: 0,
+        unidades: [],
+        unidadesLoading: false,
+        loading: false,
+        erro: null,
+        resumo: { total_realizado: 0 },
+        monthly: new Array(12).fill(0),
+        chart: null,
+        gauge: null,
+        map: null,
+        layer: null,
+        geo: null,
+        geoIndex: null,
+        metaJson: null,
+        irtdMetaCache: null,
+
+        metaBpmAnual: 0,
+        metaPlrAnual: 0,
+        metaBpmEff: 0,
+        metaPlrEff: 0,
+        cumprimento: 0,
+        statusText: 'Sem Meta',
+        statusClass: 'bg-gray-100 text-gray-700 border-gray-200',
+        varMetaLabel: '-',
+        varMetaHint: '',
+        varMetaClass: 'text-gray-700',
+        varPlrLabel: '-',
+        varPlrHint: '',
+        varPlrClass: 'text-gray-700',
+        _renderNonce: 0,
+        redsLayer: null,
+        chartMain: null,
+        chartCiaPresos: null,
+        gaugeMain: null,
+        mapSelectedKey: '',
+        _resizeBound: false,
+        ciaPresosRows: [],
+        redsRows: [],
+        redsLoading: false,
+        redsError: null,
+        redsFetchedAt: '',
+        selectedCrime: null,
+        imvAnalises: {},
+        analysisForm: {
+          autor_identificado: false,
+          foto_autor: false,
+          qtd_autores: 1,
+          evadiram: '',
+          nomes_autores: '',
+          observacoes: '',
+          anexos: [],
+        },
+        analiseMsg: '',
+        anexoOpen: false,
+        anexoIndex: 0,
+
+        init() {
+          // Em producao, evita usar base local salva anteriormente no navegador.
+          const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+          const base = (this.apiBaseUrl || '').trim();
+          if (!isLocalHost && (base.includes('127.0.0.1') || base.includes('localhost'))) {
+            this.apiBaseUrl = window.location.origin;
+            localStorage.setItem('metasApiBaseUrl', this.apiBaseUrl);
+          }
+
+          const p = new URLSearchParams(window.location.search);
+          const adminTokenFromUrl = (p.get('admin_token') || '').trim();
+          const looksLikePlaceholder = /^SEU_TOKEN_/i.test(adminTokenFromUrl);
+          if (adminTokenFromUrl && !looksLikePlaceholder) {
+            this.adminToken = adminTokenFromUrl;
+            localStorage.setItem('metasAdminToken', adminTokenFromUrl);
+            // Remove token da barra para reduzir exposicao acidental.
+            try {
+              const cleanUrl = new URL(window.location.href);
+              cleanUrl.searchParams.delete('admin_token');
+              const query = cleanUrl.searchParams.toString();
+              const nextUrl = `${cleanUrl.pathname}${query ? `?${query}` : ''}${cleanUrl.hash || ''}`;
+              window.history.replaceState({}, '', nextUrl);
+            } catch (_) {}
+          }
+
+          const apiBaseFromUrl = (p.get('api_base') || '').trim();
+          if (apiBaseFromUrl) {
+            this.apiBaseUrl = apiBaseFromUrl;
+            localStorage.setItem('metasApiBaseUrl', apiBaseFromUrl);
+          }
+
+          this.restoreFiltrosAnalises();
+
+          this.indicadorMeta = p.get('indicador') || 'meta_imv';
+          if (p.get('ano')) this.ano = Number(p.get('ano')) || this.ano;
+          if (p.get('nivel')) this.kpiNivel = String(p.get('nivel') || this.kpiNivel).toUpperCase();
+          if (p.get('periodo')) this.periodoModo = String(p.get('periodo') || this.periodoModo);
+          if (p.has('mes')) this.mesFiltro = Number(p.get('mes') || 0) || 0;
+          if (p.has('unidade_id')) this.kpiUnidadeId = String(p.get('unidade_id') || '').trim();
+          this.applyIndicadorConfig(this.indicadorMeta);
+          this.imvAnalises = this.loadImvAnalises();
+          this.carregarPlr()
+            .then(() => this.carregarGeoIndex())
+            .then(() => this.carregarMetaJson())
+            .then(() => this.carregarUnidades())
+            .then(() => this.atualizar());
+
+          if (!this._resizeBound) {
+            this._resizeBound = true;
+            window.addEventListener('resize', () => {
+              try { this.chartMain && this.chartMain.resize(); } catch {}
+              try { this.chartCiaPresos && this.chartCiaPresos.resize(); } catch {}
+              try { this.gaugeMain && this.gaugeMain.resize(); } catch {}
+            });
+          }
+        },
+
+        nextTick() {
+          return new Promise((resolve) => this.$nextTick(resolve));
+        },
+
+        indicadorCatalog() {
+          return {
+            meta_imv: { api: 'BD_IMV', titulo: 'IMV - Mortes Violentas', bpm: 37 },
+            meta_icvpe: { api: 'BD_ICVPe', titulo: 'ICVPe - Crimes Violentos Pessoa', bpm: 46 },
+            meta_icvpa: { api: 'BD_ICVPa', titulo: 'ICVPa - Crimes Violentos Patrimônio', bpm: 80 },
+            meta_irtd: { api: 'BD_IRTD', titulo: 'IRTD - Resposta ao Tráfico de Drogas', bpm: 0 },
+          };
+        },
+
+        getIndicadorConfig(indicadorId) {
+          const map = this.indicadorCatalog();
+          return map[String(indicadorId || '').trim()] || map.meta_imv;
+        },
+
+        applyIndicadorConfig(indicadorId) {
+          const id = String(indicadorId || '').trim() || 'meta_imv';
+          const cfg = this.getIndicadorConfig(id);
+          this.indicadorMeta = id;
+          this.indicadorApi = cfg.api;
+          this.titulo = cfg.titulo;
+          this.metaBpmAnual = cfg.bpm;
+          this.irtdMetaCache = null;
+        },
+
+        periodoEhAno() {
+          return String(this.periodoModo || 'ano') === 'ano';
+        },
+
+        periodoEhAcumulado() {
+          return String(this.periodoModo || 'ano') === 'acumulado';
+        },
+
+        isIndicadorIrtd() {
+          return String(this.indicadorMeta || '') === 'meta_irtd';
+        },
+
+        temPlrIndicador() {
+          return !this.isIndicadorIrtd();
+        },
+
+        isHigherBetter() {
+          return this.isIndicadorIrtd();
+        },
+
+        showCiaComparativoChart() {
+          return String(this.kpiNivel || '').toUpperCase() === 'CIA_PM'
+            && !String(this.kpiUnidadeId || '').trim();
+        },
+
+        ciaComparativoTitulo() {
+          const tituloIndicador = String(this.titulo || this.siglaIndicadorAtual() || '').trim();
+          const status = String(this.statusText || 'Sem Meta').trim();
+          return `${tituloIndicador} • ${status} • ${this.periodoTituloCurto()}`;
+        },
+
+        periodoTituloCurto() {
+          if (this.periodoEhAno()) return 'ACUMULADO ANO';
+          const meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+          const idx = Number(this.mesFiltro || 0) - 1;
+          if (idx < 0 || idx >= 12) return 'SEM MÊS';
+          const mm = meses[idx];
+          return this.periodoEhAcumulado() ? `ATÉ ${mm}` : mm;
+        },
+
+        periodoLabel() {
+          if (this.periodoEhAno()) return 'Ano completo';
+          if (!this.mesFiltro) return 'Mês não selecionado';
+          return this.periodoEhAcumulado()
+            ? `Acumulado Jan-${this.mesFiltro}`
+            : `Mês: ${this.mesFiltro}`;
+        },
+
+        metaBpmCardLabel() {
+          if (this.isIndicadorIrtd()) {
+            if (this.periodoEhAno()) return 'Meta IRTD (Parcial até hoje)';
+            return this.periodoEhAcumulado() ? 'Meta IRTD (Parcial Acumulada)' : 'Meta IRTD (Parcial Mensal)';
+          }
+          return this.periodoEhAno() ? 'Meta BPM (Anual)' : (this.periodoEhAcumulado() ? 'Meta BPM (Acumulada)' : 'Meta BPM (Mensal)');
+        },
+
+        metaPlrCardLabel() {
+          return this.periodoEhAno() ? 'Meta PLR (Anual)' : (this.periodoEhAcumulado() ? 'Meta PLR (Acumulada)' : 'Meta PLR (Mensal)');
+        },
+
+        observacaoMetasTexto() {
+          if (this.isIndicadorIrtd()) {
+            const anual = this.irtdMetaAnnualSelecionada();
+            return `Meta parcial diária do IRTD: base anual / 365 com arredondamento para cima. Meta anual referência: ${this.formatNumber(anual)}.`;
+          }
+          return 'Variação calculada sempre contra as metas estabelecidas (BPM e PLR), respeitando o período selecionado.';
+        },
+
+        metaBpmAtual() {
+          return this.periodoEhAno() ? Number(this.metaBpmAnual || 0) : Number(this.metaBpmEff || 0);
+        },
+
+        metaPlrAtual() {
+          if (!this.temPlrIndicador()) return 0;
+          return this.periodoEhAno() ? Number(this.metaPlrAnual || 0) : Number(this.metaPlrEff || 0);
+        },
+
+        salvarConfig() {
+          localStorage.setItem('metasApiBaseUrl', (this.apiBaseUrl || '').trim());
+          localStorage.setItem('metasAdminToken', (this.adminToken || '').trim());
+          this.configOpen = false;
+        },
+
+        siglaIndicadorAtual() {
+          const map = { meta_imv: 'IMV', meta_icvpe: 'ICVPe', meta_icvpa: 'ICVPa', meta_irtd: 'IRTD' };
+          return map[this.indicadorMeta] || 'IMV';
+        },
+
+        filtrosStorageKey() {
+          return 'metasAnalisesFiltros';
+        },
+
+        restoreFiltrosAnalises() {
+          try {
+            const raw = localStorage.getItem(this.filtrosStorageKey());
+            if (!raw) return;
+            const saved = JSON.parse(raw) || {};
+            if (saved.ano !== undefined) this.ano = Number(saved.ano) || this.ano;
+            if (saved.kpiNivel) this.kpiNivel = String(saved.kpiNivel).toUpperCase();
+            if (saved.kpiUnidadeId !== undefined) this.kpiUnidadeId = String(saved.kpiUnidadeId || '').trim();
+            if (saved.periodoModo) this.periodoModo = String(saved.periodoModo);
+            if (saved.mesFiltro !== undefined) this.mesFiltro = Number(saved.mesFiltro || 0) || 0;
+            if (saved.filtrosOpen !== undefined) this.filtrosOpen = !!saved.filtrosOpen;
+          } catch {}
+        },
+
+        saveFiltrosAnalises() {
+          try {
+            localStorage.setItem(this.filtrosStorageKey(), JSON.stringify({
+              ano: this.ano,
+              kpiNivel: this.kpiNivel,
+              kpiUnidadeId: this.kpiUnidadeId || '',
+              periodoModo: this.periodoModo,
+              mesFiltro: this.mesFiltro || 0,
+              filtrosOpen: !!this.filtrosOpen,
+            }));
+          } catch {}
+        },
+
+        buildIndicadorHref(indicadorId) {
+          const p = new URLSearchParams();
+          p.set('indicador', indicadorId);
+          p.set('ano', String(this.ano || new Date().getFullYear()));
+          p.set('nivel', String(this.kpiNivel || 'CIA_PM'));
+          p.set('periodo', String(this.periodoModo || 'ano'));
+          if (this.mesFiltro) p.set('mes', String(this.mesFiltro));
+          if ((this.kpiUnidadeId || '').trim()) p.set('unidade_id', String(this.kpiUnidadeId).trim());
+          return `./analises.html?${p.toString()}`;
+        },
+
+        async switchIndicador(indicadorId) {
+          const next = String(indicadorId || '').trim();
+          if (!next || next === this.indicadorMeta) return;
+          this.kpiUnidadeId = '';
+          this.mapSelectedKey = '';
+          this.applyIndicadorConfig(next);
+          try { window.history.replaceState({}, '', this.buildIndicadorHref(next)); } catch {}
+          await this.carregarMetaJson();
+          await this.carregarUnidades();
+          await this.atualizar();
+        },
+
+        apiUrl(path) {
+          const base = (this.apiBaseUrl || '').trim().replace(/\/$/, '');
+          return `${base}${path}`;
+        },
+
+        async carregarUnidades() {
+          this.unidadesLoading = true;
+          try {
+            const resp = await fetch(this.apiUrl(`/kpi/units?indicador=${encodeURIComponent(this.indicadorApi)}&nivel=${encodeURIComponent(this.kpiNivel)}&date_from=${this.ano}-01-01&date_to=${this.ano}-12-31&limit=2000`));
+            const data = await resp.json();
+            let list = Array.isArray(data?.unidades) ? data.unidades : [];
+            const nivel = String(this.kpiNivel || '').toUpperCase();
+            if (this.isIndicadorIrtd() && nivel === 'CIA_PM') {
+              const apiMap = new Map();
+              list.forEach((u) => {
+                const key = this._textKey(u?.unidade_id || u?.unidade_nome || '');
+                if (key) apiMap.set(key, u);
+              });
+              const fromMeta = [];
+              const seen = new Set();
+              const units = Array.isArray(this.metaJson?.unidades) ? this.metaJson.unidades : [];
+              units.forEach((u) => {
+                const tipo = String(u?.tipo || '').toLowerCase();
+                const idNorm = this.normalizeCiaId(u?.id);
+                const nome = String(u?.unidade || '').trim();
+                if (!nome) return;
+                if (tipo === 'territorial') return;
+                if (idNorm === '19.0' || idNorm === '19.000') return; // agregador municipal
+                const key = this._textKey(nome);
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                fromMeta.push(apiMap.get(key) || { unidade_id: nome, unidade_nome: nome, total_realizado: 0 });
+              });
+              list.forEach((u) => {
+                const key = this._textKey(u?.unidade_id || u?.unidade_nome || '');
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                fromMeta.push(u);
+              });
+              if (fromMeta.length) list = fromMeta;
+            }
+            if (nivel === 'CIA_PM' && this.geoIndex?.ciaList?.length) {
+              const map = new Map(list.map(u => [String(u.unidade_id || '').trim(), u]));
+              const ordered = this.geoIndex.ciaList.map(cia => map.get(cia) || { unidade_id: cia, unidade_nome: cia, total_realizado: 0 });
+              const known = new Set(this.geoIndex.ciaList.map(v => String(v || '').trim()));
+              list.forEach((u) => {
+                const uid = String(u?.unidade_id || '').trim();
+                if (uid && !known.has(uid)) ordered.push(u);
+              });
+              list = ordered;
+            }
+            if (nivel === 'PELOTAO' && this.geoIndex?.pelList?.length) {
+              const map = new Map(list.map(u => [String(u.unidade_id || '').trim(), u]));
+              list = this.geoIndex.pelList.map(pel => map.get(pel) || { unidade_id: pel, unidade_nome: pel, total_realizado: 0 });
+            }
+            this.unidades = list;
+          } catch {
+            this.unidades = [];
+          } finally {
+            this.unidadesLoading = false;
+          }
+        },
+
+        async carregarPlr() {
+          try {
+            const resp = await fetch('./data/metas_plr.json');
+            const json = await resp.json();
+            this._plr = json || {};
+          } catch {
+            this._plr = {};
+          }
+        },
+
+        async carregarGeoIndex() {
+          // Build mapping between names (CIA/PELOTAO) and ids (SETOR/SUB_SETOR) using the polygons GeoJSON.
+          try {
+            if (!this.geo) {
+              const resp = await fetch('./data/mapas/SubSetores_19BPM_GeoJSON.json');
+              this.geo = await resp.json();
+            }
+            const idx = { ciaNameToId: {}, pelNameToId: {}, ciaIdToName: {}, pelIdToName: {}, ciaList: [], pelList: [] };
+            (this.geo?.features || []).forEach(f => {
+              const p = f?.properties || {};
+              const subsetor = String(p.SUB_SETOR || p.SUBSETOR || p.name || '').trim();
+              const setor = String(p.SETOR || '').trim();
+              const ciaName = String(p.CIA_PM || '').trim();
+              const pelName = String(p.PELOTAO || '').trim();
+              if (ciaName && subsetor) {
+                // CIA id is first two segments of subsetor: 19.232
+                const parts = subsetor.split('.');
+                if (parts.length >= 2) {
+                  const ciaId = `${parts[0]}.${parts[1]}`;
+                  idx.ciaNameToId[ciaName] = ciaId;
+                  idx.ciaIdToName[ciaId] = ciaName;
+                }
+              }
+              if (pelName && setor) {
+                idx.pelNameToId[pelName] = setor;
+                idx.pelIdToName[setor] = pelName;
+              }
+              if (ciaName) idx.ciaList.push(ciaName);
+              if (pelName) idx.pelList.push(pelName);
+            });
+            idx.ciaList = Array.from(new Set(idx.ciaList)).sort();
+            idx.pelList = Array.from(new Set(idx.pelList)).sort();
+            this.geoIndex = idx;
+          } catch {
+            this.geoIndex = { ciaNameToId: {}, pelNameToId: {}, ciaIdToName: {}, pelIdToName: {}, ciaList: [], pelList: [] };
+          }
+        },
+
+        unitLabel(u) {
+          if (!u) return '';
+          const nome = String(u.unidade_nome || '').trim();
+          if (nome) return nome;
+          const id = String(u.unidade_id || '').trim();
+          if (!id) return '';
+          const nivel = String(this.kpiNivel || '').toUpperCase();
+          if (nivel === 'CIA_PM') return this.geoIndex?.ciaIdToName?.[id] || id;
+          if (nivel === 'PELOTAO') return this.geoIndex?.pelIdToName?.[id] || id;
+          return id;
+        },
+
+        normalizeNodeId(raw) {
+          if (raw === undefined || raw === null) return '';
+          let s = String(raw).trim();
+          if (!s) return '';
+          if (!s.includes('.') && /^\d{5}$/.test(s)) {
+            s = `${s.slice(0, 2)}.${s.slice(2)}`;
+          }
+          if (!s.includes('.')) return s;
+          const parts = s.split('.');
+          const norm = parts.map((p, idx) => {
+            if (idx === 0) return p;
+            if (!/^\d+$/.test(p)) return p;
+            return String(Number(p));
+          });
+          return norm.join('.');
+        },
+
+        normalizeCiaId(raw) {
+          if (raw === undefined || raw === null) return '';
+          const s0 = String(raw).trim();
+          if (!s0) return '';
+
+          if (/^\d{2}\.\d{1,3}$/.test(s0)) {
+            const [a, b] = s0.split('.');
+            return `${a}.${String(Number(b))}`;
+          }
+          if (/^\d{2,3}$/.test(s0)) {
+            return `19.${String(Number(s0))}`;
+          }
+          if (!s0.includes('.') && /^\d{5}$/.test(s0)) {
+            return `19.${String(Number(s0.slice(2)))}`;
+          }
+
+          const m = s0.match(/(\d{2,3})/);
+          if (m && s0.toUpperCase().includes('CIA')) {
+            return `19.${String(Number(m[1]))}`;
+          }
+          return this.normalizeNodeId(s0);
+        },
+
+        _textKey(raw) {
+          return String(raw || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toUpperCase();
+        },
+
+        _parseIsoDate(iso) {
+          const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (!m) return null;
+          return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+        },
+
+        _irtdCumMetaAtDate(metaAnual, dateObj, anoRef) {
+          const anual = Number(metaAnual || 0);
+          if (!anual || !dateObj || !Number.isFinite(anoRef)) return 0;
+          const inicioAno = new Date(anoRef, 0, 1);
+          const fimAno = new Date(anoRef, 11, 31);
+          const hoje = new Date();
+          const hoje0 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+          let d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+
+          if (anoRef > hoje0.getFullYear()) return 0;
+          if (anoRef === hoje0.getFullYear() && d > hoje0) d = hoje0;
+          if (d < inicioAno) return 0;
+          if (d > fimAno) d = fimAno;
+
+          const diaDoAno = Math.floor((d - inicioAno) / 86400000) + 1;
+          return Math.ceil((anual * diaDoAno) / 365);
+        },
+
+        _irtdMetaRange(metaAnual, dateFrom, dateTo) {
+          const dFrom = this._parseIsoDate(dateFrom);
+          const dTo = this._parseIsoDate(dateTo);
+          if (!dFrom || !dTo) return 0;
+          const anoRef = dTo.getFullYear();
+          const dPrev = new Date(dFrom.getFullYear(), dFrom.getMonth(), dFrom.getDate() - 1);
+          const acumTo = this._irtdCumMetaAtDate(metaAnual, dTo, anoRef);
+          const acumPrev = this._irtdCumMetaAtDate(metaAnual, dPrev, anoRef);
+          return Math.max(0, acumTo - acumPrev);
+        },
+
+        _sumMap(obj) {
+          return Object.values(obj || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+        },
+
+        _buildIrtdMetaCache() {
+          const src = this.metaJson || {};
+          const unidades = Array.isArray(src?.unidades) ? src.unidades : [];
+          const out = { cia: {}, pelotao: {}, setor: {}, subsetor: {}, municipio: {} };
+          if (!unidades.length) return out;
+
+          const territorial = unidades.find((u) => String(u?.tipo || '').toLowerCase() === 'territorial');
+          const locais = Array.isArray(territorial?.locais) ? territorial.locais : [];
+          const locaisPorPelotao = {};
+
+          locais.forEach((loc) => {
+            const id = this.normalizeNodeId(loc?.id);
+            const meta = Number(loc?.meta_anual || 0);
+            if (!id) return;
+            out.setor[id] = meta;
+            out.subsetor[id] = meta;
+            const pelId = id.split('.').slice(0, 3).join('.');
+            if (pelId) locaisPorPelotao[pelId] = (Number(locaisPorPelotao[pelId]) || 0) + meta;
+            const munKey = this._textKey(loc?.nome);
+            if (munKey) out.municipio[munKey] = (Number(out.municipio[munKey]) || 0) + meta;
+          });
+
+          unidades.forEach((u) => {
+            if (String(u?.tipo || '').toLowerCase() === 'territorial') return;
+            const unidadeId = this.normalizeCiaId(u?.id);
+            if (!unidadeId) return;
+
+            const unidadeNome = this._textKey(u?.unidade || '');
+            if (unidadeNome === 'TEOFILO OTONI' || unidadeId === '19.0' || unidadeId === '19.000') {
+              out.municipio[unidadeNome || 'TEOFILO OTONI'] = Number(u?.meta_anual || 0);
+              return;
+            }
+
+            let metaUnidade = 0;
+            if (Array.isArray(u?.pelotoes) && u.pelotoes.length) {
+              u.pelotoes.forEach((pel) => {
+                const pelId = this.normalizeNodeId(pel?.id);
+                if (!pelId) return;
+                const metaPel = (locaisPorPelotao[pelId] !== undefined)
+                  ? Number(locaisPorPelotao[pelId] || 0)
+                  : Number(pel?.meta_anual || 0);
+                out.pelotao[pelId] = metaPel;
+                metaUnidade += metaPel;
+              });
+            } else {
+              metaUnidade = Number(u?.meta_anual || 0);
+            }
+            out.cia[unidadeId] = metaUnidade;
+          });
+
+          return out;
+        },
+
+        irtdMetaIndex() {
+          if (!this.isIndicadorIrtd()) return { cia: {}, pelotao: {}, setor: {}, subsetor: {}, municipio: {} };
+          if (!this.irtdMetaCache) this.irtdMetaCache = this._buildIrtdMetaCache();
+          return this.irtdMetaCache;
+        },
+
+        irtdMetaAnnualSelecionada() {
+          const idx = this.irtdMetaIndex();
+          const nivel = String(this.kpiNivel || '').toUpperCase();
+          const unidade = String(this.kpiUnidadeId || '').trim();
+
+          if (nivel === 'CIA_PM') {
+            if (!unidade) return this._sumMap(idx.cia);
+            return Number(idx.cia[this.normalizeCiaId(unidade)] || 0);
+          }
+          if (nivel === 'PELOTAO') {
+            if (!unidade) return this._sumMap(idx.pelotao);
+            let key = unidade;
+            if (!key.includes('.')) key = this.geoIndex?.pelNameToId?.[key] || key;
+            key = this.normalizeNodeId(key);
+            return Number(idx.pelotao[key] || 0);
+          }
+          if (nivel === 'SETOR') {
+            if (!unidade) return this._sumMap(idx.setor);
+            return Number(idx.setor[this.normalizeNodeId(unidade)] || 0);
+          }
+          if (nivel === 'SUBSETOR') {
+            if (!unidade) return this._sumMap(idx.subsetor);
+            return Number(idx.subsetor[this.normalizeNodeId(unidade)] || 0);
+          }
+          if (nivel === 'MUNICIPIO') {
+            if (!unidade) return this._sumMap(idx.municipio);
+            const selected = (this.unidades || []).find((u) => String(u?.unidade_id || '').trim() === unidade);
+            const nome = selected?.unidade_nome || selected?.unidade_id || unidade;
+            return Number(idx.municipio[this._textKey(nome)] || 0);
+          }
+          return 0;
+        },
+
+        irtdMonthlyMetaSeries() {
+          const anual = this.irtdMetaAnnualSelecionada();
+          const out = [];
+          for (let mes = 1; mes <= 12; mes++) {
+            const mm = String(mes).padStart(2, '0');
+            const first = `${this.ano}-${mm}-01`;
+            const lastDay = new Date(this.ano, mes, 0).getDate();
+            const last = `${this.ano}-${mm}-${String(lastDay).padStart(2, '0')}`;
+            out.push(this._irtdMetaRange(anual, first, last));
+          }
+          return out;
+        },
+
+        async carregarMetaJson() {
+          const map = {
+            meta_imv: './data/arquivo_joson_meta_imv_subsetor.json',
+            meta_icvpe: './data/arquivo_joson_meta_icvpe_subsetor.json',
+            meta_icvpa: './data/arquivo_joson_meta_icvpa_subsetor.json',
+            meta_irtd: './data/arquivo_joson_meta_irtd_subsetor.json',
+          };
+          const path = map[this.indicadorMeta];
+          if (!path) { this.metaJson = null; this.irtdMetaCache = null; return; }
+          try {
+            const resp = await fetch(path);
+            const json = await resp.json();
+            this.metaJson = json;
+            this.irtdMetaCache = null;
+          } catch {
+            this.metaJson = null;
+            this.irtdMetaCache = null;
+          }
+        },
+
+        metaMonthlySeriesFromMetaJson() {
+          // Returns 12 values (Jan..Dez) representing the meta curve for the current filter, based on meta-by-subsetor JSON.
+          // Works for CIA/SETOR/SUBSETOR; for PELOTAO we map name->SETOR id; for MUNICIPIO we fallback.
+          if (this.isIndicadorIrtd()) return null;
+          const data = this.metaJson;
+          if (!Array.isArray(data)) return null;
+
+          const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+          const acc = new Array(12).fill(0);
+
+          const addDados = (dados) => {
+            if (!dados) return;
+            months.forEach((m, i) => { acc[i] += Number(dados[m] || dados[m.toUpperCase()] || 0); });
+          };
+
+          const wantNivel = String(this.kpiNivel || '').toUpperCase();
+          let filterId = (this.kpiUnidadeId || '').trim();
+
+          // Map displayed names to ids when needed
+          if (wantNivel === 'CIA_PM' && filterId) {
+            filterId = this.geoIndex?.ciaNameToId?.[filterId] || filterId; // 19.232
+          }
+          if (wantNivel === 'PELOTAO' && filterId) {
+            // Pelotao is stored as name; meta JSON uses setor id (19.232.3)
+            filterId = this.geoIndex?.pelNameToId?.[filterId] || filterId;
+          }
+
+          // If no specific unidade, sum all.
+          if (!filterId) {
+            data.forEach(un => {
+              (un.pelotoes || []).forEach(pel => {
+                (pel.setores || []).forEach(sub => addDados(sub?.dados));
+              });
+            });
+            return acc;
+          }
+
+          // For subsetor direct match (id like 19.232.3.4)
+          if (wantNivel === 'SUBSETOR') {
+            data.forEach(un => (un.pelotoes || []).forEach(pel => (pel.setores || []).forEach(sub => {
+              if (String(sub?.id || '').trim() === filterId) addDados(sub?.dados);
+            })));
+            return acc;
+          }
+
+          // For SETOR / PELOTAO: id is prefix of subsetor ids (19.232.3)
+          if (wantNivel === 'SETOR' || wantNivel === 'PELOTAO') {
+            data.forEach(un => (un.pelotoes || []).forEach(pel => (pel.setores || []).forEach(sub => {
+              const sid = String(sub?.id || '').trim();
+              if (sid.startsWith(filterId + '.')) addDados(sub?.dados);
+            })));
+            return acc;
+          }
+
+          // For CIA: id is prefix (19.232)
+          if (wantNivel === 'CIA_PM') {
+            data.forEach(un => {
+              if (this.normalizeCiaId(un?.id) === this.normalizeCiaId(filterId)) {
+                (un.pelotoes || []).forEach(pel => (pel.setores || []).forEach(sub => addDados(sub?.dados)));
+              }
+            });
+            return acc;
+          }
+
+          return null;
+        },
+
+        _metaMonthlyForCiaId(ciaId) {
+          // Sum meta-json monthly series for one CIA id (e.g. 19.42)
+          const data = this.metaJson;
+          if (!Array.isArray(data) || !ciaId) return null;
+          const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+          const acc = new Array(12).fill(0);
+          const norm = this.normalizeCiaId(ciaId);
+          const un = data.find(u => this.normalizeCiaId(u?.id) === norm);
+          if (!un) return null;
+          (un.pelotoes || []).forEach(pel => (pel.setores || []).forEach(sub => {
+            const d = sub?.dados || {};
+            months.forEach((m, i) => { acc[i] += Number(d[m] || d[m.toUpperCase()] || 0); });
+          }));
+          return acc;
+        },
+
+        _periodValueFromMonthly(series) {
+          if (!Array.isArray(series) || !series.length) return 0;
+          if (!this.periodoEhAno() && this.mesFiltro) {
+            if (this.periodoEhAcumulado()) {
+              return series.slice(0, Number(this.mesFiltro)).reduce((a, b) => a + (Number(b) || 0), 0);
+            }
+            return Number(series[Number(this.mesFiltro) - 1] || 0);
+          }
+          return series.reduce((a, b) => a + (Number(b) || 0), 0);
+        },
+
+        _plrMonthlyForCiaId(ciaId) {
+          if (!this.temPlrIndicador() || !ciaId) return null;
+          const list = this._plr?.[this.indicadorMeta];
+          if (!Array.isArray(list)) return null;
+          const norm = this.normalizeCiaId(ciaId);
+          const row = list.find((r) => this.normalizeCiaId(r?.CIA) === norm);
+          if (!row) return null;
+          const keys = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+          return keys.map((k) => Number(row[k] || 0));
+        },
+
+        plrMonthlySeries() {
+          if (!this.temPlrIndicador()) return null;
+          const list = this._plr?.[this.indicadorMeta];
+          if (!Array.isArray(list)) return null;
+          const normId = (id) => {
+            return this.normalizeCiaId(id);
+          };
+          const getRow = (ciaId) => list.find(r => normId(r.CIA) === normId(ciaId));
+          const rowToSeries = (row) => {
+            if (!row) return;
+            const keys = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+            return keys.map(k => Number(row[k] || 0));
+          };
+          const addTo = (acc, series, factor=1) => {
+            if (!acc || !series) return;
+            for (let i = 0; i < 12; i++) acc[i] += (Number(series[i] || 0) * factor);
+          };
+
+          const nivel = String(this.kpiNivel || '').toUpperCase();
+          const unidade = String(this.kpiUnidadeId || '').trim();
+
+          // CIA: direct lookup or sum all CIAs
+          if (nivel === 'CIA_PM') {
+            const out = new Array(12).fill(0);
+            if (unidade) {
+              const unidadeId = this.geoIndex?.ciaNameToId?.[unidade] || unidade;
+              addTo(out, rowToSeries(getRow(unidadeId)));
+            }
+            else list.forEach(r => addTo(out, rowToSeries(r)));
+            return out;
+          }
+
+          // For PELOTAO/SETOR/SUBSETOR we can derive a PLR curve by allocating CIA PLR
+          // proportionally to the meta-by-subsetor monthly curve (same source as "Meta BPM").
+          // This keeps PLR non-linear month-to-month when drilling down.
+          if ((nivel === 'PELOTAO' || nivel === 'SETOR' || nivel === 'SUBSETOR') && unidade) {
+            // For PELOTAO we may receive a display name; map it to SETOR id when possible.
+            let unidadeId = unidade;
+            if (nivel === 'PELOTAO' && !unidadeId.includes('.')) {
+              unidadeId = this.geoIndex?.pelNameToId?.[unidadeId] || unidadeId;
+            }
+            const parts = unidadeId.split('.');
+            const ciaId = parts.length >= 2 ? `${parts[0]}.${parts[1]}` : '';
+            const ciaRow = getRow(ciaId);
+            const plrCia = rowToSeries(ciaRow);
+            if (!plrCia) return null;
+            const metaSel = this.metaMonthlySeriesFromMetaJson();
+            const metaCia = this._metaMonthlyForCiaId(ciaId);
+            if (!metaSel || !metaCia) return null;
+            const out = new Array(12).fill(0);
+            for (let i = 0; i < 12; i++) {
+              const den = Number(metaCia[i] || 0);
+              const num = Number(metaSel[i] || 0);
+              const ratio = den ? (num / den) : 0;
+              out[i] = Number(plrCia[i] || 0) * ratio;
+            }
+            return out;
+          }
+
+          // MUNICIPIO: PLR not defined in metas_plr.json (CIA-only).
+          return null;
+        },
+
+        metaBpmMonthlySeries() {
+          if (this.isIndicadorIrtd()) {
+            return this.irtdMonthlyMetaSeries();
+          }
+          // Prefer official meta curve from meta JSON; fallback to PLR-weighted distribution.
+          const metaFromJson = this.metaMonthlySeriesFromMetaJson();
+          if (metaFromJson) return metaFromJson;
+          const annual = Number(this.metaBpmAnual || 0);
+          if (!annual) return new Array(12).fill(0);
+          const plr = this.plrMonthlySeries();
+          if (!plr) return new Array(12).fill(annual / 12);
+          const s = plr.reduce((a,b)=>a+(Number(b)||0),0);
+          if (!s) return new Array(12).fill(annual / 12);
+          return plr.map(v => (annual * (Number(v)||0)) / s);
+        },
+
+        dateRange() {
+          let dateFrom = `${this.ano}-01-01`;
+          let dateTo = `${this.ano}-12-31`;
+          if (!this.periodoEhAno() && this.mesFiltro) {
+            const mes = Number(this.mesFiltro);
+            const lastDay = new Date(this.ano, mes, 0).getDate();
+            const ms = String(mes).padStart(2,'0');
+            if (!this.periodoEhAcumulado()) {
+              dateFrom = `${this.ano}-${ms}-01`;
+            }
+            dateTo = `${this.ano}-${ms}-${String(lastDay).padStart(2,'0')}`;
+          }
+          return { dateFrom, dateTo };
+        },
+
+        async atualizar() {
+          this.loading = true;
+          this.erro = null;
+          this.saveFiltrosAnalises();
+          const nonce = ++this._renderNonce;
+          try {
+            const { dateFrom, dateTo } = this.dateRange();
+            const unidadeParam = this.kpiUnidadeId ? `&unidade_id=${encodeURIComponent(this.kpiUnidadeId)}` : '';
+            const s = await fetch(this.apiUrl(`/kpi/summary?indicador=${encodeURIComponent(this.indicadorApi)}&nivel=${encodeURIComponent(this.kpiNivel)}&date_from=${dateFrom}&date_to=${dateTo}${unidadeParam}`));
+            const sj = await s.json();
+            this.resumo = sj || { total_realizado: 0 };
+
+            // Full-year monthly series (for charts). When filtering by a month, we can still keep the yearly series.
+            try {
+              const m = await fetch(this.apiUrl(`/kpi/monthly?indicador=${encodeURIComponent(this.indicadorApi)}&nivel=${encodeURIComponent(this.kpiNivel)}&ano=${this.ano}${unidadeParam}`));
+              const mj = await m.json();
+              const series = Array.isArray(mj?.series) ? mj.series : [];
+              const vals = new Array(12).fill(0);
+              series.forEach(r => {
+                const idx = Number(r?.mes || 0) - 1;
+                if (idx >= 0 && idx < 12) vals[idx] = Number(r?.valor_realizado || 0);
+              });
+              this.monthly = vals;
+            } catch {
+              this.monthly = new Array(12).fill(0);
+            }
+
+            const plrSeries = this.plrMonthlySeries();
+            const bpmSeries = this.metaBpmMonthlySeries();
+            this.metaPlrAnual = (this.temPlrIndicador() && plrSeries) ? plrSeries.reduce((a,b)=>a+(Number(b)||0),0) : 0;
+            // Annual meta BPM is sum of monthly curve (when available).
+            this.metaBpmAnual = bpmSeries ? bpmSeries.reduce((a,b)=>a+(Number(b)||0),0) : this.metaBpmAnual;
+            if (!this.periodoEhAno() && this.mesFiltro) {
+              if (this.periodoEhAcumulado()) {
+                const end = Number(this.mesFiltro);
+                this.metaBpmEff = (bpmSeries || []).slice(0, end).reduce((a, b) => a + (Number(b) || 0), 0);
+                this.metaPlrEff = this.temPlrIndicador()
+                  ? (plrSeries || []).slice(0, end).reduce((a, b) => a + (Number(b) || 0), 0)
+                  : 0;
+              } else {
+                this.metaBpmEff = Number((bpmSeries || [])[this.mesFiltro - 1] || 0);
+                this.metaPlrEff = this.temPlrIndicador() ? Number((plrSeries || [])[this.mesFiltro - 1] || 0) : 0;
+              }
+            } else {
+              this.metaBpmEff = 0;
+              this.metaPlrEff = 0;
+            }
+
+            const real = Number(this.resumo?.total_realizado || 0);
+            const meta = this.metaBpmAtual();
+            const plr = this.metaPlrAtual();
+            const metaScope = this.isIndicadorIrtd() ? 'IRTD' : 'BPM';
+            const higherBetter = this.isHigherBetter();
+            if (!meta) {
+              this.cumprimento = 0;
+            } else if (higherBetter) {
+              this.cumprimento = Math.max(0, Math.min(100, (real / meta) * 100));
+            } else {
+              this.cumprimento = real <= 0 ? 100 : Math.max(0, Math.min(100, (meta / real) * 100));
+            }
+            if (!meta) {
+              this.statusText = 'Sem Meta';
+              this.statusClass = 'bg-gray-100 text-gray-700 border-gray-200';
+            } else {
+              if (higherBetter) {
+                if (real >= meta) {
+                  this.statusText = `Dentro da Meta (${metaScope})`;
+                  this.statusClass = 'bg-green-100 text-green-700 border-green-200';
+                } else if (this.temPlrIndicador() && plr && real >= plr) {
+                  this.statusText = 'Alerta (PLR)';
+                  this.statusClass = 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                } else {
+                  this.statusText = 'Fora da Meta';
+                  this.statusClass = 'bg-red-100 text-red-700 border-red-200';
+                }
+              } else if (real <= meta) {
+                this.statusText = `Dentro da Meta (${metaScope})`;
+                this.statusClass = 'bg-green-100 text-green-700 border-green-200';
+              } else if (this.temPlrIndicador() && plr && real <= plr) {
+                this.statusText = 'Alerta (PLR)';
+                this.statusClass = 'bg-yellow-100 text-yellow-700 border-yellow-200';
+              } else {
+                this.statusText = 'Fora da Meta';
+                this.statusClass = 'bg-red-100 text-red-700 border-red-200';
+              }
+            }
+
+            // Ensure canvases/divs exist before we render Chart/Leaflet.
+            await this.nextTick();
+            if (nonce !== this._renderNonce) return;
+            await this.renderChart(plrSeries, bpmSeries, nonce);
+            await this.renderGauge(nonce);
+            await this.renderCiaPresosChart(nonce);
+            await this.renderMap(nonce);
+            this.calcularVariacaoContraMetas();
+            if (this.detalhesOpen && this.detalhesTab === 'imv') {
+              this.carregarRedsImv();
+            }
+          } catch (e) {
+            this.erro = e?.message || String(e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        calcularVariacaoContraMetas() {
+          const real = Number(this.resumo?.total_realizado || 0);
+          const meta = this.metaBpmAtual();
+          const plr = this.metaPlrAtual();
+
+          const pct = (a, b) => {
+            if (!b) return null;
+            return ((a - b) / b) * 100;
+          };
+          const fmtNum2 = (v) => {
+            if (v === null || v === undefined || Number.isNaN(v)) return '—';
+            return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          };
+          const fmt = (v) => {
+            if (v === null || v === undefined || Number.isNaN(v)) return '—';
+            const sign = v > 0 ? '+' : '';
+            return `${sign}${v.toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 })}%`;
+          };
+          const cls = (v) => {
+            if (v === null || v === undefined || Number.isNaN(v)) return 'text-gray-700';
+            if (v === 0) return 'text-gray-700';
+            // For higher-is-better indicators, positive deltas are good; otherwise inverse.
+            if (this.isHigherBetter()) return v > 0 ? 'text-green-700' : 'text-red-700';
+            return v > 0 ? 'text-red-700' : 'text-green-700';
+          };
+
+          const vMeta = pct(real, meta);
+          const vPlr = pct(real, plr);
+
+          this.varMetaLabel = fmt(vMeta);
+          if (meta) {
+            if (this.isIndicadorIrtd()) {
+              const anual = this.irtdMetaAnnualSelecionada();
+              this.varMetaHint = `Resultado ${fmtNum2(real)} vs Meta parcial ${fmtNum2(meta)} (anual ${fmtNum2(anual)})`;
+            } else {
+              this.varMetaHint = `Resultado ${fmtNum2(real)} vs Meta ${fmtNum2(meta)}`;
+            }
+          } else {
+            this.varMetaHint = 'Meta não definida';
+          }
+          this.varMetaClass = cls(vMeta);
+
+          this.varPlrLabel = plr ? fmt(vPlr) : '—';
+          this.varPlrHint = plr ? `Resultado ${fmtNum2(real)} vs PLR ${fmtNum2(plr)}` : 'PLR indisponível para este nível';
+          this.varPlrClass = cls(vPlr);
+        },
+
+        async renderChart(plrSeries, bpmSeries, nonce) {
+          const el = document.getElementById('chart-main');
+          if (!el || typeof echarts === 'undefined') return;
+          await new Promise(requestAnimationFrame);
+          if (nonce !== this._renderNonce) return;
+
+          const labels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+          let serie = this.monthly || labels.map(() => 0);
+          let metaSerie = bpmSeries || new Array(12).fill(this.metaBpmAnual/12);
+          let plrLine = plrSeries;
+          let xlabels = labels;
+          if (!this.periodoEhAno() && this.mesFiltro && !this.periodoEhAcumulado()) {
+            const idx = this.mesFiltro - 1;
+            xlabels = [labels[idx]];
+            serie = [Number(this.resumo?.total_realizado || 0)];
+            metaSerie = [Number(metaSerie[idx] || 0)];
+            plrLine = plrLine ? [Number(plrLine[idx] || 0)] : null;
+          } else if (this.periodoEhAcumulado() && this.mesFiltro) {
+            const end = Number(this.mesFiltro);
+            xlabels = labels.slice(0, end);
+            serie = (serie || []).slice(0, end);
+            metaSerie = (metaSerie || []).slice(0, end);
+            plrLine = plrLine ? plrLine.slice(0, end) : null;
+          }
+
+          if (!this.chartMain) this.chartMain = echarts.init(el);
+          const higherBetter = this.isHigherBetter();
+          const hasPlrLine = Array.isArray(plrLine) && plrLine.some((v) => Number(v || 0) > 0);
+          const statusPalette = {
+            good: { grad: ['#86efac', '#22c55e', '#166534'], shadow: 'rgba(22,163,74,0.38)', label: 'Dentro da Meta' },
+            alert: { grad: ['#fde68a', '#f59e0b', '#b45309'], shadow: 'rgba(245,158,11,0.36)', label: 'Faixa de Alerta (PLR)' },
+            bad: { grad: ['#fda4af', '#ef4444', '#991b1b'], shadow: 'rgba(239,68,68,0.38)', label: 'Fora da Meta' },
+            sem_meta: { grad: ['#cbd5e1', '#94a3b8', '#475569'], shadow: 'rgba(100,116,139,0.3)', label: 'Sem Meta' },
+          };
+          const grad = (triplet) => new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: triplet[0] },
+            { offset: 0.35, color: triplet[1] },
+            { offset: 1, color: triplet[2] },
+          ]);
+          const statusByIdx = (serie || []).map((v, i) => {
+            const real = Number(v || 0);
+            const meta = Number((metaSerie || [])[i] || 0);
+            const plr = Number((plrLine || [])[i] || 0);
+            if (meta <= 0) return 'sem_meta';
+            if (higherBetter) return real >= meta ? 'good' : 'bad';
+            if (real <= meta) return 'good';
+            if (hasPlrLine && plr > 0 && real <= plr) return 'alert';
+            return 'bad';
+          });
+          const resultadoStyled = (serie || []).map((v, i) => {
+            const st = statusPalette[statusByIdx[i] || 'sem_meta'] || statusPalette.sem_meta;
+            return {
+              value: Number(v || 0),
+              itemStyle: {
+                borderRadius: [10, 10, 6, 6],
+                color: grad(st.grad),
+                shadowColor: st.shadow,
+                shadowBlur: 12,
+                shadowOffsetY: 4,
+              },
+            };
+          });
+          const series = [
+            {
+              name: 'Resultado',
+              type: 'bar',
+              data: resultadoStyled,
+              barWidth: 26,
+              z: 10,
+            },
+            {
+              name: this.isIndicadorIrtd() ? 'Meta IRTD (Parcial)' : 'Meta BPM (Mensal)',
+              type: 'line',
+              data: metaSerie,
+              smooth: true,
+              symbolSize: 6,
+              lineStyle: { color: '#b45309', width: 2, type: 'dashed' },
+              itemStyle: { color: '#b45309' }
+            }
+          ];
+          if (plrLine) {
+            series.push({
+              name: 'Meta PLR',
+              type: 'line',
+              data: plrLine,
+              smooth: true,
+              symbolSize: 6,
+              lineStyle: { color: '#2563eb', width: 2 },
+              itemStyle: { color: '#2563eb' }
+            });
+          }
+
+          this.chartMain.setOption({
+            animationDuration: 1200,
+            animationEasing: 'cubicOut',
+            tooltip: {
+              trigger: 'axis',
+              backgroundColor: '#fff',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              textStyle: { color: '#111827' },
+              extraCssText: 'border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);',
+              formatter: (params) => {
+                const arr = Array.isArray(params) ? params : [params];
+                const p0 = arr[0] || {};
+                const idx = Number(p0?.dataIndex || 0);
+                const mes = String(p0?.axisValue || xlabels[idx] || '');
+                const real = Number((serie || [])[idx] || 0);
+                const meta = Number((metaSerie || [])[idx] || 0);
+                const plr = Number((plrLine || [])[idx] || 0);
+                const status = statusPalette[statusByIdx[idx] || 'sem_meta']?.label || 'Sem Meta';
+                const fmt = (n) => Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                return [
+                  `<b>${mes}</b>`,
+                  `Resultado: <b>${fmt(real)}</b>`,
+                  `${this.isIndicadorIrtd() ? 'Meta IRTD (Parcial)' : 'Meta BPM'}: <b>${fmt(meta)}</b>`,
+                  hasPlrLine ? `Meta PLR: <b>${fmt(plr)}</b>` : null,
+                  `Status: <b>${status}</b>`,
+                ].filter(Boolean).join('<br/>');
+              },
+            },
+            legend: { top: 0 },
+            grid: { left: 20, right: 20, top: 36, bottom: 20, containLabel: true },
+            xAxis: { type: 'category', data: xlabels, axisTick: { show: false } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(15,23,42,0.06)' } } },
+            series
+          }, true);
+        },
+
+        async renderGauge(nonce) {
+          const el = document.getElementById('gauge-main');
+          if (!el || typeof echarts === 'undefined') return;
+          await new Promise(requestAnimationFrame);
+          if (nonce !== this._renderNonce) return;
+
+          const real = Number(this.resumo?.total_realizado || 0);
+          const meta = this.metaBpmAtual();
+          const plr = this.metaPlrAtual();
+          const higherBetter = this.isHigherBetter();
+          const hasPlr = this.temPlrIndicador() && plr > 0;
+          const max = higherBetter
+            ? Math.max(1, Number(meta || 0), Number(hasPlr ? plr : 0), Number(real || 0))
+            : (hasPlr ? plr : (meta > 0 ? meta * 1.5 : Math.max(1, real)));
+          const v = Math.max(0, Math.min(max, real));
+
+          const color = (() => {
+            if (higherBetter) {
+              if (meta > 0 && real >= meta) return '#16a34a';
+              if (hasPlr && real >= plr) return '#f59e0b';
+              return '#dc2626';
+            }
+            if (meta > 0 && real <= meta) return '#16a34a';
+            if (hasPlr && real <= plr) return '#f59e0b';
+            return '#dc2626';
+          })();
+
+          if (!this.gaugeMain) this.gaugeMain = echarts.init(el);
+          const fmt2 = (n) => Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const percent = max > 0 ? Math.min(100, (v / max) * 100) : 0;
+          this.gaugeMain.setOption({
+            animationDuration: 1200,
+            animationEasing: 'cubicOut',
+            series: [{
+              type: 'gauge',
+              radius: '92%',
+              center: ['50%', '54%'],
+              startAngle: 270,
+              endAngle: -90,
+              min: 0,
+              max: max || 1,
+              splitNumber: 5,
+              pointer: { show: false },
+              progress: {
+                show: true,
+                roundCap: true,
+                width: 14,
+                itemStyle: { color }
+              },
+              axisLine: {
+                lineStyle: { width: 14, color: [[1, '#e5e7eb']] }
+              },
+              axisTick: { show: false },
+              splitLine: { show: false },
+              axisLabel: { show: false },
+              data: [{ value: percent }],
+              detail: {
+                valueAnimation: true,
+                fontSize: 24,
+                fontWeight: 'bold',
+                color,
+                formatter: () => hasPlr
+                  ? `${fmt2(real)}\n{t|Meta ${fmt2(meta || 0)} / PLR ${fmt2(plr || 0)}}`
+                  : `${fmt2(real)}\n{t|Meta ${fmt2(meta || 0)}}`,
+                offsetCenter: [0, '0%'],
+                rich: {
+                  t: { fontSize: 11, color: '#94a3b8', lineHeight: 18, fontWeight: 'normal' }
+                }
+              }
+            }]
+          }, true);
+        },
+
+        async renderCiaPresosChart(nonce) {
+          const el = document.getElementById('chart-cia-presos');
+          if (!this.showCiaComparativoChart()) {
+            this.ciaPresosRows = [];
+            if (this.chartCiaPresos) {
+              try { this.chartCiaPresos.dispose(); } catch {}
+              this.chartCiaPresos = null;
+            }
+            return;
+          }
+          if (!el || typeof echarts === 'undefined') return;
+          await new Promise(requestAnimationFrame);
+          if (nonce !== this._renderNonce) return;
+          const sum12 = (arr) => (Array.isArray(arr) ? arr.reduce((a, b) => a + (Number(b) || 0), 0) : 0);
+          const fmtNum = (n) => Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+          const ciaLabelFrom = (ciaKey, fallbackName = '') => {
+            const key = this.normalizeCiaId(ciaKey || fallbackName);
+            const fromGeo = key ? (this.geoIndex?.ciaIdToName?.[key] || '') : '';
+            if (fromGeo) return fromGeo;
+            const fallback = String(fallbackName || '').trim();
+            if (fallback) return fallback;
+            if (/^\d{2}\.\d{1,3}$/.test(String(key || ''))) {
+              const suf = String(Number(String(key).split('.')[1]));
+              return `${suf} CIA PM`;
+            }
+            return String(key || 'SEM_CIA');
+          };
+
+          try {
+            const { dateFrom, dateTo } = this.dateRange();
+            if (!this.isIndicadorIrtd()) {
+              const paramsUnits = new URLSearchParams();
+              paramsUnits.set('indicador', this.indicadorApi);
+              paramsUnits.set('nivel', 'CIA_PM');
+              paramsUnits.set('date_from', dateFrom);
+              paramsUnits.set('date_to', dateTo);
+              paramsUnits.set('limit', '2000');
+              const respUnits = await fetch(this.apiUrl(`/kpi/units?${paramsUnits.toString()}`));
+              const dataUnits = await respUnits.json();
+              const apiUnits = Array.isArray(dataUnits?.unidades) ? dataUnits.unidades : [];
+              const rowsByKey = new Map();
+
+              const ensureRow = (ciaKey, fallbackName = '') => {
+                const key = this.normalizeCiaId(ciaKey || fallbackName);
+                if (!key) return null;
+                if (!rowsByKey.has(key)) {
+                  rowsByKey.set(key, {
+                    cia_key: key,
+                    cia_pm: ciaLabelFrom(key, fallbackName),
+                    total_registros: 0,
+                    meta_parcial: 0,
+                    meta_anual: 0,
+                    plr_parcial: 0,
+                    plr_anual: 0,
+                  });
+                }
+                return rowsByKey.get(key);
+              };
+
+              apiUnits.forEach((u) => {
+                const rawId = String(u?.unidade_id || '').trim();
+                const rawNome = String(u?.unidade_nome || '').trim();
+                const row = ensureRow(rawId || rawNome, rawNome || rawId);
+                if (!row) return;
+                row.total_registros += Number(u?.total_realizado || 0);
+              });
+
+              const metasRows = Array.isArray(this.metaJson) ? this.metaJson : [];
+              metasRows.forEach((u) => {
+                const key = this.normalizeCiaId(u?.id || u?.unidade);
+                const row = ensureRow(key, String(u?.unidade || '').trim());
+                if (!row) return;
+                const metaMonthly = this._metaMonthlyForCiaId(key);
+                row.meta_parcial = Number(this._periodValueFromMonthly(metaMonthly));
+                row.meta_anual = Number(sum12(metaMonthly));
+              });
+
+              const plrRows = Array.isArray(this._plr?.[this.indicadorMeta]) ? this._plr[this.indicadorMeta] : [];
+              plrRows.forEach((r) => {
+                const key = this.normalizeCiaId(r?.CIA || r?.['CIA PM']);
+                const row = ensureRow(key, String(r?.['CIA PM'] || '').trim());
+                if (!row) return;
+                const plrMonthly = this._plrMonthlyForCiaId(key);
+                row.plr_parcial = Number(this._periodValueFromMonthly(plrMonthly));
+                row.plr_anual = Number(sum12(plrMonthly));
+              });
+
+              rowsByKey.forEach((row, key) => {
+                if (!Number(row.meta_parcial) && !Number(row.meta_anual)) {
+                  const metaMonthly = this._metaMonthlyForCiaId(key);
+                  row.meta_parcial = Number(this._periodValueFromMonthly(metaMonthly));
+                  row.meta_anual = Number(sum12(metaMonthly));
+                }
+                if (!Number(row.plr_parcial) && !Number(row.plr_anual)) {
+                  const plrMonthly = this._plrMonthlyForCiaId(key);
+                  row.plr_parcial = Number(this._periodValueFromMonthly(plrMonthly));
+                  row.plr_anual = Number(sum12(plrMonthly));
+                }
+                row.cia_pm = String(row.cia_pm || ciaLabelFrom(key, key));
+              });
+
+              const rows = Array.from(rowsByKey.values());
+              rows.sort((a, b) => {
+                const da = Number(a?.total_registros || 0);
+                const db = Number(b?.total_registros || 0);
+                if (db !== da) return db - da;
+                return String(a?.cia_pm || '').localeCompare(String(b?.cia_pm || ''));
+              });
+
+              this.ciaPresosRows = rows;
+
+              const labels = rows.map((r) => String(r?.cia_pm || 'SEM_CIA'));
+              const byLabel = new Map(rows.map((r) => [String(r?.cia_pm || 'SEM_CIA'), r]));
+              const resultado = rows.map((r) => Number(r?.total_registros || 0));
+              const metaParcial = rows.map((r) => Number(r?.meta_parcial || 0));
+              const plrParcial = rows.map((r) => Number(r?.plr_parcial || 0));
+              const hasPlr = rows.some((r) => Number(r?.plr_parcial || 0) > 0 || Number(r?.plr_anual || 0) > 0);
+              const maxEixo = Math.max(1, ...resultado, ...metaParcial, ...(hasPlr ? plrParcial : [0]));
+              const legendData = hasPlr ? ['Resultado', 'Meta BPM CIA', 'Meta PLR CIA'] : ['Resultado', 'Meta BPM CIA'];
+              const statusByIdx = rows.map((r) => {
+                const real = Number(r?.total_registros || 0);
+                const meta = Number(r?.meta_parcial || 0);
+                const plr = Number(r?.plr_parcial || 0);
+                if (meta <= 0) return 'sem_meta';
+                if (real <= meta) return 'good';
+                if (hasPlr && plr > 0 && real <= plr) return 'alert';
+                return 'bad';
+              });
+              const colorMap = {
+                good: {
+                  grad: ['#86efac', '#22c55e', '#166534'],
+                  shadow: 'rgba(22,163,74,0.4)',
+                  label: 'Dentro da Meta',
+                },
+                alert: {
+                  grad: ['#fde68a', '#f59e0b', '#b45309'],
+                  shadow: 'rgba(245,158,11,0.4)',
+                  label: 'Faixa de Alerta (PLR)',
+                },
+                bad: {
+                  grad: ['#fda4af', '#ef4444', '#991b1b'],
+                  shadow: 'rgba(239,68,68,0.4)',
+                  label: 'Fora da Meta',
+                },
+                sem_meta: {
+                  grad: ['#cbd5e1', '#94a3b8', '#475569'],
+                  shadow: 'rgba(100,116,139,0.32)',
+                  label: 'Sem Meta',
+                },
+              };
+              const buildGrad = (triplet) => new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: triplet[0] },
+                { offset: 0.35, color: triplet[1] },
+                { offset: 1, color: triplet[2] },
+              ]);
+              const resultadoStyled = resultado.map((v, i) => {
+                const style = colorMap[statusByIdx[i] || 'sem_meta'] || colorMap.sem_meta;
+                return {
+                  value: v,
+                  itemStyle: {
+                    color: buildGrad(style.grad),
+                    borderRadius: [12, 12, 3, 3],
+                    borderColor: 'rgba(255,255,255,0.9)',
+                    borderWidth: 1,
+                    shadowColor: style.shadow,
+                    shadowBlur: 14,
+                    shadowOffsetY: 5,
+                  },
+                };
+              });
+
+              if (!this.chartCiaPresos) this.chartCiaPresos = echarts.init(el);
+              const metaAreaSeries = {
+                name: 'Meta BPM CIA',
+                type: 'line',
+                data: metaParcial,
+                symbol: 'none',
+                silent: true,
+                tooltip: { show: false },
+                lineStyle: { width: 0, opacity: 0 },
+                areaStyle: {
+                  color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(180,83,9,0.10)' },
+                    { offset: 1, color: 'rgba(180,83,9,0.01)' },
+                  ]),
+                },
+                z: 2,
+              };
+              const series = [
+                metaAreaSeries,
+                {
+                  name: 'Resultado',
+                  type: 'bar',
+                  data: resultadoStyled,
+                  barWidth: 48,
+                  z: 10,
+                  emphasis: { focus: 'series' },
+                },
+                {
+                  name: 'Relevo',
+                  type: 'pictorialBar',
+                  silent: true,
+                  tooltip: { show: false },
+                  symbol: 'rect',
+                  symbolSize: [48, 10],
+                  symbolOffset: [0, -5],
+                  symbolPosition: 'end',
+                  z: 8,
+                  itemStyle: {
+                    color: 'rgba(255,255,255,0.45)',
+                    shadowColor: 'rgba(255,255,255,0.7)',
+                    shadowBlur: 8,
+                  },
+                  data: resultado,
+                },
+                {
+                  name: 'Meta BPM CIA',
+                  type: 'line',
+                  data: metaParcial,
+                  smooth: true,
+                  symbol: 'circle',
+                  symbolSize: 8,
+                  z: 20,
+                  lineStyle: {
+                    color: '#b45309',
+                    width: 3,
+                    type: 'dashed',
+                    shadowColor: 'rgba(180,83,9,0.35)',
+                    shadowBlur: 8,
+                  },
+                  itemStyle: {
+                    color: '#92400e',
+                    borderColor: '#ffedd5',
+                    borderWidth: 2,
+                  },
+                },
+              ];
+              if (hasPlr) {
+                series.push({
+                  name: 'Meta PLR CIA',
+                  type: 'line',
+                  data: plrParcial,
+                  symbol: 'none',
+                  silent: true,
+                  tooltip: { show: false },
+                  lineStyle: { width: 0, opacity: 0 },
+                  areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                      { offset: 0, color: 'rgba(37,99,235,0.08)' },
+                      { offset: 1, color: 'rgba(37,99,235,0.01)' },
+                    ]),
+                  },
+                  z: 3,
+                });
+                series.push({
+                  name: 'Meta PLR CIA',
+                  type: 'line',
+                  data: plrParcial,
+                  smooth: true,
+                  symbol: 'diamond',
+                  symbolSize: 8,
+                  z: 21,
+                  lineStyle: {
+                    color: '#2563eb',
+                    width: 3,
+                    shadowColor: 'rgba(37,99,235,0.35)',
+                    shadowBlur: 8,
+                  },
+                  itemStyle: {
+                    color: '#1d4ed8',
+                    borderColor: '#dbeafe',
+                    borderWidth: 2,
+                  },
+                });
+              }
+
+              this.chartCiaPresos.setOption({
+                backgroundColor: {
+                  type: 'linear',
+                  x: 0, y: 0, x2: 0, y2: 1,
+                  colorStops: [
+                    { offset: 0, color: 'rgba(248,250,252,0.92)' },
+                    { offset: 1, color: 'rgba(241,245,249,0.65)' },
+                  ],
+                },
+                animationDuration: 900,
+                animationEasing: 'cubicOut',
+                tooltip: {
+                  trigger: 'item',
+                  triggerOn: 'mousemove|click',
+                  show: true,
+                  formatter: (params) => {
+                    const p0 = Array.isArray(params) ? (params[0] || {}) : (params || {});
+                    const idx = Number.isFinite(Number(p0?.dataIndex)) ? Number(p0.dataIndex) : 0;
+                    const row = rows[idx] || {};
+                    const cia = String(row?.cia_pm || p0?.name || p0?.axisValue || '');
+                    const statusKey = statusByIdx[idx] || 'sem_meta';
+                    const statusTxt = colorMap[statusKey]?.label || 'Sem Meta';
+                    return [
+                      `<b>${cia}</b>`,
+                      `Resultado: <b>${fmtNum(row?.total_registros || 0)}</b>`,
+                      `Meta CIA (período): <b>${fmtNum(row?.meta_parcial || 0)}</b>`,
+                      `Meta CIA (anual): <b>${fmtNum(row?.meta_anual || 0)}</b>`,
+                      hasPlr ? `Meta PLR (período): <b>${fmtNum(row?.plr_parcial || 0)}</b>` : null,
+                      hasPlr ? `Meta PLR (anual): <b>${fmtNum(row?.plr_anual || 0)}</b>` : null,
+                      `Status: <b>${statusTxt}</b>`,
+                    ].filter(Boolean).join('<br/>');
+                  },
+                },
+                legend: {
+                  top: 0,
+                  data: legendData,
+                  textStyle: { color: '#334155', fontWeight: 600, fontSize: 11 },
+                },
+                grid: { left: 20, right: 26, top: 46, bottom: 44, containLabel: true },
+                xAxis: {
+                  type: 'category',
+                  data: labels,
+                  axisTick: { show: false },
+                  axisLabel: { interval: 0, rotate: 22, color: '#475569', fontWeight: 600 },
+                  axisLine: { lineStyle: { color: 'rgba(148,163,184,0.45)' } },
+                },
+                yAxis: {
+                  type: 'value',
+                  name: 'Valor',
+                  min: 0,
+                  max: Math.ceil(maxEixo * 1.16),
+                  splitLine: { lineStyle: { color: 'rgba(15,23,42,0.08)' } },
+                  axisLabel: { color: '#64748b', fontWeight: 600 },
+                  nameTextStyle: { color: '#64748b', fontWeight: 700, padding: [0, 0, 4, 0] },
+                },
+                dataZoom: labels.length > 10 ? [
+                  { type: 'inside', startValue: 0, endValue: 9 },
+                  { type: 'slider', height: 14, bottom: 4, startValue: 0, endValue: 9, borderColor: 'rgba(148,163,184,0.25)' },
+                ] : [],
+                series,
+              }, true);
+              return;
+            }
+            const params = new URLSearchParams();
+            params.set('indicador', this.indicadorApi);
+            params.set('date_from', dateFrom);
+            params.set('date_to', dateTo);
+            if ((this.adminToken || '').trim()) params.set('admin_token', (this.adminToken || '').trim());
+            params.set('limit', '100');
+            const resp = await fetch(this.apiUrl(`/reds/cia-presos?${params.toString()}`));
+            const data = await resp.json();
+            const rowsApi = Array.isArray(data?.rows) ? data.rows : [];
+            const apiByCia = new Map();
+            rowsApi.forEach((r) => {
+              const label = String(r?.cia_pm || 'SEM_CIA').trim() || 'SEM_CIA';
+              apiByCia.set(label, {
+                cia_pm: label,
+                total_registros: Number(r?.total_registros || 0),
+                com_preso: Number(r?.com_preso || 0),
+                sem_preso: Number(r?.sem_preso || 0),
+              });
+            });
+
+            const metaUnits = [];
+            const units = Array.isArray(this.metaJson?.unidades) ? this.metaJson.unidades : [];
+            units.forEach((u) => {
+              const tipo = String(u?.tipo || '').toLowerCase();
+              const idNorm = this.normalizeCiaId(u?.id);
+              const nome = String(u?.unidade || '').trim();
+              if (!nome || tipo === 'territorial') return;
+              if (idNorm === '19.0' || idNorm === '19.000') return;
+              metaUnits.push(nome);
+            });
+
+            const orderedLabels = [];
+            const seen = new Set();
+            metaUnits.forEach((name) => {
+              if (seen.has(name)) return;
+              seen.add(name);
+              orderedLabels.push(name);
+            });
+            apiByCia.forEach((_v, key) => {
+              if (seen.has(key)) return;
+              seen.add(key);
+              orderedLabels.push(key);
+            });
+
+            const idxMeta = this.irtdMetaIndex();
+            const rows = orderedLabels.map((cia) => {
+              const fromApi = apiByCia.get(cia) || {
+                cia_pm: cia,
+                total_registros: 0,
+                com_preso: 0,
+                sem_preso: 0,
+              };
+              const annual = Number(idxMeta?.cia?.[this.normalizeCiaId(cia)] || 0);
+              const parcial = this._irtdMetaRange(annual, dateFrom, dateTo);
+              return {
+                ...fromApi,
+                meta_anual: annual,
+                meta_parcial: Number(parcial || 0),
+              };
+            });
+
+            // Keep chart ordered by total registros for easier visual ranking.
+            rows.sort((a, b) => {
+              const da = Number(a?.total_registros || 0);
+              const db = Number(b?.total_registros || 0);
+              if (db !== da) return db - da;
+              return String(a?.cia_pm || '').localeCompare(String(b?.cia_pm || ''));
+            });
+
+            this.ciaPresosRows = rows;
+
+            const labels = rows.map((r) => String(r?.cia_pm || 'SEM_CIA'));
+            const comPreso = rows.map((r) => Number(r?.com_preso || 0));
+            const semPreso = rows.map((r) => Number(r?.sem_preso || 0));
+            const metaParcial = rows.map((r) => Number(r?.meta_parcial || 0));
+            const totais = rows.map((r) => Number(r?.total_registros || 0));
+            const maxEixo = Math.max(1, ...totais, ...metaParcial);
+            const statusByIdx = rows.map((r) => {
+              const real = Number(r?.total_registros || 0);
+              const meta = Number(r?.meta_parcial || 0);
+              if (meta <= 0) return 'sem_meta';
+              return real >= meta ? 'good' : 'bad';
+            });
+            const irtdColorMap = {
+              good: {
+                com: ['#86efac', '#22c55e', '#166534'],
+                sem: ['#bbf7d0', '#4ade80', '#15803d'],
+                shadow: 'rgba(22,163,74,0.4)',
+                label: 'Dentro da Meta',
+              },
+              bad: {
+                com: ['#fda4af', '#ef4444', '#991b1b'],
+                sem: ['#fecaca', '#f87171', '#b91c1c'],
+                shadow: 'rgba(239,68,68,0.4)',
+                label: 'Fora da Meta',
+              },
+              sem_meta: {
+                com: ['#cbd5e1', '#94a3b8', '#475569'],
+                sem: ['#e2e8f0', '#cbd5e1', '#64748b'],
+                shadow: 'rgba(100,116,139,0.32)',
+                label: 'Sem Meta',
+              },
+            };
+            const buildGrad = (triplet) => new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: triplet[0] },
+              { offset: 0.35, color: triplet[1] },
+              { offset: 1, color: triplet[2] },
+            ]);
+            const comPresoStyled = comPreso.map((v, i) => {
+              const st = irtdColorMap[statusByIdx[i] || 'sem_meta'] || irtdColorMap.sem_meta;
+              return {
+                value: v,
+                itemStyle: {
+                  color: buildGrad(st.com),
+                  borderRadius: [12, 12, 3, 3],
+                  borderColor: 'rgba(255,255,255,0.9)',
+                  borderWidth: 1,
+                  shadowColor: st.shadow,
+                  shadowBlur: 14,
+                  shadowOffsetY: 5,
+                },
+              };
+            });
+            const semPresoStyled = semPreso.map((v, i) => {
+              const st = irtdColorMap[statusByIdx[i] || 'sem_meta'] || irtdColorMap.sem_meta;
+              return {
+                value: v,
+                itemStyle: {
+                  color: buildGrad(st.sem),
+                  borderRadius: [12, 12, 3, 3],
+                  borderColor: 'rgba(255,255,255,0.9)',
+                  borderWidth: 1,
+                  shadowColor: st.shadow,
+                  shadowBlur: 14,
+                  shadowOffsetY: 5,
+                },
+              };
+            });
+
+            if (!this.chartCiaPresos) this.chartCiaPresos = echarts.init(el);
+            this.chartCiaPresos.setOption({
+              backgroundColor: {
+                type: 'linear',
+                x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: 'rgba(248,250,252,0.92)' },
+                  { offset: 1, color: 'rgba(241,245,249,0.65)' },
+                ],
+              },
+              animationDuration: 900,
+              animationEasing: 'cubicOut',
+              tooltip: {
+                trigger: 'item',
+                triggerOn: 'mousemove|click',
+                show: true,
+                formatter: (params) => {
+                  const p0 = Array.isArray(params) ? (params[0] || {}) : (params || {});
+                  const idx = Number.isFinite(Number(p0?.dataIndex)) ? Number(p0.dataIndex) : 0;
+                  const row = rows[idx] || {};
+                  const cia = String(row?.cia_pm || p0?.name || p0?.axisValue || '');
+                  const statusTxt = irtdColorMap[statusByIdx[idx] || 'sem_meta']?.label || 'Sem Meta';
+                  const com = Number(row?.com_preso || 0);
+                  const sem = Number(row?.sem_preso || 0);
+                  const tot = Number(row?.total_registros || 0);
+                  const mp = Number(row?.meta_parcial || 0);
+                  const ma = Number(row?.meta_anual || 0);
+                  return [
+                    `<b>${cia}</b>`,
+                    `Com preso: <b>${com}</b>`,
+                    `Sem preso: <b>${sem}</b>`,
+                    `Total: <b>${tot}</b>`,
+                    `Meta parcial: <b>${mp}</b>`,
+                    `Meta anual: <b>${ma}</b>`,
+                    `Status: <b>${statusTxt}</b>`,
+                  ].join('<br/>');
+                },
+              },
+              legend: {
+                top: 0,
+                data: ['Com preso', 'Sem preso', 'Meta parcial CIA'],
+                textStyle: { color: '#334155', fontWeight: 600, fontSize: 11 },
+              },
+              grid: { left: 20, right: 26, top: 46, bottom: 44, containLabel: true },
+              xAxis: {
+                type: 'category',
+                data: labels,
+                axisTick: { show: false },
+                axisLabel: { interval: 0, rotate: 22, color: '#475569', fontWeight: 600 },
+                axisLine: { lineStyle: { color: 'rgba(148,163,184,0.45)' } },
+              },
+              yAxis: {
+                type: 'value',
+                name: 'Registros / Meta',
+                min: 0,
+                max: Math.ceil(maxEixo * 1.16),
+                splitLine: { lineStyle: { color: 'rgba(15,23,42,0.08)' } },
+                axisLabel: { color: '#64748b', fontWeight: 600 },
+                nameTextStyle: { color: '#64748b', fontWeight: 700, padding: [0, 0, 4, 0] },
+              },
+              dataZoom: labels.length > 10 ? [
+                { type: 'inside', startValue: 0, endValue: 9 },
+                { type: 'slider', height: 14, bottom: 4, startValue: 0, endValue: 9, borderColor: 'rgba(148,163,184,0.25)' },
+              ] : [],
+              series: [
+                {
+                  name: 'Com preso',
+                  type: 'bar',
+                  stack: 'total',
+                  data: comPresoStyled,
+                  barWidth: 48,
+                  z: 10,
+                  emphasis: { focus: 'series' },
+                },
+                {
+                  name: 'Sem preso',
+                  type: 'bar',
+                  stack: 'total',
+                  data: semPresoStyled,
+                  barWidth: 48,
+                  z: 10,
+                  emphasis: { focus: 'series' },
+                },
+                {
+                  name: 'Relevo',
+                  type: 'pictorialBar',
+                  stack: 'total',
+                  silent: true,
+                  tooltip: { show: false },
+                  symbol: 'rect',
+                  symbolSize: [48, 10],
+                  symbolOffset: [0, -5],
+                  symbolPosition: 'end',
+                  z: 8,
+                  itemStyle: {
+                    color: 'rgba(255,255,255,0.45)',
+                    shadowColor: 'rgba(255,255,255,0.7)',
+                    shadowBlur: 8,
+                  },
+                  data: totais,
+                },
+                {
+                  name: 'Meta parcial CIA',
+                  type: 'line',
+                  data: metaParcial,
+                  symbol: 'none',
+                  silent: true,
+                  tooltip: { show: false },
+                  lineStyle: { width: 0, opacity: 0 },
+                  areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                      { offset: 0, color: 'rgba(37,99,235,0.12)' },
+                      { offset: 1, color: 'rgba(37,99,235,0.01)' },
+                    ]),
+                  },
+                  z: 2,
+                },
+                {
+                  name: 'Meta parcial CIA',
+                  type: 'line',
+                  data: metaParcial,
+                  smooth: true,
+                  symbol: 'circle',
+                  symbolSize: 8,
+                  z: 20,
+                  lineStyle: {
+                    color: '#1d4ed8',
+                    width: 3,
+                    shadowColor: 'rgba(29,78,216,0.35)',
+                    shadowBlur: 8,
+                  },
+                  itemStyle: {
+                    color: '#1e3a8a',
+                    borderColor: '#dbeafe',
+                    borderWidth: 2,
+                  },
+                },
+              ],
+            }, true);
+          } catch (_) {
+            this.ciaPresosRows = [];
+            if (!this.chartCiaPresos) this.chartCiaPresos = echarts.init(el);
+            this.chartCiaPresos.setOption({
+              title: {
+                text: 'Sem dados para o período selecionado',
+                left: 'center',
+                top: 'middle',
+                textStyle: { color: '#94a3b8', fontSize: 12, fontWeight: 'normal' },
+              },
+              xAxis: { show: false },
+              yAxis: { show: false },
+              series: [],
+            }, true);
+          }
+        },
+
+        async renderMap(nonce) {
+          const el = document.getElementById('map-main');
+          if (!el || typeof L === 'undefined') return;
+          if (nonce !== this._renderNonce) return;
+          if (!this.map) {
+            this.map = L.map(el).setView([-18.5,-41.7], 8);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18, attribution:'' }).addTo(this.map);
+          }
+          if (!this.geo) {
+            const resp = await fetch('./data/mapas/SubSetores_19BPM_GeoJSON.json');
+            this.geo = await resp.json();
+          }
+          const { dateFrom, dateTo } = this.dateRange();
+          const resp = await fetch(this.apiUrl(`/kpi/units?indicador=${encodeURIComponent(this.indicadorApi)}&nivel=${encodeURIComponent(this.kpiNivel)}&date_from=${dateFrom}&date_to=${dateTo}&limit=2000`));
+          const data = await resp.json();
+          const values = {};
+          (data?.unidades || []).forEach(u => { values[String(u.unidade_id)] = Number(u.total_realizado || 0); });
+          const keyFor = (p) => {
+            if (!p) return '';
+            if (this.kpiNivel === 'SUBSETOR') return String(p.SUB_SETOR || p.name || '');
+            if (this.kpiNivel === 'SETOR') return String(p.SETOR || '');
+            if (this.kpiNivel === 'PELOTAO') return String(p.PELOTAO || '');
+            if (this.kpiNivel === 'CIA_PM') return String(p.CIA_PM || '');
+            if (this.kpiNivel === 'MUNICIPIO') return String(p.CD_MUNICIP || p.municipio || '');
+            return String(p.SUB_SETOR || p.name || '');
+          };
+          const color = (v) => {
+            const meta = this.metaBpmAtual();
+            const plr = this.metaPlrAtual();
+            if (this.isHigherBetter()) {
+              if (meta && v >= meta) return '#16a34a';
+              if (this.temPlrIndicador() && plr && v >= plr) return '#f59e0b';
+              return '#dc2626';
+            }
+            if (meta && v <= meta) return '#16a34a';
+            if (this.temPlrIndicador() && plr && v <= plr) return '#f59e0b';
+            return '#dc2626';
+          };
+          if (this.layer) this.layer.remove();
+          this.layer = L.geoJSON(this.geo, {
+            style: (f) => {
+              const k = keyFor(f.properties);
+              const v = values[k] || 0;
+              const isSelected = this.mapSelectedKey && k === this.mapSelectedKey;
+              return {
+                color: isSelected ? '#0f172a' : '#111827',
+                weight: isSelected ? 3 : 1,
+                fillColor: color(v),
+                fillOpacity: isSelected ? 0.75 : 0.55
+              };
+            },
+            onEachFeature: (feature, layer) => {
+              layer.on('click', () => {
+                const key = keyFor(feature.properties);
+                if (!key) return;
+                this.mapSelectedKey = key;
+                this.kpiUnidadeId = key;
+                this.atualizar();
+              });
+            },
+          }).addTo(this.map);
+          try { this.map.fitBounds(this.layer.getBounds(), { padding:[10,10] }); } catch {}
+
+          // REDS points (if available)
+          try {
+            const { dateFrom, dateTo } = this.dateRange();
+            const params = new URLSearchParams();
+            params.set('indicador', this.indicadorApi);
+            params.set('date_from', dateFrom);
+            params.set('date_to', dateTo);
+            params.set('nivel', this.kpiNivel);
+            if (this.kpiUnidadeId) params.set('unidade_id', this.kpiUnidadeId);
+            if ((this.adminToken || '').trim()) params.set('admin_token', (this.adminToken || '').trim());
+            params.set('limit', '5000');
+            const resp = await fetch(this.apiUrl(`/reds/points?${params.toString()}`));
+            const data = await resp.json();
+            if (this.redsLayer) this.redsLayer.remove();
+            this.redsLayer = L.layerGroup();
+            (data?.rows || []).forEach(r => {
+              const lat = Number(String(r.latitude ?? '').replace(',', '.'));
+              const lon = Number(String(r.longitude ?? '').replace(',', '.'));
+              if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+              const tooltip = `
+                <div style="font-size:12px">
+                  <div><b>${r.natureza_descricao || 'Ocorrência'}</b></div>
+                  <div>${r.data_hora_fato || ''}</div>
+                  <div>${r.municipio_nome || ''}</div>
+                  <div>CIA: ${r.CIA_PM || '-'}</div>
+                  <div>Pelotão: ${r.PELOTAO || '-'}</div>
+                  <div>Setor: ${r.SETOR || '-'}</div>
+                  <div>SubSetor: ${r.SUBSETOR || '-'}</div>
+                </div>
+              `;
+              L.circleMarker([lat, lon], {
+                radius: 5,
+                weight: 1,
+                color: '#111827',
+                fillColor: '#dc2626',
+                fillOpacity: 0.85,
+              }).bindTooltip(tooltip).addTo(this.redsLayer);
+            });
+            this.redsLayer.addTo(this.map);
+          } catch {}
+        },
+
+        abrirDetalhes() {
+          this.detalhesOpen = true;
+          if (this.detalhesTab === 'imv') {
+            this.carregarRedsImv();
+          }
+        },
+
+        exportarRedsCsv() {
+          const { dateFrom, dateTo } = this.dateRange();
+          const params = new URLSearchParams();
+          params.set('indicador', this.indicadorApi);
+          params.set('date_from', dateFrom);
+          params.set('date_to', dateTo);
+          params.set('nivel', this.kpiNivel);
+          if (this.kpiUnidadeId) params.set('unidade_id', this.kpiUnidadeId);
+          if ((this.adminToken || '').trim()) params.set('admin_token', (this.adminToken || '').trim());
+          window.open(this.apiUrl(`/reds/export?${params.toString()}`), '_blank');
+        },
+
+        loadImvAnalises() {
+          try {
+            const currentKey = `imvAnalises:${this.indicadorMeta || 'meta_imv'}`;
+            let raw = localStorage.getItem(currentKey);
+            if (!raw && (this.indicadorMeta || 'meta_imv') === 'meta_imv') {
+              raw = localStorage.getItem('imvAnalises');
+            }
+            return raw ? JSON.parse(raw) : {};
+          } catch {
+            return {};
+          }
+        },
+
+        saveImvAnalises() {
+          const currentKey = `imvAnalises:${this.indicadorMeta || 'meta_imv'}`;
+          localStorage.setItem(currentKey, JSON.stringify(this.imvAnalises || {}));
+        },
+
+        crimeKey(row, idx) {
+          const key = row?.numero_ocorrencia || row?.id || row?.numero || '';
+          if (key) return String(key);
+          const fallback = `${row?.data_hora_fato || ''}-${row?.natureza_codigo || ''}-${idx}`;
+          return fallback || String(idx);
+        },
+
+        temAnalise(row, idx) {
+          const key = this.crimeKey(row, idx);
+          return !!this.imvAnalises?.[key];
+        },
+
+        defaultAnalysis() {
+          return {
+            autor_identificado: false,
+            foto_autor: false,
+            qtd_autores: 1,
+            evadiram: '',
+            nomes_autores: '',
+            observacoes: '',
+            anexos: [],
+          };
+        },
+
+        selecionarCrime(row, idx) {
+          const key = this.crimeKey(row, idx);
+          this.selectedCrime = { ...(row || {}), _key: key };
+          const saved = this.imvAnalises?.[key];
+          this.analysisForm = saved ? JSON.parse(JSON.stringify(saved)) : this.defaultAnalysis();
+          this.analiseMsg = '';
+        },
+
+        salvarAnalise() {
+          if (!this.selectedCrime) return;
+          this.imvAnalises[this.selectedCrime._key] = {
+            ...this.analysisForm,
+            updatedAt: new Date().toISOString(),
+          };
+          this.saveImvAnalises();
+          this.analiseMsg = 'Salvo.';
+        },
+
+        limparAnalise() {
+          if (!this.selectedCrime) return;
+          if (this.imvAnalises && this.selectedCrime?._key) {
+            delete this.imvAnalises[this.selectedCrime._key];
+          }
+          this.analysisForm = this.defaultAnalysis();
+          this.saveImvAnalises();
+          this.analiseMsg = 'Formulario limpo.';
+        },
+
+        async carregarRedsImv() {
+          this.redsLoading = true;
+          this.redsError = null;
+          try {
+            const { dateFrom, dateTo } = this.dateRange();
+            const params = new URLSearchParams();
+            params.set('indicador', this.indicadorApi);
+            params.set('date_from', dateFrom);
+            params.set('date_to', dateTo);
+            params.set('nivel', this.kpiNivel);
+            if (this.kpiUnidadeId) params.set('unidade_id', this.kpiUnidadeId);
+            if ((this.adminToken || '').trim()) params.set('admin_token', (this.adminToken || '').trim());
+            params.set('limit', '5000');
+            const resp = await fetch(this.apiUrl(`/reds/points?${params.toString()}`));
+            if (!resp.ok) {
+              throw new Error(`Erro ao consultar API (${resp.status})`);
+            }
+            const data = await resp.json();
+            this.redsRows = Array.isArray(data?.rows) ? data.rows : [];
+            this.redsFetchedAt = new Date().toLocaleString('pt-BR');
+          } catch (e) {
+            this.redsError = e?.message || String(e);
+            this.redsRows = [];
+          } finally {
+            this.redsLoading = false;
+          }
+        },
+
+        async handleFileUpload(evt) {
+          if (!this.selectedCrime) {
+            this.analiseMsg = 'Selecione uma ocorrencia antes de anexar arquivos.';
+            if (evt?.target) evt.target.value = '';
+            return;
+          }
+          const files = Array.from(evt?.target?.files || []);
+          if (!files.length) return;
+          const maxSize = 3 * 1024 * 1024;
+          for (const f of files) {
+            if (f.size > maxSize) {
+              this.analiseMsg = `Arquivo muito grande: ${f.name}`;
+              continue;
+            }
+            const dataUrl = await this.fileToDataUrl(f);
+            this.analysisForm.anexos = this.analysisForm.anexos || [];
+            this.analysisForm.anexos.push({
+              id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+              name: f.name,
+              type: f.type || 'application/octet-stream',
+              size: f.size,
+              dataUrl,
+            });
+          }
+          if (evt?.target) evt.target.value = '';
+          this.salvarAnalise();
+        },
+
+        fileToDataUrl(file) {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Falha ao ler arquivo'));
+            reader.readAsDataURL(file);
+          });
+        },
+
+        abrirAnexo(idx) {
+          this.anexoIndex = idx;
+          this.anexoOpen = true;
+        },
+
+        removerAnexo(idx) {
+          if (!this.analysisForm?.anexos) return;
+          this.analysisForm.anexos.splice(idx, 1);
+          this.salvarAnalise();
+        },
+
+        slideAnexo(dir) {
+          const total = this.analysisForm?.anexos?.length || 0;
+          if (!total) return;
+          let next = this.anexoIndex + dir;
+          if (next < 0) next = total - 1;
+          if (next >= total) next = 0;
+          this.anexoIndex = next;
+        },
+
+        get anexoAtual() {
+          const list = this.analysisForm?.anexos || [];
+          return list[this.anexoIndex] || null;
+        },
+
+        formatDateTime(isoValue) {
+          if (!isoValue) return '-';
+          const d = new Date(isoValue);
+          if (Number.isNaN(d.getTime())) return String(isoValue);
+          return d.toLocaleString('pt-BR');
+        },
+
+        formatNumber(n) {
+          const num = Number(n || 0);
+          if (Number.isInteger(num)) return num.toLocaleString('pt-BR');
+          return num.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+        },
+      };
+    }
+  </script>
+  <script>
+    (async function loadAuthUserBadge() {
+      try {
+        const r = await fetch('/auth/me', { credentials: 'same-origin' });
+        if (!r.ok) return;
+        const data = await r.json();
+        const u = (data || {}).user || {};
+        const badge = document.getElementById('auth-user-badge-analises');
+        const nameEl = document.getElementById('auth-user-name-analises');
+        const metaEl = document.getElementById('auth-user-meta-analises');
+        const adminLink = document.getElementById('auth-admin-link-analises');
+        if (!badge || !nameEl || !metaEl) return;
+        const nome = (u.nome || u.username || '').trim();
+        const nr = (u.numero_policia || u.username || '').trim();
+        const ptgr = (u.posto_graduacao || '').trim();
+        const lot = (u.unidade_setor || '').trim();
+        if (!nome && !nr) return;
+        nameEl.textContent = [ptgr, nome].filter(Boolean).join(' - ') || nome || nr;
+        metaEl.textContent = [nr ? `NR PM ${nr}` : '', lot || 'Sem lotação'].filter(Boolean).join(' | ');
+        badge.classList.remove('hidden');
+        if (adminLink && ((u.perfil || '') === 'admin' || (data.source || '') === 'legacy_env')) {
+          adminLink.classList.remove('hidden');
+        }
+      } catch (_) {
+        // sem sessão ou endpoint indisponível: mantém oculto
+      }
+    })();
+  </script>
+</body>
+</html>
