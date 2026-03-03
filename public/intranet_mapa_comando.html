@@ -1,0 +1,491 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapa Comando 19 BPM</title>
+<link rel="icon" type="image/x-icon" href="./imagens/Icones_logo_19bpm/favicon.ico">
+<style>
+@font-face{
+  font-family:"PMMG Rawline";
+  src:url("./fonts/Rawline_FamiliaCompleta/rawline-400.woff2") format("woff2"),
+      url("./fonts/Rawline_FamiliaCompleta/rawline-400.woff") format("woff");
+  font-weight:400;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:"PMMG Rawline";
+  src:url("./fonts/Rawline_FamiliaCompleta/rawline-500.woff2") format("woff2"),
+      url("./fonts/Rawline_FamiliaCompleta/rawline-500.woff") format("woff");
+  font-weight:500;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:"PMMG Rawline";
+  src:url("./fonts/Rawline_FamiliaCompleta/rawline-600.woff2") format("woff2"),
+      url("./fonts/Rawline_FamiliaCompleta/rawline-600.woff") format("woff");
+  font-weight:600;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:"PMMG Rawline";
+  src:url("./fonts/Rawline_FamiliaCompleta/rawline-700.woff2") format("woff2"),
+      url("./fonts/Rawline_FamiliaCompleta/rawline-700.woff") format("woff");
+  font-weight:700;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:"PMMG Teko";
+  src:url("./fonts/Teko/static/Teko-Regular.woff2") format("woff2"),
+      url("./fonts/Teko/static/Teko-Regular.woff") format("woff");
+  font-weight:400;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:"PMMG Teko";
+  src:url("./fonts/Teko/static/Teko-Medium.woff2") format("woff2"),
+      url("./fonts/Teko/static/Teko-Medium.woff") format("woff");
+  font-weight:500;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:"PMMG Teko";
+  src:url("./fonts/Teko/static/Teko-SemiBold.woff2") format("woff2"),
+      url("./fonts/Teko/static/Teko-SemiBold.woff") format("woff");
+  font-weight:600;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:"PMMG Teko";
+  src:url("./fonts/Teko/static/Teko-Bold.woff2") format("woff2"),
+      url("./fonts/Teko/static/Teko-Bold.woff") format("woff");
+  font-weight:700;
+  font-style:normal;
+  font-display:swap;
+}
+:root{--pmmg-black:#000000;--pmmg-caqui:#a08f63;--pmmg-caqui-esc:#8a7a52;--pmmg-caqui-cl:#b9aa7f;--pmmg-red:#ab2328;--pmmg-red-esc:#8f1d22;--bg:#f3eee2;--panel:#fffdf8;--line:#d8cfbc;--ink:#1b160d;--muted:#6f644c;--acc:var(--pmmg-black);--acc2:var(--pmmg-caqui);--mf:#e7dfcd;--ms:#ad9d76;--mh:#d0be95;--sel:#a08f63}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:"PMMG Rawline","Segoe UI",Tahoma,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 10%,#fbf8ef,#f2ecdc 45%,#e8deca)}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr;gap:10px;padding:10px}.panel{background:#fffdf9e8;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(45,35,15,.08)}
+.toolbar{display:grid;grid-template-columns:repeat(7,minmax(110px,1fr));gap:8px;padding:10px}.field{display:grid;gap:4px}.field label{font-size:12px;color:var(--muted);font-weight:700}.field select,.field button,.field input,.field textarea{height:36px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 10px;color:var(--ink);font-size:13px}
+.field button{cursor:pointer;font-weight:700}.btnP{background:linear-gradient(#1a1a1a,#000);color:#fff;border-color:#000}.btnW{background:linear-gradient(var(--pmmg-caqui-cl),var(--pmmg-caqui));color:#1c160b;border-color:var(--pmmg-caqui-esc)}
+.layout{min-height:0;display:grid;grid-template-columns:minmax(0,1.75fr) minmax(320px,.95fr);gap:10px}.mapWrap{position:relative;overflow:hidden}.badges{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:8px;z-index:3;pointer-events:none}
+.badge{pointer-events:auto;background:#ffffffe9;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted);font-weight:600}#mapSvg{width:100%;height:100%;display:block}
+.shape{fill:var(--mf);stroke:var(--ms);stroke-width:1.2;vector-effect:non-scaling-stroke;cursor:pointer;transition:.12s}.shape:hover{fill:var(--mh)}.shape.dim{opacity:.2}.shape.sel{fill:var(--sel);stroke:var(--pmmg-black);stroke-width:1.5}
+.tip{position:fixed;z-index:30;max-width:430px;display:none;pointer-events:none;background:linear-gradient(180deg,#201a10f6,#0f0c07f4);color:#f8f3e7;border:1px solid rgba(160,143,99,.35);border-radius:14px;padding:10px;box-shadow:0 14px 32px rgba(0,0,0,.28)}
+.tip .r{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:start}
+.tip img{width:52px;height:52px;border-radius:11px;object-fit:cover;background:#3f3624;border:1px solid rgba(160,143,99,.28)}
+.tip .t{font-size:12px;line-height:1.22;display:grid;gap:2px;min-width:0}
+.tip .mun{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
+.tip .scope{font-size:11px;color:#e6d9b8}
+.tip .cmd{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tip .nr{font-size:11px;color:#e6d9b8}
+.tip .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.tip .pill{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:999px;background:rgba(160,143,99,.12);border:1px solid rgba(160,143,99,.22);font-size:11px;color:#f3ebda}
+.tip .ic{width:12px;height:12px;display:inline-block;opacity:.95}
+.tip .ic svg{width:12px;height:12px;display:block;fill:currentColor}
+.map-label{font-family:"PMMG Teko","PMMG Rawline","Segoe UI",Tahoma,sans-serif;font-size:16px;font-weight:600;letter-spacing:.03em;fill:#4b3d23;fill-opacity:.62;stroke:#fffaf0;stroke-opacity:.92;stroke-width:3px;paint-order:stroke fill;pointer-events:none;text-anchor:middle;user-select:none}
+.side{display:grid;grid-template-rows:auto auto 1fr;gap:10px;padding:10px;min-height:0}.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.k{background:#fffef9;border:1px solid var(--line);border-radius:12px;padding:10px}.k .n{font-family:"PMMG Teko","PMMG Rawline","Segoe UI",Tahoma,sans-serif;font-size:32px;line-height:.9;font-weight:700;letter-spacing:.02em}.k .l{font-size:12px;color:var(--muted);font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.card{background:#fffef9;border:1px solid var(--line);border-radius:12px;padding:8px;display:grid;gap:6px;min-height:120px}.card.click{cursor:pointer}.card.click:hover{border-color:var(--pmmg-caqui);background:#fff9ee}.card .h{font-family:"PMMG Teko","PMMG Rawline","Segoe UI",Tahoma,sans-serif;font-size:16px;line-height:.95;color:var(--pmmg-caqui-esc);font-weight:600;letter-spacing:.04em;text-transform:uppercase}.ch{display:grid;grid-template-columns:46px 1fr;gap:8px;align-items:center}.ch img{width:46px;height:46px;border-radius:10px;object-fit:cover;border:1px solid var(--line);background:#efe6d4}.cn{font-size:13px;font-weight:800;line-height:1.15}.cm{font-size:12px;color:var(--muted);line-height:1.2}
+.list{background:#fffef9;border:1px solid var(--line);border-radius:12px;display:grid;grid-template-rows:auto 1fr;min-height:0;overflow:hidden}.list .ttl{padding:10px;border-bottom:1px solid var(--line);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:8px}.list .ttl .acts{display:flex;gap:6px;align-items:center}.list .ttl button{height:28px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 8px;font-size:11px;font-weight:700;cursor:pointer}.list .ttl button.mode-on{background:#f5efdf;border-color:var(--pmmg-caqui);color:#3e321d}.list .ttl>span{font-family:"PMMG Teko","PMMG Rawline","Segoe UI",Tahoma,sans-serif;font-size:22px;line-height:.9;letter-spacing:.02em}.items{overflow:auto;padding:8px;display:grid;gap:6px}
+.it{border:1px solid var(--line);border-radius:10px;padding:8px;background:#fffef9;cursor:pointer}.it:hover{border-color:var(--pmmg-caqui)}.it.sel{border-color:var(--pmmg-caqui-esc);background:#f6f0e1}.it .t{font-family:"PMMG Teko","PMMG Rawline","Segoe UI",Tahoma,sans-serif;font-size:21px;line-height:.9;font-weight:600;letter-spacing:.02em}.it .m{font-size:12px;color:var(--muted)}
+.modalBg{position:fixed;inset:0;background:rgba(12,10,7,.72);display:none;align-items:center;justify-content:center;padding:12px;z-index:40}.modal{width:min(1100px,100%);max-height:92vh;overflow:auto;background:#fffdf8;border:1px solid var(--line);border-radius:16px;display:grid;grid-template-rows:auto 1fr}
+.mh{position:sticky;top:0;background:#fffaf0f0;border-bottom:1px solid var(--line);padding:12px;display:flex;justify-content:space-between;align-items:center;z-index:1}.mh h2{margin:0;font-family:"PMMG Teko","PMMG Rawline","Segoe UI",Tahoma,sans-serif;font-size:30px;line-height:.9;letter-spacing:.02em;font-weight:600}.x{width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;font-weight:800}
+.mb{padding:12px;display:grid;grid-template-columns:1.05fr .95fr;gap:12px}.stack{display:grid;gap:10px;align-content:start}.box{background:#fffef9;border:1px solid var(--line);border-radius:12px;padding:10px}.box h3{margin:0 0 8px;font-family:"PMMG Teko","PMMG Rawline","Segoe UI",Tahoma,sans-serif;font-size:23px;line-height:.95;font-weight:600;letter-spacing:.02em}.kv{display:grid;grid-template-columns:130px 1fr;gap:6px 8px;font-size:13px}.kv div:nth-child(odd){color:var(--muted);font-weight:700}
+.msg{font-size:12px;padding:8px;border:1px solid var(--line);border-radius:10px;background:#f7f1e4;color:var(--muted)}.msg.err{background:#fff2f2;border-color:#e4bcc0;color:var(--pmmg-red-esc)}
+.histTabs{display:none;gap:6px;grid-template-columns:repeat(2,minmax(0,1fr));margin:8px 0}.histTabs.show{display:grid}.histTabs button{height:32px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:12px;font-weight:700;cursor:pointer}.histTabs button.on{background:#f5efdf;border-color:var(--pmmg-caqui);color:#3e321d}
+.hist{display:grid;gap:8px;max-height:280px;overflow:auto}.hr{border:1px solid var(--line);border-radius:10px;padding:8px;background:#fffef9;display:grid;gap:6px}.hrTop{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:start}.hrAva{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--line);background:#efe6d4}.hr .l{font-size:12px}.hr .l.role{font-weight:700;color:#5a4c30}.ha{display:flex;gap:6px;flex-wrap:wrap}.ha select,.ha button{height:30px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 8px;font-size:12px}.ha button.mode-on{background:#f5efdf;border-color:var(--pmmg-caqui);color:#3e321d;font-weight:700}
+.fg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.fg .full{grid-column:1/-1}.fg label{display:grid;gap:4px;font-size:12px;color:var(--muted);font-weight:700}.fg input,.fg select,.fg textarea{width:100%;border:1px solid var(--line);border-radius:9px;background:#fff;padding:8px 10px;font-size:13px;color:var(--ink)}.fg textarea{min-height:70px;resize:vertical}.act{display:flex;justify-content:flex-end;gap:8px}.hidden{display:none!important}
+.xgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:45vh;overflow:auto;padding:2px}
+.xrow{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;background:#fffef9;padding:8px}
+.xrow input{width:16px;height:16px;margin:0}
+.xrow span{font-size:13px}
+.xhelp{font-size:12px;color:var(--muted)}
+@media (max-width:1100px){.toolbar{grid-template-columns:repeat(4,minmax(110px,1fr))}.layout{grid-template-columns:1fr;grid-template-rows:minmax(360px,55vh) auto}.mb{grid-template-columns:1fr}}
+@media (max-width:700px){.toolbar{grid-template-columns:repeat(2,minmax(110px,1fr))}.cards{grid-template-columns:1fr}.kv{grid-template-columns:1fr}.xgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar panel">
+    <div class="field"><label>Cia</label><select id="fCia"><option value="">Todas</option></select></div>
+    <div class="field" style="display:none"><label>Pelotão (descr.)</label><select id="fPel"><option value="">Todos</option></select></div>
+    <div class="field"><label>Pelotão (cód. 19.xx.x)</label><select id="fSetor"><option value="">Todos</option></select></div>
+    <div class="field"><label>SubSetor</label><select id="fSub"><option value="">Todos</option></select></div>
+    <div class="field"><label>Município</label><select id="fMun"><option value="">Todos</option></select></div>
+    <div class="field"><label>&nbsp;</label><button id="bClear">Limpar</button></div>
+    <div class="field"><label>&nbsp;</label><div style="display:flex;gap:8px"><button id="bRefresh" class="btnP" style="flex:1">Atualizar</button><button id="bXlsx" class="btnW" style="flex:1">XLSX</button></div></div>
+  </div>
+  <div class="layout">
+    <section class="panel mapWrap">
+      <div class="badges"><div class="badge" id="stat">Carregando...</div><div class="badge" id="viewer">Perfil: -</div></div>
+      <svg id="mapSvg" viewBox="0 0 1000 1000" aria-label="Mapa subsetores"></svg>
+      <div class="tip" id="tip"></div>
+    </section>
+    <aside class="panel side">
+      <div class="kpis">
+        <div class="k"><div class="n" id="kAll">0</div><div class="l">Subsetores</div></div>
+        <div class="k"><div class="n" id="kVis">0</div><div class="l">Visíveis</div></div>
+        <div class="k"><div class="n" id="kMun">0</div><div class="l">Municípios</div></div>
+        <div class="k"><div class="n" id="kSel">-</div><div class="l">Selecionado</div></div>
+      </div>
+      <div class="cards hidden" id="cards19"></div>
+      <div class="cards" id="cards"></div>
+      <div class="list">
+        <div class="ttl">
+          <span id="listTitle">Subsetores (clique)</span>
+          <div class="acts">
+            <button id="bBackList" class="hidden" type="button">Voltar Lista</button>
+            <button id="bSelAtualizar" class="hidden" type="button">Atualizar SubSetor</button>
+            <button id="bSelSubstituir" class="hidden" type="button">Substituir</button>
+            <button id="bSelInterino" class="hidden" type="button">Interino</button>
+          </div>
+        </div>
+        <div class="items hidden" id="selInfoWrap">
+          <div class="msg" id="selInfoMsg">Clique em um SubSetor no mapa para ver detalhes aqui.</div>
+          <div class="kv" id="selInfoKv"></div>
+        </div>
+        <div class="items" id="items"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="modalBg" id="mBg" aria-hidden="true">
+  <div class="modal">
+    <div class="mh"><h2 id="mTitle">Detalhes</h2><button class="x" id="mClose">X</button></div>
+    <div class="mb">
+      <div class="stack">
+        <div class="box"><h3>Dados da Área</h3><div class="kv" id="mKv"></div></div>
+        <div class="box"><h3>Histórico (escopo selecionado)</h3><div class="msg" id="mHistMsg">Selecione uma área.</div><div class="histTabs" id="mHistTabs"><button type="button" id="mHistTabCmt">CMT</button><button type="button" id="mHistTabSub">SUBCMT</button></div><div class="hist" id="mHist"></div></div>
+      </div>
+      <div class="stack">
+        <div class="box">
+          <h3>Cadastro / Substituição</h3>
+          <div class="ha" style="margin:0 0 8px 0">
+            <button type="button" id="bModeAtualizar">Atualizar dados</button>
+            <button type="button" id="bModeSubstituir">Substituir</button>
+            <button type="button" id="bModeInterino">Interino</button>
+          </div>
+          <div class="msg" id="mEditMsg">Somente Admin ou Cmt de Cia responsável pode alterar.</div>
+          <form id="fAssign" class="fg">
+            <label>Escopo<select name="scope_type"><option value="SUBSETOR">SubSetor</option><option value="SETOR">Setor</option><option value="PELOTAO">Pelotão</option><option value="CIA">Cia</option><option value="BPM">19º BPM</option></select></label>
+            <label>Vínculo<select name="role_kind"><option value="titular">Cmt</option><option value="interino">Interino</option><option value="subcmt">SubCmt</option></select></label>
+            <label>Situação<select name="situacao"><option value="ativo">Ativo</option><option value="afastado">Afastado</option><option value="inativo">Inativo</option></select></label>
+            <label>Data entrada<input type="date" name="data_inicio"></label>
+            <label>Número Polícia<input name="numero_policia"></label>
+            <label>Posto/Graduação<select name="posto_graduacao"><option value="">Selecione</option><option value="TEN CEL PM">TEN CEL PM</option><option value="MAJ PM">MAJ PM</option><option value="CAP PM">CAP PM</option><option value="1 TEN PM">1 TEN PM</option><option value="2 TEN PM">2 TEN PM</option><option value="SUB TEN PM">SUB TEN PM</option><option value="1 SGT PM">1 SGT PM</option><option value="2 SGT PM">2 SGT PM</option><option value="3 SGT PM">3 SGT PM</option><option value="CB PM">CB PM</option><option value="SD PM">SD PM</option></select></label>
+            <label>Nome Guerra<input name="nome_guerra"></label>
+            <label>Nome Completo<input name="nome_completo"></label>
+            <label>Telefone<input name="telefone"></label>
+            <label>E-mail<input type="email" name="email"></label>
+            <label class="full">URL Foto<input id="fotoUrl" name="foto_url"></label>
+            <label>População Município<input id="popMunicipio" inputmode="numeric" placeholder="Somente números"></label>
+            <label>Efetivo da Fração<input id="efetivoFracao" inputmode="numeric" placeholder="Somente números"></label>
+            <div class="full act" style="justify-content:flex-start"><button type="button" id="bSaveAreaMeta">Salvar Dados da Área</button></div>
+            <label class="full">Upload foto (MinIO)<div style="display:flex;gap:8px"><input id="fotoFile" type="file" accept="image/*" style="flex:1;height:36px;padding:5px 8px"><button type="button" id="bFoto">Enviar Foto</button></div></label>
+            <label class="full">Motivo/Obs<textarea name="motivo" placeholder="Ex: Interino durante férias/licença"></textarea></label>
+            <label class="full" style="display:flex;align-items:center;gap:8px;color:var(--ink)"><input type="checkbox" name="replace_existing_same_role" checked style="width:auto;height:auto;margin:0">Fechar período do vínculo anterior do mesmo tipo (substituição)</label>
+            <div class="full act"><button type="submit" class="btnP">Salvar Comando</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modalBg" id="xBg" aria-hidden="true">
+  <div class="modal" style="width:min(760px,100%);max-height:88vh">
+    <div class="mh">
+      <h2>Exportar XLSX</h2>
+      <button class="x" id="xClose" type="button">X</button>
+    </div>
+    <div class="mb" style="grid-template-columns:1fr">
+      <div class="stack">
+        <div class="box">
+          <h3>Colunas da extração</h3>
+          <div class="xhelp" style="margin:0 0 8px 0">A exportação respeita os filtros atuais da tela. Selecione as colunas desejadas.</div>
+          <div class="ha" style="margin:0 0 8px 0">
+            <button type="button" id="xSelAll">Selecionar tudo</button>
+            <button type="button" id="xSelCore">Padrão (operacional)</button>
+            <button type="button" id="xSelNone">Limpar seleção</button>
+          </div>
+          <div class="xgrid" id="xCols"></div>
+          <div class="act" style="margin-top:10px;justify-content:space-between">
+            <div class="xhelp" id="xCount">0 colunas selecionadas</div>
+            <div style="display:flex;gap:8px">
+              <button type="button" id="xCancel">Cancelar</button>
+              <button type="button" id="xExport" class="btnP">Gerar XLSX</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const Q=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+const S={data:null,paths:new Map(),sel:null,ff:[],filters:{cia:'',pelotao:'',setor:'',subsetor:'',municipio:''},modalF:null,sideMode:'list',editMode:'substituir',lastModalOpts:null,histTab:'cmt'};
+const E={svg:Q('mapSvg'),tip:Q('tip'),stat:Q('stat'),viewer:Q('viewer'),cards19:Q('cards19'),cards:Q('cards'),items:Q('items'),listTitle:Q('listTitle'),selInfoWrap:Q('selInfoWrap'),selInfoMsg:Q('selInfoMsg'),selInfoKv:Q('selInfoKv'),bBackList:Q('bBackList'),bSelAtualizar:Q('bSelAtualizar'),bSelSubstituir:Q('bSelSubstituir'),bSelInterino:Q('bSelInterino'),bModeAtualizar:Q('bModeAtualizar'),bModeSubstituir:Q('bModeSubstituir'),bModeInterino:Q('bModeInterino'),kAll:Q('kAll'),kVis:Q('kVis'),kMun:Q('kMun'),kSel:Q('kSel'),mBg:Q('mBg'),mTitle:Q('mTitle'),mKv:Q('mKv'),mHistMsg:Q('mHistMsg'),mHistTabs:Q('mHistTabs'),mHistTabCmt:Q('mHistTabCmt'),mHistTabSub:Q('mHistTabSub'),mHist:Q('mHist'),mEditMsg:Q('mEditMsg'),fAssign:Q('fAssign'),fotoFile:Q('fotoFile'),fotoUrl:Q('fotoUrl'),popMunicipio:Q('popMunicipio'),efetivoFracao:Q('efetivoFracao'),bSaveAreaMeta:Q('bSaveAreaMeta'),xBg:Q('xBg'),xClose:Q('xClose'),xCancel:Q('xCancel'),xSelAll:Q('xSelAll'),xSelCore:Q('xSelCore'),xSelNone:Q('xSelNone'),xCols:Q('xCols'),xExport:Q('xExport'),xCount:Q('xCount')};
+const nice=s=>{s=String(s??'').trim();return s||'-'}; const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const FALLBACK_AVATAR='./imagens/Icones_logo_19bpm/android-chrome-192x192.png';
+function normAsciiUpper(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim()}
+function isTeoOuNovoCruzeiro(mun){const n=normAsciiUpper(mun);return n==='TEOFILO OTONI'||n==='NOVO CRUZEIRO'}
+function ensureSelectHasValue(sel,val,label){if(!sel)return;const v=String(val??'').trim();if(!v)return;const has=[...sel.options].some(o=>String(o.value||'')===v);if(has)return;const o=document.createElement('option');o.value=v;o.textContent=label||v;o.dataset.custom='1';sel.appendChild(o)}
+function commandRoleLabel(scopeType, roleKind, ctx={}){
+  const st=String(scopeType||'SUBSETOR').toUpperCase();
+  const rk=String(roleKind||'titular').toLowerCase();
+  const scopeCode=String(ctx.scopeCode||ctx.scope_code||'').trim();
+  const mun=String(ctx.municipio||ctx.municipio_nome||'').trim();
+  if(rk==='subcmt') return st==='BPM'?'SUBCMT BPM':'SUBCMT';
+  if(rk==='interino'){
+    if(st==='BPM') return 'CMT BPM (INTERINO)';
+    if(st==='CIA') return `CMT ${scopeCode||'CIA'} (INTERINO)`;
+    if(st==='PELOTAO'||st==='SETOR') return `CMT ${scopeCode||'PELOTÃO'} (INTERINO)`;
+    if(st==='SUBSETOR') return isTeoOuNovoCruzeiro(mun)?'CMT SUBSETOR (INTERINO)':'CMT DESTACAMENTO (INTERINO)';
+    return 'INTERINO';
+  }
+  if(st==='BPM') return 'CMT BPM';
+  if(st==='CIA') return `CMT ${scopeCode||'CIA'}`;
+  if(st==='PELOTAO'||st==='SETOR') return `CMT ${scopeCode||'PELOTÃO'}`;
+  if(st==='SUBSETOR') return isTeoOuNovoCruzeiro(mun)?'CMT SUBSETOR':'CMT DESTACAMENTO';
+  return 'CMT';
+}
+function currentRoleLabelContext(feature){
+  const f=feature||S.modalF||null, p=f?.properties||{};
+  const scopeType=String(E.fAssign?.scope_type?.value||'SUBSETOR').toUpperCase();
+  let scopeCode='';
+  if(scopeType==='BPM') scopeCode='19 BPM';
+  else if(scopeType==='CIA') scopeCode=String(p.cia_code||'');
+  else if(scopeType==='PELOTAO') scopeCode=String(p.pelotao_code||'');
+  else if(scopeType==='SETOR') scopeCode=String(p.setor_code||'');
+  else scopeCode=String(p.subsetor_code||'');
+  return {scopeType,scopeCode,municipio_nome:String(p.municipio_nome||'')};
+}
+function syncRoleKindOptionLabels(feature){
+  const sel=E.fAssign?.role_kind; if(!sel) return;
+  const ctx=currentRoleLabelContext(feature);
+  [...sel.options].forEach(o=>{
+    const v=String(o.value||'').toLowerCase();
+    if(v==='titular') o.textContent=commandRoleLabel(ctx.scopeType,'titular',ctx);
+    else if(v==='subcmt') o.textContent=ctx.scopeType==='BPM'?'SUBCMT BPM':'SubCmt';
+    else if(v==='interino') o.textContent=commandRoleLabel(ctx.scopeType,'interino',ctx);
+  });
+}
+function applyHistTab(tab='cmt'){
+  S.histTab=(tab==='subcmt'?'subcmt':'cmt');
+  const isSub=S.histTab==='subcmt';
+  if(E.mHistTabCmt) E.mHistTabCmt.classList.toggle('on',!isSub);
+  if(E.mHistTabSub) E.mHistTabSub.classList.toggle('on',isSub);
+  [...(E.mHist?.querySelectorAll('.hr[data-hist-tab]')||[])].forEach(n=>{
+    const t=String(n.dataset.histTab||'cmt');
+    n.classList.toggle('hidden', t!==S.histTab);
+  });
+}
+function syncHistTabs(scopeType){
+  const isBpm=String(scopeType||'').toUpperCase()==='BPM';
+  if(E.mHistTabs) E.mHistTabs.classList.toggle('show',isBpm);
+  if(!isBpm){
+    [...(E.mHist?.querySelectorAll('.hr[data-hist-tab]')||[])].forEach(n=>n.classList.remove('hidden'));
+    return;
+  }
+  const preferred=String(E.fAssign?.role_kind?.value||'').toLowerCase()==='subcmt'?'subcmt':(S.histTab||'cmt');
+  applyHistTab(preferred);
+}
+const XLSX_COLS=[['municipio','Município'],['bairro','Bairro'],['codigo_municipio','Código Município'],['cia_pm','Cia PM'],['pelotao','Pelotão'],['setor','Pelotão (cód.)'],['subsetor','SubSetor'],['area_aprox','Área (aprox.)'],['populacao','População'],['efetivo_fracao','Efetivo Fração'],['cmt_cia','Cmt Cia'],['nr_pm_cia','Nr PM Cia'],['cmt_pelotao','Cmt Pelotão'],['nr_pm_pelotao','Nr PM Pelotão'],['cmt_setor','Cmt Setor'],['nr_pm_setor','Nr PM Setor'],['cmt_subsetor','Cmt SubSetor'],['nr_pm_subsetor','Nr PM SubSetor']];
+const XLSX_CORE_COLS=['municipio','bairro','cia_pm','setor','subsetor','populacao'];
+const gid=f=>String(f?.properties?.id||f?.properties?.subsetor_code||'');
+function iterCoords(g,fn){if(!g)return;const c=g.coordinates||[];if(g.type==='Polygon'){c.forEach(r=>r.forEach(([x,y])=>fn(x,y)))}else if(g.type==='MultiPolygon'){c.forEach(p=>p.forEach(r=>r.forEach(([x,y])=>fn(x,y))))}}
+function bbox(fs){let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity;fs.forEach(f=>iterCoords(f.geometry,(x,y)=>{if(x<a)a=x;if(y<b)b=y;if(x>c)c=x;if(y>d)d=y}));return{minX:a,minY:b,maxX:c,maxY:d}}
+function proj(x,y,b){const p=24,W=1000,H=1000,dx=Math.max(1e-9,b.maxX-b.minX),dy=Math.max(1e-9,b.maxY-b.minY),s=Math.min((W-p*2)/dx,(H-p*2)/dy),ox=(W-dx*s)/2,oy=(H-dy*s)/2;return[ox+(x-b.minX)*s,H-(oy+(y-b.minY)*s)]}
+function ringPath(r,b){let d='';r.forEach(([x,y],i)=>{const [px,py]=proj(x,y,b);d+=`${i?'L':'M'} ${px.toFixed(2)} ${py.toFixed(2)} `});return d+'Z '}
+function gPath(g,b){if(!g)return'';let d='';const c=g.coordinates||[];if(g.type==='Polygon')c.forEach(r=>d+=ringPath(r,b));else if(g.type==='MultiPolygon')c.forEach(p=>p.forEach(r=>d+=ringPath(r,b)));return d.trim()}
+function fillSel(el,vals,keep=''){const cur=keep||el.value||'';const h=el.options[0]?.outerHTML||'<option value=\"\">Todos</option>';el.innerHTML=h;[...vals].sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;el.appendChild(o)});if(![...vals].includes(cur))el.value=''}
+function xlsxCheckedKeys(){return [...(E.xCols?.querySelectorAll('input[type="checkbox"][data-col]')||[])].filter(i=>i.checked).map(i=>i.dataset.col)}
+function updateXlsxCount(){const n=xlsxCheckedKeys().length;E.xCount.textContent=`${n} coluna${n===1?'':'s'} selecionada${n===1?'':'s'}`}
+function markXlsxCols(keys){const set=new Set(keys||[]);[...(E.xCols?.querySelectorAll('input[type="checkbox"][data-col]')||[])].forEach(i=>{i.checked=set.has(i.dataset.col)});updateXlsxCount()}
+function buildXlsxColsUI(){if(!E.xCols)return;E.xCols.innerHTML=XLSX_COLS.map(([k,l])=>`<label class="xrow"><input type="checkbox" data-col="${esc(k)}" checked><span>${esc(l)}</span></label>`).join('');E.xCols.querySelectorAll('input[type="checkbox"]').forEach(i=>i.onchange=updateXlsxCount);markXlsxCols(XLSX_CORE_COLS)}
+function openXlsxModal(){if(!E.xBg)return;E.xBg.style.display='flex';E.xBg.setAttribute('aria-hidden','false');if(!E.xCols.children.length)buildXlsxColsUI();updateXlsxCount()}
+function closeXlsxModal(){if(!E.xBg)return;E.xBg.style.display='none';E.xBg.setAttribute('aria-hidden','true')}
+function exportXlsxSelected(){const cols=xlsxCheckedKeys();if(!cols.length){alert('Selecione ao menos uma coluna para exportar.');return}const u=new URL('/intranet/mapa-comando/export.xlsx',window.location.origin);Object.entries(S.filters||{}).forEach(([k,v])=>{if(v)u.searchParams.set(k,String(v))});u.searchParams.set('columns',cols.join(','));window.open(u.toString(),'_blank');closeXlsxModal()}
+function canEdit(f){const v=S.data?.viewer||{};return !!(v.is_admin || (Array.isArray(v.editable_cias)&&v.editable_cias.includes(f?.properties?.cia_code)))}
+function hasAnyFilter(){const f=S.filters||{};return !!(f.cia||f.pelotao||f.setor||f.subsetor||f.municipio)}
+function fPass(p){const f=S.filters;return (!f.cia||p.cia_code===f.cia)&&(!f.pelotao||p.pelotao_code===f.pelotao)&&(!f.setor||p.setor_code===f.setor)&&(!f.subsetor||p.subsetor_code===f.subsetor)&&(!f.municipio||p.municipio_nome===f.municipio)}
+function fPassExcept(p,skip){const f=S.filters;return (skip==='cia'||!f.cia||p.cia_code===f.cia)&&(skip==='pelotao'||!f.pelotao||p.pelotao_code===f.pelotao)&&(skip==='setor'||!f.setor||p.setor_code===f.setor)&&(skip==='subsetor'||!f.subsetor||p.subsetor_code===f.subsetor)&&(skip==='municipio'||!f.municipio||p.municipio_nome===f.municipio)}
+function syncCascadeOptions(){const all=S.data?.geojson?.features||[];[['fCia','cia','cia_code'],['fPel','pelotao','pelotao_code'],['fSetor','setor','setor_code'],['fSub','subsetor','subsetor_code'],['fMun','municipio','municipio_nome']].forEach(([id,key,prop])=>{const vals=[...new Set(all.filter(f=>fPassExcept(f.properties||{},key)).map(f=>f.properties?.[prop]).filter(Boolean))];fillSel(Q(id),new Set(vals),S.filters[key]);if(S.filters[key]&&!vals.includes(S.filters[key])){S.filters[key]='';Q(id).value=''}})}
+function cmdLine(card){const c=card?.commander||{};return `${c.posto_graduacao?c.posto_graduacao+'/':''}${c.nome_guerra||'Não definido'} - ${c.numero_policia||'-'}`}
+function fmtBrNum(v){if(v===null||v===undefined||v==='')return'-';const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat('pt-BR').format(n):String(v)}
+function bpmTotals(){const ov=S.data?.overview_19bpm||{}, m=ov.metrics||{}, fs=S.data?.geojson?.features||[];let pop=Number(m.populacao), efet=Number(m.efetivo);if(!Number.isFinite(pop)){pop=fs.reduce((a,f)=>a+(Number(f?.properties?.populacao_municipio)||0),0)}if(!Number.isFinite(efet)){efet=fs.reduce((a,f)=>a+(Number(f?.properties?.efetivo_fracao)||0),0)}return{populacao:pop||0,efetivo:efet||0}}
+function renderModalAreaKv(f){const st=String(E.fAssign?.scope_type?.value||'SUBSETOR').toUpperCase();if(st==='BPM'){const ov=S.data?.overview_19bpm||{}, t=bpmTotals();E.mTitle.textContent='Detalhes do 19 BPM';kvRows([['Unidade','19 BPM'],['Abrangência',`${(S.data?.geojson?.features||[]).length||0} subsetores`],['População (total)',fmtBrNum(t.populacao)],['Efetivo (total)',fmtBrNum(t.efetivo)],['Cmt 19º BPM',cmdLine(ov.comandante||{})],['SubCmt 19º BPM',cmdLine(ov.subcomandante||{})]]);E.popMunicipio.value=t.populacao?String(t.populacao):'';E.efetivoFracao.value=t.efetivo?String(t.efetivo):'';return}const p=f?.properties||{}, c=p.cards||{}, pelCmd=(c.setor?.assignment?.id?(c.setor||{}):(c.pelotao||c.setor||{}));E.mTitle.textContent=`Detalhes do ${p.subsetor_code||p.id||'SubSetor'}`;kvRows([['Município',p.municipio_nome],['Código Município',p.cd_municipio],['Cia',p.cia_code],['Pelotão',([p.setor_code,p.pelotao_code].filter(Boolean).join(' · ')||'-')],['SubSetor',p.subsetor_code],['Área (aprox.)',p.area??'-'],['População',p.populacao_municipio??'-'],['Efetivo da Fração',p.efetivo_fracao??'-'],['Cmt Cia',cmdLine(c.cia)],['Cmt Pelotão',cmdLine(pelCmd)],['Cmt SubSetor',cmdLine(c.subsetor)]]);E.popMunicipio.value=String(p.populacao_municipio??'');E.efetivoFracao.value=String(p.efetivo_fracao??'')}
+function syncAreaMetaControls(){const ok=!!S.modalF&&canEdit(S.modalF), isSubsetor=String(E.fAssign?.scope_type?.value||'SUBSETOR').toUpperCase()==='SUBSETOR';E.popMunicipio.disabled=!(ok&&isSubsetor);E.efetivoFracao.disabled=!(ok&&isSubsetor);E.bSaveAreaMeta.disabled=!(ok&&isSubsetor)}
+function cardHtml(title,card,scopeType,roleKind='titular'){const c=card?.commander||{}, fallback='./imagens/Icones_logo_19bpm/android-chrome-192x192.png', clickable=scopeType?' click':'', hasA=!!card?.assignment?.id;let nomeDisplay=String(c.nome_guerra||'Não definido');if(String(title||'').toLowerCase().includes('pelotão'))nomeDisplay=nomeDisplay.replace(/setor/gi,'Pelotão');return `<div class="card${clickable}" ${scopeType?`data-card-scope="${esc(scopeType)}" data-card-role="${esc(roleKind)}" data-has-assignment="${hasA?'1':'0'}"`:''}><div class="h">${esc(title)}</div><div class="ch"><img src="${esc(c.foto_url||fallback)}" alt="" onerror="this.onerror=null;this.src='${fallback}'"><div><div class="cn">${esc(nomeDisplay)}</div><div class="cm">${esc((c.posto_graduacao||'A definir')+(c.posto_graduacao?' · ':'')+(c.numero_policia||'-'))}</div></div></div><div class="cm">${esc(card?.scope_code||'-')}</div><div class="cm">${esc(card?.assignment?.situacao||'sem registro')}</div></div>`}
+function setSideMode(mode){S.sideMode=mode;const det=mode==='details';E.items.classList.toggle('hidden',det);E.selInfoWrap.classList.toggle('hidden',!det);E.bBackList.classList.toggle('hidden',!det);E.bSelAtualizar.classList.toggle('hidden',!det);E.bSelSubstituir.classList.toggle('hidden',!det);E.bSelInterino.classList.toggle('hidden',!det);E.listTitle.textContent=det?'Detalhes Selecionados':'Subsetores (clique)'}
+  function renderSelectedInfoPanel(f){if(!f){E.selInfoMsg.textContent='Clique em um SubSetor no mapa para ver detalhes aqui.';E.selInfoKv.innerHTML='';return}const p=f.properties||{}, c=p.cards||{}, pelCmd=(c.setor?.assignment?.id?(c.setor||{}):(c.pelotao||c.setor||{}));E.selInfoMsg.textContent='Clique em "Atualizar/Substituir/Interino" para abrir o modal de edição do SubSetor selecionado.';E.selInfoKv.innerHTML=[['Município',p.municipio_nome],['Cód. Município',p.cd_municipio],['Cia',p.cia_code],['Pelotão',([p.setor_code,p.pelotao_code].filter(Boolean).join(' · ')||'-')],['SubSetor',p.subsetor_code],['População',fmtBrNum(p.populacao_municipio)],['Efetivo da Fração',fmtBrNum(p.efetivo_fracao)],['Cmt Cia',cmdLine(c.cia)],['Cmt Pelotão',cmdLine(pelCmd)],['Cmt SubSetor',cmdLine(c.subsetor)]].map(([k,v])=>`<div>${esc(k)}</div><div>${esc(String(v??'-'))}</div>`).join('')}
+function bindCardClicks(f){[...document.querySelectorAll('#cards .card.click, #cards19 .card.click')].forEach(n=>{n.onclick=()=>{const scope=n.dataset.cardScope||'SUBSETOR', role=n.dataset.cardRole||'titular', hasA=n.dataset.hasAssignment==='1';const baseFeature=f||S.modalF||(S.data?.geojson?.features||[])[0];if(!baseFeature)return;openModal(baseFeature,{scopeType:scope,roleKind:role,editMode:hasA?'update':'substituir'})}})}
+function renderCards19(){const o=S.data?.overview_19bpm||{}, c1=o.comandante||{}, c2=o.subcomandante||{};E.cards19.innerHTML=[['Cmt 19º BPM',c1,'BPM','titular'],['SubCmt 19º BPM',c2,'BPM','subcmt']].map(([t,x,s,r])=>cardHtml(t,x,s,r)).join('')}
+function renderCards(f){const c=f?.properties?.cards||{}, p=f?.properties||{}, showOverview=!hasAnyFilter()&&!f;E.cards19.classList.toggle('hidden',!showOverview);if(showOverview)renderCards19();const setorHas=!!c.setor?.assignment?.id, pelHas=!!c.pelotao?.assignment?.id, pelBase=setorHas?(c.setor||{}):(c.pelotao||c.setor||{}), pelScope=setorHas?'SETOR':(pelHas?'PELOTAO':'SETOR'), pelRole=(pelBase?.assignment?.role_kind||'titular');const pelCode=String(p.setor_code||'').trim(), pelDesc=String(p.pelotao_code||'').trim(), pelScopeLabel=[pelCode,pelDesc].filter(Boolean).join(' · ');const pelCard={...(pelBase||{}),scope_code:pelScopeLabel||pelBase?.scope_code||'-'};E.cards.innerHTML=showOverview?'':[ ['Cia',c.cia,'CIA',c.cia?.assignment?.role_kind||'titular'],['Pelotão',pelCard,pelScope,pelRole],['SubSetor',c.subsetor,'SUBSETOR',c.subsetor?.assignment?.role_kind||'titular'] ].map(([t,x,s,r])=>cardHtml(t,x,s,r)).join('');bindCardClicks(f)}
+function tipShow(f,e){const p=f.properties||{}, card=p.tooltip||p.cards?.subsetor||{}, c=card.commander||{}, fallback='./imagens/Icones_logo_19bpm/android-chrome-192x192.png';const scopeLine=`${nice(p.subsetor_code)} / ${nice(p.setor_code)} / ${nice(p.cia_code)}`;const cmdLineTop=`${c.posto_graduacao?c.posto_graduacao+' ':''}${nice(c.nome_guerra)}`;const nrPm=`Nr PM: ${nice(c.numero_policia)}`;const popRaw=p.populacao_municipio??p.populacao??p.pop_municipio??null;const efetRaw=p.efetivo_fracao??p.efetivo_total??card?.assignment?.efetivo_total??card?.assignment?.efetivo??null;const fmt=v=>{if(v===null||v===undefined||v==='')return 'N/I';const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?new Intl.NumberFormat('pt-BR').format(n):String(v)};const pop=fmt(popRaw);const efet=fmt(efetRaw);const personIc='<span class=\"ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 16 16\"><path d=\"M8 8a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 1c-2.76 0-5 1.57-5 3.5V14h10v-1.5C13 10.57 10.76 9 8 9Z\"/></svg></span>';const teamIc='<span class=\"ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 16 16\"><path d=\"M5 7a2 2 0 1 0-2-2 2 2 0 0 0 2 2Zm6 0a2 2 0 1 0-2-2 2 2 0 0 0 2 2ZM5 8c-1.93 0-3.5 1.12-3.5 2.5V12h4v-1.5A3.56 3.56 0 0 1 6.27 8H5Zm6 0h-1.27A3.56 3.56 0 0 1 10.5 10.5V12h4v-1.5C14.5 9.12 12.93 8 11 8ZM8 8c-1.93 0-3.5 1.12-3.5 2.5V12h7v-1.5C11.5 9.12 9.93 8 8 8Z\"/></svg></span>';E.tip.innerHTML=`<div class="r"><img src="${esc(c.foto_url||fallback)}" alt="" onerror="this.onerror=null;this.src='${fallback}'"><div class="t"><div class="mun">${esc(nice(p.municipio_nome))}</div><div class="scope">${esc(scopeLine)}</div><div class="cmd">${esc(cmdLineTop)}</div><div class="nr">${esc(nrPm)}</div><div class="meta"><span class="pill">${personIc}<span>Pop.: ${esc(pop)}</span></span><span class="pill">${teamIc}<span>Efetivo: ${esc(efet)}</span></span></div></div></div>`;E.tip.style.display='block';tipMove(e)}
+function tipMove(e){if(E.tip.style.display==='none')return;let x=e.clientX+14,y=e.clientY+14;const w=E.tip.offsetWidth||380,h=E.tip.offsetHeight||120;if(x+w>innerWidth-10)x=e.clientX-w-14;if(y+h>innerHeight-10)y=e.clientY-h-14;E.tip.style.left=x+'px';E.tip.style.top=y+'px'}
+function tipHide(){E.tip.style.display='none'}
+function setStats(){const all=S.data?.geojson?.features||[], vis=S.ff||[], m=new Set(vis.map(f=>f.properties?.municipio_nome).filter(Boolean)), sf=all.find(f=>gid(f)===S.sel), global=!hasAnyFilter()&&!sf;E.kAll.textContent=all.length;E.kVis.textContent=vis.length;E.kMun.textContent=m.size;E.kSel.textContent=global?'19 BPM':(sf?.properties?.subsetor_code||'-');E.stat.textContent=!hasAnyFilter()?`Mapa 19 BPM · visão geral (${all.length} subsetores)`:`Mapa 19 BPM · ${vis.length}/${all.length} subsetores`;const v=S.data?.viewer||{};E.viewer.textContent=v.is_admin?`Perfil: ADMIN (${v.numero_policia||v.username||'-'})`:`Perfil: ${v.numero_policia||v.username||'consulta'} · Cias editáveis: ${(v.editable_cias||[]).join(', ')||'nenhuma'}`}
+function renderList(){if(!S.ff.length){E.items.innerHTML='<div class="it"><div class="m">Nenhum subsetor no filtro atual.</div></div>';return}E.items.innerHTML=S.ff.map(f=>{const p=f.properties||{}, c=p.cards?.subsetor||{};return `<div class="it ${S.sel===gid(f)?'sel':''}" data-id="${esc(gid(f))}"><div class="t">${esc(p.subsetor_code||p.id)}</div><div class="m">${esc(p.municipio_nome)} · ${esc(p.cia_code)} · ${esc(p.pelotao_code)}</div><div class="m">${esc(cmdLine(c))}</div></div>`}).join('');E.items.querySelectorAll('.it[data-id]').forEach(n=>n.onclick=()=>{const f=(S.data.geojson.features||[]).find(x=>gid(x)===n.dataset.id);if(f)selectF(f,false,'click')})}
+function applyFilters(){const all=S.data?.geojson?.features||[];S.ff=all.filter(f=>fPass(f.properties||{}));const dim=hasAnyFilter();let sf=all.find(f=>gid(f)===S.sel)||null;if(sf&&dim&&!S.ff.includes(sf)){S.sel=null;sf=null}if(!sf&&dim&&S.ff.length===1){sf=S.ff[0];S.sel=gid(sf)}all.forEach(f=>{const p=S.paths.get(gid(f));if(!p)return;const vis=S.ff.includes(f);p.classList.toggle('dim',dim&&!vis);p.classList.toggle('sel',S.sel===gid(f))});renderCards(sf);renderSelectedInfoPanel(sf);renderList();setStats()}
+function selectF(f,open,source='program'){S.sel=gid(f);if(source==='click')setSideMode('details');applyFilters();if(open)openModal(f)}
+function renderMunicipioLabels(fs,b){
+  const stats={};
+  fs.forEach(f=>{
+    const p=f.properties||{}, k=String(p.municipio_nome||'').trim();
+    if(!k)return;
+    stats[k]=stats[k]||{sx:0,sy:0,n:0,minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity};
+    iterCoords(f.geometry,(x,y)=>{
+      const [px,py]=proj(x,y,b), s=stats[k];
+      s.sx+=px; s.sy+=py; s.n+=1;
+      if(px<s.minX)s.minX=px; if(py<s.minY)s.minY=py;
+      if(px>s.maxX)s.maxX=px; if(py>s.maxY)s.maxY=py;
+    });
+  });
+  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+  const wrapLines=(text,maxChars)=>{
+    const words=String(text||'').trim().split(/\s+/).filter(Boolean);
+    if(!words.length)return [''];
+    const lines=[]; let cur='';
+    for(const w of words){
+      const cand=cur?`${cur} ${w}`:w;
+      if(cur && cand.length>maxChars){ lines.push(cur); cur=w; }
+      else cur=cand;
+    }
+    if(cur)lines.push(cur);
+    if(lines.length<=3)return lines;
+    return [lines[0], lines[1], lines.slice(2).join(' ')];
+  };
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('aria-hidden','true');
+  Object.entries(stats).forEach(([name,v])=>{
+    if(!v.n)return;
+    const cx=v.sx/v.n, cy=v.sy/v.n;
+    const w=Math.max(1,v.maxX-v.minX), h=Math.max(1,v.maxY-v.minY);
+    if(w<42||h<20)return;
+    const upper=String(name).toUpperCase();
+    const maxChars=clamp(Math.floor((w*0.75)/8), 7, 18);
+    let lines=wrapLines(upper,maxChars);
+    if(lines.length===1 && upper.length>14 && w<190) lines=wrapLines(upper, Math.max(7, Math.floor(maxChars*0.8)));
+    const maxLen=Math.max(...lines.map(s=>s.length),1);
+    const fitByW=(w*0.82)/Math.max(1,maxLen*0.62);
+    const fitByH=(h*0.6)/Math.max(1,lines.length*1.05);
+    const fsz=clamp(Math.floor(Math.min(18,fitByW,fitByH)), 10, 18);
+    const lineH=Math.max(12, Math.round(fsz*0.98));
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('class','map-label');
+    t.setAttribute('x',cx.toFixed(1));
+    t.setAttribute('y',cy.toFixed(1));
+    t.style.fontSize=`${fsz}px`;
+    if(lines.length===1){
+      t.textContent=lines[0];
+    }else{
+      const startY=cy-((lines.length-1)*lineH)/2;
+      lines.forEach((ln,i)=>{
+        const sp=document.createElementNS('http://www.w3.org/2000/svg','tspan');
+        sp.setAttribute('x',cx.toFixed(1));
+        sp.setAttribute('y',(startY+i*lineH).toFixed(1));
+        if(ln.length>maxChars+2) sp.setAttribute('textLength', String(Math.max(30,Math.floor(w*0.8))));
+        sp.textContent=ln;
+        t.appendChild(sp);
+      });
+    }
+    g.appendChild(t);
+  });
+  return g;
+}
+function renderMap(){const fs=S.data?.geojson?.features||[], b=bbox(fs);E.svg.innerHTML='';S.paths.clear();const frag=document.createDocumentFragment();fs.forEach(f=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',gPath(f.geometry,b));p.setAttribute('class','shape');p.dataset.id=gid(f);p.onmouseenter=e=>tipShow(f,e);p.onmousemove=tipMove;p.onmouseleave=tipHide;p.onclick=()=>selectF(f,false,'click');S.paths.set(gid(f),p);frag.appendChild(p)});E.svg.appendChild(frag);E.svg.appendChild(renderMunicipioLabels(fs,b));applyFilters()}
+function kvRows(rows){E.mKv.innerHTML=rows.map(([k,v])=>`<div>${esc(k)}</div><div>${esc(String(v??'-'))}</div>`).join('')}
+function inferScope(f,st){const p=f.properties||{};st=String(st||'SUBSETOR').toUpperCase();if(st==='BPM')return{scope_type:'BPM',scope_code:'19 BPM',scope_label:'19 BPM',cia_code:'',pelotao_code:'',setor_code:'',subsetor_code:'',municipio_nome:''};if(st==='CIA')return{scope_type:'CIA',scope_code:p.cia_code,scope_label:p.cia_code,cia_code:p.cia_code,pelotao_code:'',setor_code:'',subsetor_code:'',municipio_nome:p.municipio_nome};if(st==='PELOTAO')return{scope_type:'PELOTAO',scope_code:p.pelotao_code,scope_label:p.pelotao_code,cia_code:p.cia_code,pelotao_code:p.pelotao_code,setor_code:'',subsetor_code:'',municipio_nome:p.municipio_nome};if(st==='SETOR')return{scope_type:'SETOR',scope_code:p.setor_code,scope_label:p.setor_code,cia_code:p.cia_code,pelotao_code:p.pelotao_code,setor_code:p.setor_code,subsetor_code:'',municipio_nome:p.municipio_nome};return{scope_type:'SUBSETOR',scope_code:p.subsetor_code,scope_label:p.subsetor_code,cia_code:p.cia_code,pelotao_code:p.pelotao_code,setor_code:p.setor_code,subsetor_code:p.subsetor_code,municipio_nome:p.municipio_nome}}
+function getCardByScopeRole(f){const st=String(E.fAssign.scope_type.value||'SUBSETOR').toUpperCase(), role=String(E.fAssign.role_kind.value||'titular').toLowerCase(), cards=f?.properties?.cards||{}, ov=S.data?.overview_19bpm||{};let card=null;if(st==='BPM'){card=role==='subcmt'?(ov.subcomandante||null):(ov.comandante||null)}else if(st==='CIA')card=cards.cia||null;else if(st==='PELOTAO')card=cards.pelotao||null;else if(st==='SETOR')card=cards.setor||null;else card=cards.subsetor||null;return card}
+function prefillAssignFromCurrent(f){if(!f)return;const F=E.fAssign, card=getCardByScopeRole(f), c=card?.commander||{}, a=card?.assignment||{};if(c&&c.numero_policia){F.numero_policia.value=String(c.numero_policia||'');ensureSelectHasValue(F.posto_graduacao,String(c.posto_graduacao||''));F.posto_graduacao.value=String(c.posto_graduacao||'');F.nome_guerra.value=String(c.nome_guerra||'');F.nome_completo.value=String(c.nome_completo||'');F.telefone.value=maskPhone(String(c.telefone||''));F.email.value=String(c.email||'');F.foto_url.value=String(c.foto_url||'')}if(a&&a.data_inicio)F.data_inicio.value=String(a.data_inicio||'').slice(0,10);if(a&&a.motivo)F.motivo.value=String(a.motivo||'')}
+function maskPhone(v){const d=String(v||'').replace(/\D/g,'').slice(0,11);if(!d)return'';if(d.length<=2)return `(${d}`;if(d.length<=3)return `(${d.slice(0,2)}) ${d.slice(2)}`;if(d.length<=7)return `(${d.slice(0,2)}) ${d.slice(2,3)} ${d.slice(3)}`;return `(${d.slice(0,2)}) ${d.slice(2,3)} ${d.slice(3,7)}-${d.slice(7)}`}
+function bindInputMasks(){['numero_policia','posto_graduacao','nome_guerra','nome_completo','motivo'].forEach(n=>{const el=E.fAssign[n];if(!el)return;el.addEventListener('input',()=>{el.value=String(el.value||'').toUpperCase()})});if(E.fAssign.telefone){E.fAssign.telefone.addEventListener('input',()=>{E.fAssign.telefone.value=maskPhone(E.fAssign.telefone.value)})}const onlyDigits=el=>{if(!el)return;el.addEventListener('input',()=>{el.value=String(el.value||'').replace(/\D/g,'')})};onlyDigits(E.popMunicipio);onlyDigits(E.efetivoFracao)}
+  function modalFill(f,opts={}){const F=E.fAssign;F.scope_type.value=opts.scopeType||'SUBSETOR';F.role_kind.value=opts.roleKind||'titular';F.situacao.value='ativo';F.data_inicio.value=today();['numero_policia','nome_guerra','nome_completo','telefone','email','foto_url','motivo'].forEach(n=>F[n].value='');F.posto_graduacao.value='';F.replace_existing_same_role.checked=true;renderModalAreaKv(f);syncRoleKindOptionLabels(f);prefillAssignFromCurrent(f);const ok=canEdit(f);E.mEditMsg.className='msg'+(ok?'':' err');E.mEditMsg.textContent=ok?'Permissão de edição disponível para esta Cia.':'Sem permissão de edição para esta área.';[...F.elements].forEach(el=>{if(el.tagName==='BUTTON')return;el.disabled=!ok});Q('bFoto').disabled=!ok;syncAreaMetaControls()}
+async function loadHist(f){
+  const scope=inferScope(f,E.fAssign.scope_type.value||'SUBSETOR');
+  E.mHistMsg.className='msg';
+  E.mHistMsg.textContent=`Carregando histórico de ${scope.scope_type} ${scope.scope_code}...`;
+  E.mHist.innerHTML='';
+  try{
+    const r=await fetch(`/intranet/mapa-comando/history?scope_type=${encodeURIComponent(scope.scope_type)}&scope_code=${encodeURIComponent(scope.scope_code||'')}`,{credentials:'include'});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'Falha ao carregar histórico');
+    const it=Array.isArray(d.items)?d.items:[];
+    if(!it.length){E.mHistMsg.textContent=`Nenhum histórico cadastrado para ${scope.scope_type} ${scope.scope_code}.`;syncHistTabs(scope.scope_type);return}
+    E.mHistMsg.textContent=`Histórico de ${scope.scope_type} ${scope.scope_code} (${it.length})`;
+    E.mHist.innerHTML=it.map(x=>{
+      const editable=canEdit(f);
+      const open=!x.data_fim&&editable;
+      const delBtn=editable?`<button type="button" class="d">Excluir lançamento</button>`:'';
+      const roleLbl=commandRoleLabel(x.scope_type,x.role_kind,{scopeCode:x.scope_code,municipio_nome:x.municipio_nome||(f?.properties?.municipio_nome||'')});
+      const scopeLbl=`${String(x.scope_type||'').toUpperCase()} ${String(x.scope_code||'').trim()}`;
+      const foto=String(x.commander_foto_url||'').trim()||FALLBACK_AVATAR;
+      const nomeLinha=`${(x.commander_posto_graduacao?String(x.commander_posto_graduacao)+'/':'')+(x.commander_nome_guerra||'')}`;
+      const histTab=(String(x.role_kind||'').toLowerCase()==='subcmt')?'subcmt':'cmt';
+      const controls=open
+        ? `<div class="ha"><select class="s"><option value="ativo">ativo</option><option value="afastado">afastado</option><option value="inativo">inativo</option></select><button type="button" class="u">Atualizar status</button><button type="button" class="c">Encerrar período</button>${delBtn}</div>`
+        : (editable?`<div class="ha">${delBtn}</div>`:'');
+      return `<div class="hr" data-id="${x.id}" data-hist-tab="${histTab}">
+        <div class="hrTop">
+          <img class="hrAva" src="${esc(foto)}" alt="" onerror="this.onerror=null;this.src='${FALLBACK_AVATAR}'">
+          <div>
+            <div class="l"><b>${esc(nomeLinha)}</b> · Nr ${esc(x.commander_numero_policia||'-')}</div>
+            <div class="l role">${esc(roleLbl)}</div>
+          </div>
+        </div>
+        <div class="l">${esc(scopeLbl)} · ${esc(x.situacao)}</div>
+        <div class="l">Entrada: ${esc(x.data_inicio||'-')} · Saída: ${esc(x.data_fim||'-')} · Cadastro: ${esc(x.data_cadastro||'-')}</div>
+        ${x.motivo?`<div class="l">${esc(x.motivo)}</div>`:''}
+        ${controls}
+      </div>`;
+    }).join('');
+    E.mHist.querySelectorAll('.hr').forEach(n=>{
+      const id=Number(n.dataset.id), row=it.find(x=>Number(x.id)===id), s=n.querySelector('.s');
+      if(s&&row)s.value=row.situacao||'ativo';
+      const bu=n.querySelector('.u'), bc=n.querySelector('.c'), bd=n.querySelector('.d');
+      if(bu)bu.onclick=()=>patchStatus(id,{situacao:s.value,motivo:'',encerrar_periodo:false});
+      if(bc)bc.onclick=()=>patchStatus(id,{situacao:s?s.value:'inativo',motivo:'',encerrar_periodo:true,data_fim:today()});
+      if(bd)bd.onclick=()=>deleteAssignment(id);
+    });
+    syncHistTabs(scope.scope_type);
+  }catch(e){
+    E.mHistMsg.className='msg err';
+    E.mHistMsg.textContent=e.message||String(e);
+    if(E.mHistTabs) E.mHistTabs.classList.remove('show');
+  }
+}
+async function patchStatus(id,p){try{const r=await fetch(`/intranet/mapa-comando/assignments/${id}/status`,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});const d=await r.json();if(!r.ok)throw new Error(d.detail||'Falha ao atualizar');await refresh({keep:true,reopen:true})}catch(e){alert(e.message||String(e))}}
+async function deleteAssignment(id){if(!confirm('Excluir este lançamento do histórico? Esta ação remove o vínculo selecionado.'))return;try{const r=await fetch(`/intranet/mapa-comando/assignments/${id}`,{method:'DELETE',credentials:'include'});const d=await r.json();if(!r.ok)throw new Error(d.detail||'Falha ao excluir');await refresh({keep:true,reopen:true})}catch(e){alert(e.message||String(e))}}
+async function saveAreaMeta(){if(!S.modalF)return;const p=S.modalF.properties||{};if(String(E.fAssign.scope_type.value||'SUBSETOR').toUpperCase()!=='SUBSETOR'){alert('Os campos População/Efetivo desta tela salvam metadados do SubSetor. Para BPM, o valor é consolidado automaticamente.');return}if(!canEdit(S.modalF)){alert('Sem permissão para alterar dados desta área.');return}const toInt=v=>{const d=String(v||'').replace(/\D/g,'').trim();return d?Number(d):null};const payload={scope_type:'SUBSETOR',scope_code:String(p.subsetor_code||''),cia_code:String(p.cia_code||''),municipio_nome:String(p.municipio_nome||''),populacao_municipio:toInt(E.popMunicipio.value),efetivo_fracao:toInt(E.efetivoFracao.value)};if(!payload.scope_code){alert('SubSetor inválido para salvar metadata.');return}const b=E.bSaveAreaMeta,t=b.textContent;b.disabled=true;b.textContent='Salvando área...';try{const r=await fetch('/intranet/mapa-comando/scope-metadata',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok)throw new Error(d.detail||'Falha ao salvar dados da área');await refresh({keep:true,reopen:true})}catch(e){alert(e.message||String(e))}finally{b.disabled=false;b.textContent=t}}
+function setEditMode(mode){S.editMode=mode||'substituir';[['update',E.bModeAtualizar],['substituir',E.bModeSubstituir],['interino',E.bModeInterino]].forEach(([k,el])=>{if(el)el.classList.toggle('mode-on',S.editMode===k)});if(S.editMode==='interino'){E.fAssign.role_kind.value='interino';E.fAssign.situacao.value='ativo';E.fAssign.replace_existing_same_role.checked=true}else if(S.editMode==='substituir'){if(E.fAssign.role_kind.value==='interino')E.fAssign.role_kind.value='titular';E.fAssign.replace_existing_same_role.checked=true}else if(S.editMode==='update'){E.fAssign.replace_existing_same_role.checked=false}S.lastModalOpts={...(S.lastModalOpts||{}),editMode:S.editMode,scopeType:E.fAssign.scope_type.value||null,roleKind:E.fAssign.role_kind.value||null}}
+function openModal(f,opts={}){S.modalF=f;S.lastModalOpts={scopeType:opts.scopeType||null,roleKind:opts.roleKind||null,editMode:opts.editMode||'substituir'};modalFill(f,opts);setEditMode(opts.editMode||'substituir');loadHist(f);E.mBg.style.display='flex';E.mBg.setAttribute('aria-hidden','false')}
+function closeModal(){E.mBg.style.display='none';E.mBg.setAttribute('aria-hidden','true')}
+async function uploadFoto(){if(!S.modalF)return;const file=E.fotoFile.files?.[0];if(!file){alert('Selecione uma imagem.');return}const num=E.fAssign.numero_policia.value.trim();if(!num){alert('Preencha o Número de Polícia antes do upload para persistir a foto automaticamente no cadastro.')}const fd=new FormData();fd.append('file',file);const b=Q('bFoto'),t=b.textContent;b.disabled=true;b.textContent='Enviando...';try{const r=await fetch(`/intranet/mapa-comando/upload-photo?numero_policia=${encodeURIComponent(num)}`,{method:'POST',credentials:'include',body:fd});let d=null;const ct=String(r.headers.get('content-type')||'').toLowerCase();if(ct.includes('application/json')){d=await r.json()}else{const txt=(await r.text()).trim();if(!r.ok)throw new Error(txt||`Falha no upload (HTTP ${r.status})`);d={ok:r.ok,url:''}}if(!r.ok)throw new Error((d&&d.detail)||`Falha no upload (HTTP ${r.status})`);E.fotoUrl.value=d.url||'';if(d.persisted_commander){await refresh({keep:true,reopen:true});alert('Foto enviada e persistida no cadastro do comandante.')}else{alert('Foto enviada para o bucket. Clique em Salvar Comando para persistir a URL no cadastro.')}}catch(e){alert(e.message||String(e))}finally{b.disabled=false;b.textContent=t}}
+async function saveAssign(ev){ev.preventDefault();if(!S.modalF)return;const F=E.fAssign, sc=inferScope(S.modalF,F.scope_type.value), payload={...sc,role_kind:F.role_kind.value,situacao:F.situacao.value,motivo:F.motivo.value,data_inicio:F.data_inicio.value||null,replace_existing_same_role:!!F.replace_existing_same_role.checked,commander:{numero_policia:F.numero_policia.value.trim(),posto_graduacao:F.posto_graduacao.value.trim(),nome_guerra:F.nome_guerra.value.trim(),nome_completo:F.nome_completo.value.trim(),telefone:F.telefone.value.trim(),email:F.email.value.trim(),foto_url:F.foto_url.value.trim(),observacoes:F.motivo.value.trim(),ativo:true}};if(!payload.commander.numero_policia||!payload.commander.nome_guerra){alert('Informe Número de Polícia e Nome de Guerra.');return}const b=F.querySelector('button[type="submit"]'),t=b.textContent;b.disabled=true;b.textContent='Salvando...';try{let url='/intranet/mapa-comando/assignment',body=payload;const currentCard=getCardByScopeRole(S.modalF), hasAssignment=!!currentCard?.assignment?.id, currentNp=String(currentCard?.commander?.numero_policia||'').trim();if(S.editMode==='update'){if(hasAssignment&&currentNp&&currentNp===payload.commander.numero_policia){url='/intranet/mapa-comando/commander/upsert';body={scope_type:payload.scope_type,cia_code:payload.cia_code||'',commander:payload.commander}}else{body.role_kind=payload.role_kind||'titular';body.replace_existing_same_role=true;if(!hasAssignment){alert('Sem comandante vinculado neste escopo. O sistema vai cadastrar como substituição (novo vínculo).')}}}else if(S.editMode==='interino'){body.role_kind='interino';body.replace_existing_same_role=true}else if(S.editMode==='substituir'){body.role_kind=(F.role_kind.value==='subcmt'?'subcmt':'titular');body.replace_existing_same_role=true}const r=await fetch(url,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.detail||'Falha ao salvar');await refresh({keep:true,reopen:true})}catch(e){alert(e.message||String(e))}finally{b.disabled=false;b.textContent=t}}
+async function refresh({keep=false,reopen=false}={}){E.stat.textContent='Carregando dados do mapa...';const prev=keep?S.sel:null, modalId=reopen&&S.modalF?gid(S.modalF):null, modalOpts=reopen?S.lastModalOpts:null;try{const r=await fetch('/intranet/mapa-comando/data',{credentials:'include'}),d=await r.json();if(!r.ok)throw new Error(d.detail||'Falha ao carregar dados');S.data=d;syncCascadeOptions();renderMap();if(prev&&(S.data.geojson.features||[]).some(f=>gid(f)===prev))S.sel=prev;applyFilters();if(modalId){const nf=(S.data.geojson.features||[]).find(f=>gid(f)===modalId);if(nf){S.modalF=nf;openModal(nf,modalOpts||{})}}}catch(e){E.stat.textContent=e.message||String(e);E.items.innerHTML=`<div class="it"><div class="m">${esc(e.message||String(e))}</div></div>`}}
+[['fCia','cia'],['fPel','pelotao'],['fSetor','setor'],['fSub','subsetor'],['fMun','municipio']].forEach(([id,k])=>Q(id).onchange=e=>{S.filters[k]=e.target.value;syncCascadeOptions();applyFilters()});
+Q('bClear').onclick=()=>{S.filters={cia:'',pelotao:'',setor:'',subsetor:'',municipio:''};S.sel=null;setSideMode('list');syncCascadeOptions();applyFilters()};
+Q('bRefresh').onclick=()=>refresh({keep:true,reopen:!!S.modalF});Q('bXlsx').onclick=openXlsxModal;
+E.bBackList.onclick=()=>setSideMode('list');
+E.bSelAtualizar.onclick=()=>{const f=(S.data?.geojson?.features||[]).find(x=>gid(x)===S.sel);if(!f)return;const hasA=!!(f.properties?.cards?.subsetor?.assignment?.id);openModal(f,{scopeType:'SUBSETOR',roleKind:'titular',editMode:hasA?'update':'substituir'})};
+E.bSelSubstituir.onclick=()=>{const f=(S.data?.geojson?.features||[]).find(x=>gid(x)===S.sel);if(f)openModal(f,{scopeType:'SUBSETOR',roleKind:'titular',editMode:'substituir'})};
+E.bSelInterino.onclick=()=>{const f=(S.data?.geojson?.features||[]).find(x=>gid(x)===S.sel);if(f)openModal(f,{scopeType:'SUBSETOR',roleKind:'interino',editMode:'interino'})};
+E.bModeAtualizar.onclick=()=>setEditMode('update');E.bModeSubstituir.onclick=()=>setEditMode('substituir');E.bModeInterino.onclick=()=>setEditMode('interino');
+Q('mClose').onclick=closeModal;E.mBg.onclick=e=>{if(e.target===E.mBg)closeModal};E.xClose.onclick=closeXlsxModal;E.xCancel.onclick=closeXlsxModal;E.xBg.onclick=e=>{if(e.target===E.xBg)closeXlsxModal};E.xSelAll.onclick=()=>markXlsxCols(XLSX_COLS.map(([k])=>k));E.xSelCore.onclick=()=>markXlsxCols(XLSX_CORE_COLS);E.xSelNone.onclick=()=>markXlsxCols([]);E.xExport.onclick=exportXlsxSelected;document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeXlsxModal()}});
+if(E.mHistTabCmt)E.mHistTabCmt.onclick=()=>applyHistTab('cmt'); if(E.mHistTabSub)E.mHistTabSub.onclick=()=>applyHistTab('subcmt');
+E.fAssign.onsubmit=saveAssign;E.fAssign.scope_type.onchange=()=>{S.lastModalOpts={...(S.lastModalOpts||{}),scopeType:E.fAssign.scope_type.value||null,roleKind:E.fAssign.role_kind.value||null,editMode:S.editMode};if(S.modalF){syncRoleKindOptionLabels(S.modalF);renderModalAreaKv(S.modalF);prefillAssignFromCurrent(S.modalF);syncAreaMetaControls();loadHist(S.modalF)}};E.fAssign.role_kind.onchange=()=>{S.lastModalOpts={...(S.lastModalOpts||{}),scopeType:E.fAssign.scope_type.value||null,roleKind:E.fAssign.role_kind.value||null,editMode:S.editMode};if(S.modalF){syncRoleKindOptionLabels(S.modalF);renderModalAreaKv(S.modalF);prefillAssignFromCurrent(S.modalF);syncAreaMetaControls();syncHistTabs(E.fAssign.scope_type.value||'')}};Q('bFoto').onclick=uploadFoto;E.bSaveAreaMeta.onclick=saveAreaMeta;E.fAssign.data_inicio.value=today();bindInputMasks();buildXlsxColsUI();setSideMode('list');setEditMode('substituir');
+refresh();
+</script>
+</body>
+</html>
+

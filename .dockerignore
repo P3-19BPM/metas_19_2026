@@ -1,18 +1,49 @@
+﻿# VCS / local IDE
 .git
 .gitignore
+.gitattributes
 .vscode
-docker-compose.yml
-README.md
-DEPLOY_GUIDE.md
-COMMIT_MESSAGE.txt
+.idea
 
-Ignorar arquivos da raiz que não são do site
+# Python caches / virtualenvs
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venvMETAS/
+.venv/
+venv/
+env/
+ENV/
 
-*.json
-*.html
-*.csv
-*.xlsx
+# Secrets / envs
+.env
+.env.*
+api/.env
+agent/.env
 
-Permitir apenas o conteúdo da pasta public
+# Local runtime / data not needed in image context
+agent/
+data/
+gdo_data/
+*.db
+*.sqlite
+*.sqlite3
+agent/output/
 
-!public/
+# Local docs / prototypes at repo root (not used by Dockerfile)
+/*.md
+/*.html
+/*.py
+/*.json
+/*.csv
+/*.xlsx
+/*.zip
+
+# Misc
+coverage/
+htmlcov/
+node_modules/

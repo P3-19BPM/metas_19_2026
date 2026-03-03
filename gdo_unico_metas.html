@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gestão Operacional - PMMG</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Configuração de Cores PMMG -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pmmg: {
+                            gold: '#B3A369',
+                            goldLight: '#D4C9A0',
+                            red: '#AB2328',
+                            black: '#000000',
+                            gray: '#373435',
+                            bg: '#F3F4F6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #B3A369; border-radius: 3px; }
+        .form-checkbox:checked { background-color: #B3A369; border-color: #B3A369; }
+    </style>
+
+    <!-- LÓGICA PRINCIPAL -->
+    <script>
+        function appData() {
+            return {
+                // --- ESTADO ---
+                currentMeta: 'meta_imv',
+                
+                // MULTI-SELEÇÃO DE MESES
+                mesesSelecionados: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
+                mesesLista: [
+                    {id: 'jan', label: 'Janeiro'}, {id: 'fev', label: 'Fevereiro'}, {id: 'mar', label: 'Março'},
+                    {id: 'abr', label: 'Abril'}, {id: 'mai', label: 'Maio'}, {id: 'jun', label: 'Junho'},
+                    {id: 'jul', label: 'Julho'}, {id: 'ago', label: 'Agosto'}, {id: 'set', label: 'Setembro'},
+                    {id: 'out', label: 'Outubro'}, {id: 'nov', label: 'Novembro'}, {id: 'dez', label: 'Dezembro'}
+                ],
+                
+                filtroUnidade: 'todas',
+                loading: false,
+                erroCarregamento: null,
+                
+                expandedUnidades: [], 
+                expandedPelotoes: [], 
+                
+                // --- CONFIGURAÇÃO DAS METAS (ARQUIVOS DEFINIDOS) ---
+                metasDisponiveis: [
+                    { id: 'meta_imv', nome: 'IMV', icon: 'fa-solid fa-person-falling-burst', arquivo: 'arquivo_joson_meta_imv_subsetor.json' },
+                    { id: 'meta_icvpe', nome: 'ICVPe', icon: 'fa-solid fa-mask', arquivo: 'arquivo_joson_meta_icvpe_subsetor.json' },
+                    { id: 'meta_icvpa', nome: 'ICVPa', icon: 'fa-solid fa-gun', arquivo: 'arquivo_joson_meta_icvpa_subsetor.json' },
+                    { id: 'meta_irtd', nome: 'IRTD', icon: 'fa-solid fa-cannabis', arquivo: null }
+                ],
+
+                // Banco de Dados Local
+                dadosBase: {
+                    'meta_imv': [], 'meta_icvpe': [], 'meta_icvpa': [], 'meta_irtd': []
+                },
+                
+                // PLRs
+                dadosPLR_Processed: {},
+
+                // Dados PLR Raw (Strings)
+                dadosPLR_Raw_IMV: `[{"CIA PM":"CIA PM","CIA":"CIA","POP":"POP","JAN":"JAN","FEV":"FEV","MAR":"MAR","ABR":"ABR","MAI":"MAI","JUN":"JUN","JUL":"JUL","AGO":"AGO","SET":"SET","OUT":"OUT","NOV":"NOV","DEZ":"DEZ"},{"CIA PM":"42 CIA PM","CIA":"19.42","POP":98156,"JAN":1,322292825,"FEV":1,120149796,"MAR":1,306414114,"ABR":1,398723202,"MAI":0,311105441,"JUN":1,294380014,"JUL":0,077758588,"AGO":1,202528263,"SET":1,271724632,"OUT":0,329381895,"NOV":1,24560636,"DEZ":0,329321766},{"CIA PM":"47 CIA PM","CIA":"19.47","POP":63332,"JAN":0,08064291,"FEV":0,046002423,"MAR":0,076670896,"ABR":0,064032809,"MAI":0,109151688,"JUN":0,105896314,"JUL":0,012468524,"AGO":0,084793105,"SET":1,060275503,"OUT":0,249733681,"NOV":0,019129815,"DEZ":0,102116541},{"CIA PM":"155 CIA PM","CIA":"19.155","POP":64641,"JAN":1,41606262,"FEV":0,189512941,"MAR":0,871355199,"ABR":0,208992451,"MAI":1,776689503,"JUN":2,040587566,"JUL":1,108136462,"AGO":0,398501513,"SET":0,279551225,"OUT":1,807548779,"NOV":1,198783612,"DEZ":1,575607135},{"CIA PM":"232 CIA PM","CIA":"19.232","POP":125117,"JAN":2,241607138,"FEV":1,816654702,"MAR":2,655102433,"ABR":2,482479927,"MAI":1,353030355,"JUN":0,562301645,"JUL":1,596295635,"AGO":3,450314037,"SET":1,542677031,"OUT":2,522878287,"NOV":1,161988625,"DEZ":2,524840073}]`,
+                dadosPLR_Raw_ICVPa: `[{"CIA PM":"CIA PM","CIA":"CIA","POP":"POP","JAN":"JAN","FEV":"FEV","MAR":"MAR","ABR":"ABR","MAI":"MAI","JUN":"JUN","JUL":"JUL","AGO":"AGO","SET":"SET","OUT":"OUT","NOV":"NOV","DEZ":"DEZ"},{"CIA PM":"42 CIA PM","CIA":"19.42","POP":98156,"JAN":1,41016,"FEV":4,52483,"MAR":2,11613,"ABR":2,55708,"MAI":4,60934,"JUN":1,10685,"JUL":2,15127,"AGO":4,28706,"SET":2,51892,"OUT":3,80199,"NOV":2,96073,"DEZ":2,03388},{"CIA PM":"47 CIA PM","CIA":"19.47","POP":63332,"JAN":2,94865,"FEV":4,0026,"MAR":2,94789,"ABR":1,80599,"MAI":1,96954,"JUN":3,95741,"JUL":2,9423,"AGO":0,64259,"SET":1,89628,"OUT":2,79157,"NOV":2,61582,"DEZ":1,73343},{"CIA PM":"155 CIA PM","CIA":"19.155","POP":64641,"JAN":2,81362,"FEV":0,3061,"MAR":1,2907,"ABR":2,32503,"MAI":1,18918,"JUN":0,14914,"JUL":1,17295,"AGO":0,18486,"SET":2,29893,"OUT":0,28049,"NOV":0,45928,"DEZ":0,2437},{"CIA PM":"232 CIA PM","CIA":"19.232","POP":125117,"JAN":5,08751,"FEV":1,80677,"MAR":4,06007,"ABR":2,82462,"MAI":0,35055,"JUN":2,5567,"JUL":2,95919,"AGO":4,00868,"SET":1,91703,"OUT":1,81861,"NOV":2,61583,"DEZ":4,94818}]`,
+                dadosPLR_Raw_ICVPe: `[{"CIA PM":"CIA PM","CIA":"CIA","POP":"POP","JAN":"JAN","FEV":"FEV","MAR":"MAR","ABR":"ABR","MAI":"MAI","JUN":"JUN","JUL":"JUL","AGO":"AGO","SET":"SET","OUT":"OUT","NOV":"NOV","DEZ":"DEZ"},{"CIA PM":"42 CIA PM","CIA":"19.42","POP":98156,"JAN":3,147671256,"FEV":1,259937102,"MAR":1,164451328,"ABR":0,118046553,"MAI":0,097273926,"JUN":2,43794226,"JUL":1,332714118,"AGO":1,964676708,"SET":2,276018075,"OUT":1,58348814,"NOV":0,197038461,"DEZ":0,111206727},{"CIA PM":"47 CIA PM","CIA":"19.47","POP":63332,"JAN":1,050023774,"FEV":0,02568172,"MAR":0,063232878,"ABR":0,005866908,"MAI":0,052392261,"JUN":0,05410327,"JUL":0,008985195,"AGO":0,006065007,"SET":2,035259489,"OUT":0,007300471,"NOV":0,065423475,"DEZ":0,029396255},{"CIA PM":"155 CIA PM","CIA":"19.155","POP":64641,"JAN":0,072080544,"FEV":1,095195953,"MAR":1,081726337,"ABR":1,078968902,"MAI":0,085150623,"JUN":1,132126,"JUL":0,077224398,"AGO":0,079392921,"SET":0,07222011,"OUT":2,122864252,"NOV":0,048082463,"DEZ":2,091958598},{"CIA PM":"232 CIA PM","CIA":"19.232","POP":125117,"JAN":1,215146344,"FEV":1,413692685,"MAR":3,058810908,"ABR":2,414832094,"MAI":4,083100445,"JUN":0,110243393,"JUL":3,249094943,"AGO":1,100777955,"SET":0,167820514,"OUT":0,079112293,"NOV":4,124224827,"DEZ":1,851954742}]`,
+
+                // --- INICIALIZAÇÃO ---
+                async init() {
+                    console.log("Sistema Iniciado.");
+                    // Processa as PLRs
+                    this.dadosPLR_Processed['meta_imv'] = this.parseStringPLR(this.dadosPLR_Raw_IMV);
+                    this.dadosPLR_Processed['meta_icvpa'] = this.parseStringPLR(this.dadosPLR_Raw_ICVPa);
+                    this.dadosPLR_Processed['meta_icvpe'] = this.parseStringPLR(this.dadosPLR_Raw_ICVPe);
+                    
+                    await this.carregarDadosLocalmente('meta_imv');
+                },
+
+                // --- PROCESSADOR PLR ---
+                parseStringPLR(rawString) {
+                    try {
+                        if (!rawString || rawString.length < 5) return null;
+                        let cleanRaw = rawString.replace(/:\s*(\d+),(\d+)/g, ': $1.$2');
+                        const json = JSON.parse(cleanRaw);
+                        const mapa = {};
+                        json.forEach(row => {
+                            if (row["CIA"] === "CIA") return;
+                            let id = String(row["CIA"]);
+                            if (id.length === 5 && !id.includes('.')) {
+                                id = id.substring(0, 2) + '.' + id.substring(2);
+                            }
+                            mapa[id] = {
+                                jan: row["JAN"], fev: row["FEV"], mar: row["MAR"],
+                                abr: row["ABR"], mai: row["MAI"], jun: row["JUN"],
+                                jul: row["JUL"], ago: row["AGO"], set: row["SET"],
+                                out: row["OUT"], nov: row["NOV"], dez: row["DEZ"]
+                            };
+                        });
+                        return mapa;
+                    } catch (e) {
+                        return null;
+                    }
+                },
+
+                // --- CARREGAMENTO ---
+                async carregarDadosLocalmente(metaId) {
+                    const metaInfo = this.metasDisponiveis.find(m => m.id === metaId);
+                    if (!metaInfo || !metaInfo.arquivo) return;
+                    if (this.dadosBase[metaId].length > 0) return; 
+
+                    this.loading = true;
+                    this.erroCarregamento = null;
+
+                    try {
+                        const response = await fetch(`./${metaInfo.arquivo}`);
+                        if (!response.ok) throw new Error("Arquivo não encontrado.");
+                        
+                        let rawText = await response.text();
+                        rawText = rawText.replace(/\/\/.*$/gm, "");
+                        rawText = rawText.replace(/:\s*(\d+),(\d+)/g, ': $1.$2');
+
+                        const jsonData = JSON.parse(rawText);
+                        this.dadosBase[metaId] = jsonData;
+                        
+                        if (jsonData.length > 0) this.expandedUnidades.push(jsonData[0].id);
+
+                    } catch (error) {
+                        console.error("Erro:", error);
+                        this.erroCarregamento = error.message;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                // --- MULTI-SELEÇÃO ---
+                toggleMes(mesId) {
+                    if (this.mesesSelecionados.includes(mesId)) {
+                        this.mesesSelecionados = this.mesesSelecionados.filter(m => m !== mesId);
+                    } else {
+                        this.mesesSelecionados.push(mesId);
+                    }
+                },
+                
+                selecionarTodosMeses() {
+                    this.mesesSelecionados = this.mesesLista.map(m => m.id);
+                },
+
+                limparMeses() {
+                    this.mesesSelecionados = [];
+                },
+
+                getLabelMeses() {
+                    if (this.mesesSelecionados.length === 12) return 'Ano Completo (12)';
+                    if (this.mesesSelecionados.length === 0) return 'Selecione...';
+                    if (this.mesesSelecionados.length <= 3) {
+                        return this.mesesSelecionados.map(m => m.toUpperCase()).join(', ');
+                    }
+                    return `${this.mesesSelecionados.length} meses selecionados`;
+                },
+
+                // --- CÁLCULOS ---
+                
+                getValorAcumulado(dadosObjeto) {
+                    if (!dadosObjeto) return 0;
+                    return this.mesesSelecionados.reduce((acc, mes) => {
+                        const val = dadosObjeto[mes] || dadosObjeto[mes.toUpperCase()] || 0;
+                        return acc + val;
+                    }, 0);
+                },
+
+                getValorPLR(unidadeId) {
+                    const mapaAtual = this.dadosPLR_Processed[this.currentMeta];
+                    if (!mapaAtual) return 0; 
+
+                    let idStr = String(unidadeId);
+                    let dados = mapaAtual[idStr];
+                    
+                    if (!dados) {
+                        if (idStr.length === 5 && !idStr.includes('.')) {
+                            dados = mapaAtual[idStr.substring(0, 2) + '.' + idStr.substring(2)];
+                        } else if (idStr.includes('.')) {
+                            dados = mapaAtual[idStr.replace('.', '')];
+                        }
+                    }
+
+                    if (!dados) return 0;
+                    
+                    return this.mesesSelecionados.reduce((acc, mes) => {
+                        return acc + (dados[mes] || dados[mes.toUpperCase()] || 0);
+                    }, 0);
+                },
+                
+                temPLR() {
+                    return !!this.dadosPLR_Processed[this.currentMeta];
+                },
+
+                calcularTaxa(valor, populacao) {
+                    let val = parseFloat(valor) || 0;
+                    let pop = parseFloat(populacao) || 0;
+                    if (pop === 0) return 0;
+                    return (val / pop) * 100000;
+                },
+
+                // --- NOVAS FUNÇÕES PARA O CARD DO BPM ---
+                getTotaisBPM() {
+                    let totalAbsoluto = 0;
+                    let totalPop = 0;
+                    let totalMetaPLR = 0;
+
+                    // Itera sobre TODAS as unidades (independente do filtro de visualização)
+                    // Mas usa os dados da meta atual carregada
+                    let unidades = this.dadosBase[this.currentMeta] || [];
+
+                    unidades.forEach(unidade => {
+                        // Soma Realizado
+                        const totaisUnidade = this.getTotaisUnidade(unidade);
+                        totalAbsoluto += totaisUnidade.absoluto;
+                        totalPop += totaisUnidade.populacao;
+
+                        // Soma Meta PLR
+                        if (this.temPLR()) {
+                            totalMetaPLR += this.getValorPLR(unidade.id);
+                        }
+                    });
+
+                    return {
+                        absoluto: Math.round(totalAbsoluto * 100) / 100,
+                        populacao: totalPop,
+                        metaPLR: Math.round(totalMetaPLR * 100) / 100,
+                        taxa: this.calcularTaxa(totalAbsoluto, totalPop)
+                    };
+                },
+
+                getTotaisPelotao(pelotao) {
+                    let totalAbsoluto = 0;
+                    let totalPop = 0;
+
+                    pelotao.setores.forEach(set => {
+                        totalAbsoluto += this.getValorAcumulado(set.dados);
+                        let pop = parseFloat(set.dados.pop) || 0;
+                        totalPop += pop;
+                    });
+
+                    return {
+                        absoluto: Math.round(totalAbsoluto * 100) / 100,
+                        populacao: totalPop,
+                        taxa: this.calcularTaxa(totalAbsoluto, totalPop)
+                    };
+                },
+
+                getTotaisUnidade(unidade) {
+                    let totalAbsoluto = 0;
+                    let totalPop = 0;
+
+                    unidade.pelotoes.forEach(pel => {
+                        pel.setores.forEach(set => {
+                            totalAbsoluto += this.getValorAcumulado(set.dados);
+                            let pop = parseFloat(set.dados.pop) || 0;
+                            totalPop += pop;
+                        });
+                    });
+
+                    return {
+                        absoluto: Math.round(totalAbsoluto * 100) / 100,
+                        populacao: totalPop,
+                        taxa: this.calcularTaxa(totalAbsoluto, totalPop)
+                    };
+                },
+
+                getTotaisGerais() {
+                    let totalAbsoluto = 0;
+                    let totalPop = 0;
+
+                    this.dadosFiltrados.forEach(unidade => {
+                        const totais = this.getTotaisUnidade(unidade);
+                        totalAbsoluto += totais.absoluto;
+                        totalPop += totais.populacao;
+                    });
+
+                    return {
+                        absoluto: Math.round(totalAbsoluto * 100) / 100,
+                        populacao: totalPop,
+                        taxa: this.calcularTaxa(totalAbsoluto, totalPop)
+                    };
+                },
+
+                // --- HELPERS ---
+                get dadosFiltrados() {
+                    let dados = this.dadosBase[this.currentMeta] || [];
+                    if (this.filtroUnidade !== 'todas') {
+                        dados = dados.filter(u => u.unidade === this.filtroUnidade);
+                    }
+                    return dados;
+                },
+
+                getUniqueUnidades() {
+                    const dados = this.dadosBase[this.currentMeta] || [];
+                    return [...new Set(dados.map(item => item.unidade))];
+                },
+                
+                getNomeMetaAtual() {
+                    const m = this.metasDisponiveis.find(m => m.id === this.currentMeta);
+                    return m ? m.nome : 'Selecione';
+                },
+
+                mudarMeta(meta) {
+                    this.currentMeta = meta.id;
+                    this.filtroUnidade = 'todas';
+                    if (meta.arquivo) this.carregarDadosLocalmente(meta.id);
+                },
+
+                toggleUnidade(id) {
+                    if (this.expandedUnidades.includes(id)) {
+                        this.expandedUnidades = this.expandedUnidades.filter(u => u !== id);
+                    } else {
+                        this.expandedUnidades.push(id);
+                    }
+                },
+                
+                togglePelotao(id) {
+                    if (this.expandedPelotoes.includes(id)) {
+                        this.expandedPelotoes = this.expandedPelotoes.filter(p => p !== id);
+                    } else {
+                        this.expandedPelotoes.push(id);
+                    }
+                },
+
+                formatNumber(num) {
+                    if (num === undefined || num === null || isNaN(num)) return '0';
+                    if (Number.isInteger(num)) return num.toLocaleString('pt-BR');
+                    return num.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+</head>
+
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden" x-data="appData()">
+
+    <!-- HEADER -->
+    <header class="bg-pmmg-black text-white shadow-lg z-30 flex-none border-b-4 border-pmmg-gold">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-pmmg-gold rounded flex items-center justify-center text-pmmg-black shadow-inner">
+                    <i class="fa-solid fa-shield-halved text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wider leading-tight">GESTÃO OPERACIONAL</h1>
+                    <p class="text-[10px] text-pmmg-gold font-semibold uppercase tracking-widest">19º BPM - PMMG</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="flex flex-1 overflow-hidden relative">
+        
+        <!-- SIDEBAR -->
+        <nav class="bg-white md:w-64 flex-none border-r border-gray-200 flex md:flex-col absolute md:static top-0 w-full z-20 md:z-auto shadow-md md:shadow-none overflow-x-auto">
+            <div class="p-4 md:border-b border-gray-100 hidden md:block">
+                <span class="text-xs font-bold text-gray-400 uppercase">Tipos de Metas</span>
+            </div>
+            
+            <template x-for="(meta, index) in metasDisponiveis" :key="index">
+                <button 
+                    @click="mudarMeta(meta)"
+                    class="flex items-center gap-3 px-6 py-4 md:py-3 text-sm font-medium transition-all whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-l-4 hover:bg-gray-50 flex-shrink-0"
+                    :class="currentMeta === meta.id 
+                        ? 'border-pmmg-red text-pmmg-red bg-red-50' 
+                        : 'border-transparent md:border-l-transparent text-gray-600 hover:text-pmmg-black border-b-transparent'">
+                    <i :class="meta.icon" class="text-lg opacity-80"></i>
+                    <span x-text="meta.nome"></span>
+                </button>
+            </template>
+        </nav>
+
+        <!-- CONTEÚDO CENTRAL -->
+        <main class="flex-1 overflow-y-auto bg-gray-100 p-4 pt-20 md:pt-4 relative w-full">
+            <div class="max-w-6xl mx-auto space-y-6">
+
+                <!-- Aviso de Erro -->
+                <div x-show="erroCarregamento" x-cloak class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md mb-4">
+                    <p class="font-bold">Erro ao ler Dados:</p>
+                    <p x-text="erroCarregamento"></p>
+                </div>
+
+                <!-- Painel de Filtros e Resumo -->
+                <div class="bg-white rounded-lg shadow-sm border-l-4 border-pmmg-gold p-4 md:p-6">
+                    <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
+                        
+                        <!-- Lado Esquerdo: Título e Resumo BPM -->
+                        <div class="flex-1 flex flex-col md:flex-row gap-6 md:items-center">
+                            <!-- Título -->
+                            <div class="shrink-0">
+                                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                    <span x-text="getNomeMetaAtual()"></span>
+                                    <span class="text-xs bg-pmmg-black text-pmmg-gold px-2 py-0.5 rounded uppercase">2026</span>
+                                </h2>
+                                <p class="text-sm text-gray-500 mt-1">Indicadores por Nível Hierárquico</p>
+                            </div>
+
+                            <!-- CARD DE RESUMO 19º BPM (NOVO) -->
+                            <div class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center justify-around shadow-sm min-w-[280px]">
+                                <div class="text-center px-2">
+                                    <span class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">19º BPM (Abs)</span>
+                                    <span class="block text-lg font-bold text-gray-800" x-text="formatNumber(getTotaisBPM().absoluto)"></span>
+                                </div>
+                                <div class="h-8 w-px bg-gray-300"></div>
+                                <div class="text-center px-2">
+                                    <span class="text-[10px] text-blue-500 uppercase font-bold tracking-wide">Meta (PLR)</span>
+                                    <span class="block text-lg font-bold text-blue-600" x-text="temPLR() ? formatNumber(getTotaisBPM().metaPLR) : '-'"></span>
+                                </div>
+                                <div class="h-8 w-px bg-gray-300"></div>
+                                <div class="text-center px-2">
+                                    <span class="text-[10px] text-pmmg-red uppercase font-bold tracking-wide">Taxa (100k)</span>
+                                    <span class="block text-lg font-bold text-pmmg-red" x-text="formatNumber(getTotaisBPM().taxa)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lado Direito: Filtros -->
+                        <div class="flex flex-wrap gap-2 items-center shrink-0">
+                            
+                            <!-- DROPDOWN MULTI-SELECT -->
+                            <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                                <button @click="open = !open" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-pmmg-gold focus:border-pmmg-gold p-2.5 flex items-center justify-between min-w-[180px]">
+                                    <span class="truncate mr-2" x-text="getLabelMeses()"></span>
+                                    <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
+                                </button>
+                                
+                                <div x-show="open" class="absolute top-full right-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow-lg z-50 p-3" x-transition>
+                                    <div class="flex justify-between mb-2 pb-2 border-b border-gray-100 items-center">
+                                        <div class="flex gap-3">
+                                            <button @click="selecionarTodosMeses()" class="text-xs text-pmmg-gold font-bold hover:underline">Todos</button>
+                                            <button @click="limparMeses()" class="text-xs text-gray-400 hover:text-red-500 hover:underline">Limpar</button>
+                                        </div>
+                                        <span class="text-xs text-gray-400">Acumulado</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                                        <template x-for="mes in mesesLista" :key="mes.id">
+                                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                                <input type="checkbox" :value="mes.id" 
+                                                       :checked="mesesSelecionados.includes(mes.id)"
+                                                       @change="toggleMes(mes.id)"
+                                                       class="form-checkbox h-4 w-4 text-pmmg-gold rounded focus:ring-pmmg-gold">
+                                                <span class="text-sm text-gray-700" x-text="mes.label"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Filtro Unidade -->
+                            <select x-model="filtroUnidade" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-pmmg-gold focus:border-pmmg-gold block p-2.5 outline-none">
+                                <option value="todas">Todas Unidades</option>
+                                <template x-for="unidade in getUniqueUnidades()" :key="unidade">
+                                    <option :value="unidade" x-text="unidade"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Cards de Totais (Visão Filtrada) -->
+                    <!-- Se uma unidade for selecionada, estes cards refletem o filtro. Se for "Todas", refletem o BPM -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+                        <div class="p-3 bg-gray-50 rounded border border-gray-100 hover:shadow-md transition">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">Total (Filtro)</p>
+                            <p class="text-2xl font-bold text-pmmg-black mt-1" x-text="formatNumber(getTotaisGerais().absoluto)"></p>
+                        </div>
+                        
+                        <div class="p-3 bg-gray-50 rounded border border-gray-100 hover:shadow-md transition">
+                            <p class="text-xs text-gray-500 uppercase font-semibold">População Coberta</p>
+                            <p class="text-2xl font-bold text-pmmg-black mt-1" x-text="formatNumber(getTotaisGerais().populacao)"></p>
+                        </div>
+
+                        <div class="p-3 bg-red-50 rounded border border-red-100">
+                            <p class="text-xs text-pmmg-red uppercase font-semibold">Taxa Geral (100k)</p>
+                            <div class="flex items-baseline gap-1 mt-1">
+                                <p class="text-2xl font-bold text-pmmg-red" x-text="formatNumber(getTotaisGerais().taxa)"></p>
+                                <span class="text-[10px] text-red-400">/ 100 mil</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-blue-50 rounded border border-blue-100">
+                            <p class="text-xs text-blue-700 uppercase font-semibold">Período</p>
+                            <p class="text-sm font-bold text-blue-900 mt-2 truncate" x-text="getLabelMeses()"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading -->
+                <div x-show="loading" class="text-center py-8">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-pmmg-gold"></i>
+                    <p class="text-gray-500 mt-2 font-medium">Processando dados...</p>
+                </div>
+
+                <!-- Lista de Unidades -->
+                <div x-show="!loading && !erroCarregamento" class="space-y-4">
+                    
+                    <template x-for="unidade in dadosFiltrados" :key="unidade.id">
+                        <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 transition hover:border-pmmg-gold">
+                            
+                            <!-- Cabeçalho Unidade -->
+                            <div class="bg-gray-800 px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-700 transition select-none" 
+                                 @click="toggleUnidade(unidade.id)">
+                                
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-pmmg-gold text-white flex items-center justify-center font-bold text-xs shadow-md">CIA</div>
+                                    <h3 class="font-bold text-white text-sm md:text-base tracking-wide" x-text="unidade.unidade"></h3>
+                                </div>
+
+                                <div class="flex items-center gap-4 text-right">
+                                    <div class="flex flex-col md:flex-row gap-4 text-xs">
+                                        <!-- Valor Absoluto -->
+                                        <div>
+                                            <span class="text-gray-400 uppercase text-[10px]">Total</span>
+                                            <span class="block text-white font-bold text-sm" x-text="formatNumber(getTotaisUnidade(unidade).absoluto)"></span>
+                                        </div>
+                                        
+                                        <!-- Taxa Calculada -->
+                                        <div class="border-l border-gray-600 pl-4">
+                                            <span class="text-gray-400 uppercase text-[10px]">Taxa</span>
+                                            <span class="block text-pmmg-gold font-bold text-sm" x-text="formatNumber(getTotaisUnidade(unidade).taxa)"></span>
+                                        </div>
+
+                                        <!-- PLR (Meta) -->
+                                        <template x-if="temPLR()">
+                                            <div class="border-l border-gray-600 pl-4">
+                                                <span class="text-blue-300 uppercase text-[10px] font-bold">PLR (Meta)</span>
+                                                <span class="block text-blue-400 font-bold text-sm" 
+                                                      x-text="formatNumber(getValorPLR(unidade.id))"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-300 ml-2" :class="expandedUnidades.includes(unidade.id) ? 'rotate-180' : ''"></i>
+                                </div>
+                            </div>
+
+                            <!-- Pelotões -->
+                            <div x-show="expandedUnidades.includes(unidade.id)" x-collapse class="bg-gray-50 border-t border-gray-200">
+                                <template x-for="pelotao in unidade.pelotoes" :key="pelotao.id">
+                                    <div class="border-b border-gray-200 last:border-0">
+                                        
+                                        <!-- Cabeçalho Pelotão -->
+                                        <div class="px-4 py-2 bg-gray-100 flex justify-between items-center cursor-pointer hover:bg-gray-200 transition pl-8 md:pl-12 select-none" @click="togglePelotao(pelotao.id)">
+                                            <div class="flex items-center gap-2">
+                                                <i class="fa-solid fa-users text-pmmg-gold text-xs"></i>
+                                                <span class="font-semibold text-gray-700 text-sm" x-text="pelotao.nome"></span>
+                                            </div>
+                                            
+                                            <div class="flex items-center gap-4">
+                                                <!-- Totais do Pelotão -->
+                                                <div class="hidden sm:flex gap-3 text-xs text-gray-500">
+                                                    <div>
+                                                        <span class="text-[9px] uppercase">Pop:</span>
+                                                        <span class="font-bold" x-text="formatNumber(getTotaisPelotao(pelotao).populacao)"></span>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-[9px] uppercase">Total:</span>
+                                                        <span class="font-bold text-gray-700" x-text="formatNumber(getTotaisPelotao(pelotao).absoluto)"></span>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-[9px] uppercase">Taxa:</span>
+                                                        <span class="font-bold text-pmmg-red" x-text="formatNumber(getTotaisPelotao(pelotao).taxa)"></span>
+                                                    </div>
+                                                </div>
+                                                <i class="fa-solid fa-chevron-right text-xs text-gray-400 transition-transform duration-300" :class="expandedPelotoes.includes(pelotao.id) ? 'rotate-90' : ''"></i>
+                                            </div>
+                                        </div>
+
+                                        <!-- Tabela Setores -->
+                                        <div x-show="expandedPelotoes.includes(pelotao.id)" x-collapse class="bg-white p-2 md:p-4">
+                                            <div class="overflow-x-auto rounded-lg border border-gray-100">
+                                                <table class="w-full text-sm text-left text-gray-500">
+                                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                                        <tr>
+                                                            <th class="px-4 py-3 rounded-tl-lg">Setor / Local</th>
+                                                            <th class="px-4 py-3 text-center w-32">População</th>
+                                                            <th class="px-4 py-3 text-center bg-pmmg-gold/10 text-pmmg-black w-32">Acumulado</th>
+                                                            <th class="px-4 py-3 text-center bg-red-50 text-pmmg-red rounded-tr-lg w-32">Taxa (100k)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <template x-for="setor in pelotao.setores" :key="setor.id">
+                                                            <tr class="border-b hover:bg-gray-50 transition">
+                                                                <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
+                                                                    <div class="flex items-center gap-2">
+                                                                        <div class="w-1.5 h-1.5 rounded-full bg-pmmg-red"></div>
+                                                                        <span x-text="setor.local"></span>
+                                                                    </div>
+                                                                </td>
+                                                                <!-- Coluna População -->
+                                                                <td class="px-4 py-3 text-center text-gray-400">
+                                                                    <span x-text="formatNumber(parseFloat(setor.dados.pop))"></span>
+                                                                </td>
+                                                                <!-- Coluna Acumulado -->
+                                                                <td class="px-4 py-3 text-center font-bold text-gray-800 bg-yellow-50/30">
+                                                                    <span x-text="formatNumber(getValorAcumulado(setor.dados))"></span>
+                                                                </td>
+                                                                <!-- Coluna Taxa -->
+                                                                <td class="px-4 py-3 text-center font-bold text-pmmg-red bg-red-50/50">
+                                                                    <span x-text="formatNumber(calcularTaxa(getValorAcumulado(setor.dados), setor.dados.pop))"></span>
+                                                                </td>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <div x-show="dadosFiltrados.length === 0" class="text-center py-10 opacity-50">
+                        <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-300"></i>
+                        <p>Nenhum dado encontrado para os filtros atuais.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-10 mb-4 text-center text-xs text-gray-400 font-mono">
+                &copy; 2026 Polícia Militar de Minas Gerais - Setor de Inteligência
+            </div>
+        </main>
+    </div>
+</body>
+</html>

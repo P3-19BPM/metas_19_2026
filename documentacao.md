@@ -83,7 +83,9 @@ docker compose up -d
 Substituir apenas o número da tag:
 
 ```powershell
-docker buildx build --platform linux/amd64,linux/arm64 -t mmpgnovaiscrud/painel-gdo-19bpm:v6 --push .
+Último deploy em 02/03/2026
+
+docker buildx build --platform linux/amd64,linux/arm64 -t mmpgnovaiscrud/painel-gdo-19bpm:v7.9.5 -t mmpgnovaiscrud/painel-gdo-19bpm:latest --push .
 ```
 
 ## Histórico de referência

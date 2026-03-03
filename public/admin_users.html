@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin - Usuarios</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f3f5f8; color: #111827; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    .top { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom: 12px; }
+    .card { background:#fff; border:1px solid #dbe2ea; border-radius:12px; padding:14px; box-shadow: 0 6px 20px rgba(0,0,0,.05); }
+    .grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
+    .grid2 { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; }
+    .full { grid-column: 1 / -1; }
+    label { display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px; text-transform:uppercase; }
+    input, select, textarea { width:100%; box-sizing:border-box; border:1px solid #cbd5e1; border-radius:8px; padding:9px 10px; font-size:14px; }
+    textarea { min-height: 72px; resize: vertical; }
+    button { border:1px solid #cbd5e1; border-radius:8px; padding:8px 10px; background:#fff; cursor:pointer; }
+    button.primary { background:#0f172a; color:#fff; border-color:#0f172a; }
+    button.danger { background:#991b1b; color:#fff; border-color:#991b1b; }
+    button.success { background:#166534; color:#fff; border-color:#166534; }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .muted { color:#64748b; font-size:12px; }
+    .msg { margin-top:8px; font-size:13px; }
+    .ok { color:#166534; }
+    .err { color:#b91c1c; }
+    table { width:100%; border-collapse: collapse; font-size:13px; }
+    th, td { border-bottom:1px solid #e5e7eb; padding:8px 6px; text-align:left; vertical-align: top; }
+    th { color:#475569; font-size:12px; text-transform:uppercase; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid #d1d5db; }
+    .pill.ok { color:#166534; border-color:#86efac; background:#f0fdf4; }
+    .pill.off { color:#991b1b; border-color:#fca5a5; background:#fef2f2; }
+    .row-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+    @media (max-width: 960px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 680px) {
+      .grid, .grid2 { grid-template-columns: 1fr; }
+      .top { flex-direction: column; align-items: flex-start; }
+      table { display:block; overflow:auto; white-space:nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1 style="margin:0;font-size:22px;">Administracao de Acessos</h1>
+        <div class="muted">Criar, editar, ativar/desativar usuarios e resetar senha provisoria.</div>
+      </div>
+      <div class="actions">
+        <a href="/minha_conta.html"><button>Minha senha</button></a>
+        <a href="/"><button>Painel</button></a>
+        <button id="btnRefreshTop">Atualizar</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px;">
+      <div class="section-head">
+        <strong>Cadastro / Edicao de Usuario</strong>
+        <span class="muted" id="formMode">Modo: novo usuario</span>
+      </div>
+      <form id="userForm" class="grid">
+        <input type="hidden" id="f_id">
+        <div>
+          <label for="f_nome">Nome</label>
+          <input id="f_nome" required>
+        </div>
+        <div>
+          <label for="f_numero">NR PM (login)</label>
+          <input id="f_numero" required>
+        </div>
+        <div>
+          <label for="f_posto">Posto / Graduacao (PT/GR)</label>
+          <select id="f_posto" required>
+            <option value="TEN CEL">TEN CEL</option>
+            <option value="MAJ">MAJ</option>
+            <option value="CAP">CAP</option>
+            <option value="1 TEN">1 TEN</option>
+            <option value="2 TEN">2 TEN</option>
+            <option value="SUB TEN">SUB TEN</option>
+            <option value="1 SGT">1 SGT</option>
+            <option value="2 SGT">2 SGT</option>
+            <option value="3 SGT">3 SGT</option>
+            <option value="CB">CB</option>
+            <option value="SD">SD</option>
+          </select>
+        </div>
+        <div>
+          <label for="f_unidade">Unidade / Setor</label>
+          <select id="f_unidade">
+            <option value="">Selecione...</option>
+            <option value="42ª CIA PM">42ª CIA PM</option>
+            <option value="47ª CIA PM">47ª CIA PM</option>
+            <option value="74ª CIA TM">74ª CIA TM</option>
+            <option value="155ª CIA PM">155ª CIA PM</option>
+            <option value="232ª CIA PM">232ª CIA PM</option>
+            <option value="EM19BPM">EM19BPM</option>
+            <option value="EM15RPM">EM15RPM</option>
+          </select>
+        </div>
+        <div>
+          <label for="f_perfil">Perfil de acesso (ADM?)</label>
+          <select id="f_perfil">
+            <option value="consulta">consulta</option>
+            <option value="gestor">gestor</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div>
+          <label for="f_ativo">Status</label>
+          <select id="f_ativo">
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+        </div>
+        <div>
+          <label for="f_password">Senha (na criacao / reset)</label>
+          <input id="f_password" type="password" placeholder="Senha provisoria">
+        </div>
+        <div>
+          <label for="f_prov">Senha provisoria?</label>
+          <select id="f_prov">
+            <option value="true">Sim (obrigar troca)</option>
+            <option value="false">Nao</option>
+          </select>
+        </div>
+        <div class="full actions">
+          <button type="submit" class="primary" id="btnSalvar">Criar usuario</button>
+          <button type="button" id="btnLimpar">Limpar</button>
+          <button type="button" id="btnResetSenha" class="danger" disabled>Resetar senha</button>
+        </div>
+      </form>
+      <div id="formMsg" class="msg"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px;">
+      <div class="section-head">
+        <strong>Usuarios</strong>
+        <div class="actions">
+          <button id="btnRefreshUsers">Atualizar usuarios</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Numero</th>
+            <th>PT/GR</th>
+            <th>Unidade</th>
+            <th>Login (NR PM)</th>
+            <th>Perfil</th>
+            <th>Status</th>
+            <th>Senha Provisoria</th>
+            <th>Ultimo Login</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody id="usersTbody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <strong>Solicitacoes de Acesso (login)</strong>
+        <div class="actions">
+          <button id="btnRefreshReq">Atualizar solicitacoes</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Data</th>
+            <th>Nome</th>
+            <th>Numero</th>
+            <th>Unidade</th>
+            <th>Telefone</th>
+            <th>Motivo</th>
+            <th>Status</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody id="reqTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const st = {
+      me: null,
+      users: [],
+      editingId: null,
+    };
+
+    function qs(id) { return document.getElementById(id); }
+    function esc(v) {
+      return String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c]));
+    }
+    function setMsg(el, msg, ok=true) {
+      el.textContent = msg || "";
+      el.className = "msg " + (msg ? (ok ? "ok" : "err") : "");
+    }
+    function boolText(v) { return v ? "Sim" : "Nao"; }
+
+    async function api(url, opts={}) {
+      const r = await fetch(url, {
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+        ...opts,
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.detail || `Erro HTTP ${r.status}`);
+      return data;
+    }
+
+    async function loadMe() {
+      const data = await api("/auth/me");
+      st.me = data.user || {};
+      if ((st.me.perfil || "") !== "admin" && data.source !== "legacy_env") {
+        document.body.innerHTML = '<div style="padding:20px;font-family:Arial">Acesso restrito ao perfil admin.</div>';
+        throw new Error("admin required");
+      }
+    }
+
+    async function loadUsers() {
+      const data = await api("/auth/users");
+      st.users = data.items || [];
+      renderUsers();
+    }
+
+    function renderUsers() {
+      const tbody = qs("usersTbody");
+      tbody.innerHTML = (st.users || []).map((u) => `
+        <tr>
+          <td>${u.id}</td>
+          <td>${esc(u.nome)}</td>
+          <td>${esc(u.numero_policia)}</td>
+          <td>${esc(u.posto_graduacao || "-")}</td>
+          <td>${esc(u.unidade_setor || "-")}</td>
+          <td>${esc(u.numero_policia || u.username)}</td>
+          <td>${esc(u.perfil)}</td>
+          <td><span class="pill ${u.ativo ? "ok" : "off"}">${u.ativo ? "Ativo" : "Inativo"}</span></td>
+          <td>${boolText(!!u.must_change_password)}</td>
+          <td>${esc(u.last_login_at || "-")}</td>
+          <td>
+            <div class="row-actions">
+              <button data-act="edit" data-id="${u.id}">Editar</button>
+              <button data-act="toggle" data-id="${u.id}" class="${u.ativo ? "" : "success"}">${u.ativo ? "Desativar" : "Ativar"}</button>
+              <button data-act="reset" data-id="${u.id}" class="danger">Resetar senha</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function fillForm(u) {
+      st.editingId = u ? u.id : null;
+      qs("f_id").value = u?.id || "";
+      qs("f_nome").value = u?.nome || "";
+      qs("f_numero").value = u?.numero_policia || "";
+      qs("f_posto").value = u?.posto_graduacao || "SD";
+      qs("f_unidade").value = u?.unidade_setor || "";
+      qs("f_perfil").value = u?.perfil || "consulta";
+      qs("f_ativo").value = String(!!u?.ativo);
+      qs("f_password").value = "";
+      qs("f_prov").value = "true";
+      qs("btnResetSenha").disabled = !u;
+      qs("btnSalvar").textContent = u ? "Salvar alteracoes" : "Criar usuario";
+      qs("formMode").textContent = "Modo: " + (u ? `edicao (ID ${u.id})` : "novo usuario");
+    }
+
+    async function saveUser(ev) {
+      ev.preventDefault();
+      const payloadBase = {
+        nome: qs("f_nome").value.trim(),
+        numero_policia: qs("f_numero").value.trim(),
+        posto_graduacao: qs("f_posto").value,
+        unidade_setor: qs("f_unidade").value.trim(),
+        perfil: qs("f_perfil").value,
+        ativo: qs("f_ativo").value === "true",
+      };
+      try {
+        if (!payloadBase.nome || !payloadBase.numero_policia || !payloadBase.posto_graduacao) {
+          throw new Error("Preencha nome, NR PM e Posto/Graduação.");
+        }
+        if (st.editingId) {
+          await api(`/auth/users/${st.editingId}`, { method: "PUT", body: JSON.stringify(payloadBase) });
+          setMsg(qs("formMsg"), "Usuario atualizado com sucesso.");
+        } else {
+          const password = qs("f_password").value;
+          if (!password) throw new Error("Informe a senha provisoria para criar o usuario.");
+          const payload = { ...payloadBase, password, senha_provisoria: qs("f_prov").value === "true" };
+          await api("/auth/users", { method: "POST", body: JSON.stringify(payload) });
+          setMsg(qs("formMsg"), "Usuario criado com sucesso.");
+        }
+        fillForm(null);
+        await loadUsers();
+      } catch (e) {
+        setMsg(qs("formMsg"), e.message || "Falha ao salvar usuario", false);
+      }
+    }
+
+    async function resetSenhaUser(id) {
+      const nova = prompt("Informe a nova senha provisoria:");
+      if (!nova) return;
+      const prov = confirm("Obrigar o usuario a trocar a senha no primeiro acesso? (OK=Sim, Cancelar=Nao)");
+      await api(`/auth/users/${id}/password`, {
+        method: "POST",
+        body: JSON.stringify({ password: nova, senha_provisoria: prov })
+      });
+      await loadUsers();
+      setMsg(qs("formMsg"), "Senha resetada.");
+    }
+
+    async function toggleAtivoUser(id) {
+      const u = st.users.find(x => x.id === id);
+      if (!u) return;
+      await api(`/auth/users/${id}/active`, {
+        method: "POST",
+        body: JSON.stringify({ ativo: !u.ativo })
+      });
+      await loadUsers();
+    }
+
+    async function loadRequests() {
+      const data = await api("/auth/access-requests?limit=200");
+      const rows = data.items || [];
+      const tbody = qs("reqTbody");
+      tbody.innerHTML = rows.map((r) => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${esc(r.created_at || "-")}</td>
+          <td>${esc(r.nome)}</td>
+          <td>${esc(r.numero_policia)}</td>
+          <td>${esc(r.unidade_setor || "-")}</td>
+          <td>${esc(r.telefone || "-")}</td>
+          <td>${esc(r.motivo || "-")}</td>
+          <td>${esc(r.status || "-")}</td>
+          <td>
+            <div class="row-actions">
+              <button data-req="pendente" data-id="${r.id}">Pendente</button>
+              <button data-req="atendido" data-id="${r.id}" class="success">Atendido</button>
+              <button data-req="negado" data-id="${r.id}" class="danger">Negado</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    async function setReqStatus(id, status) {
+      await api(`/auth/access-requests/${id}/status?status=${encodeURIComponent(status)}`, { method: "POST" });
+      await loadRequests();
+    }
+
+    function bindEvents() {
+      qs("userForm").addEventListener("submit", saveUser);
+      qs("btnLimpar").addEventListener("click", () => { fillForm(null); setMsg(qs("formMsg"), ""); });
+      qs("btnResetSenha").addEventListener("click", async () => {
+        if (!st.editingId) return;
+        try { await resetSenhaUser(Number(st.editingId)); } catch (e) { setMsg(qs("formMsg"), e.message, false); }
+      });
+      qs("btnRefreshUsers").addEventListener("click", () => loadUsers().catch(alert));
+      qs("btnRefreshReq").addEventListener("click", () => loadRequests().catch(alert));
+      qs("btnRefreshTop").addEventListener("click", async () => { await loadUsers(); await loadRequests(); });
+
+      qs("usersTbody").addEventListener("click", async (ev) => {
+        const btn = ev.target.closest("button[data-act]");
+        if (!btn) return;
+        const id = Number(btn.dataset.id);
+        const act = btn.dataset.act;
+        try {
+          if (act === "edit") {
+            const u = st.users.find(x => x.id === id);
+            fillForm(u || null);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } else if (act === "toggle") {
+            await toggleAtivoUser(id);
+          } else if (act === "reset") {
+            await resetSenhaUser(id);
+          }
+        } catch (e) {
+          setMsg(qs("formMsg"), e.message || "Falha na acao", false);
+        }
+      });
+
+      qs("reqTbody").addEventListener("click", async (ev) => {
+        const btn = ev.target.closest("button[data-req]");
+        if (!btn) return;
+        try { await setReqStatus(Number(btn.dataset.id), btn.dataset.req); }
+        catch (e) { alert(e.message || "Falha ao atualizar solicitacao"); }
+      });
+    }
+
+    (async function init() {
+      try {
+        bindEvents();
+        fillForm(null);
+        await loadMe();
+        await loadUsers();
+        await loadRequests();
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,18 +1,22 @@
-FROM nginx:alpine
+﻿FROM python:3.11-slim
 
-# Remove configuração padrão
-RUN rm /etc/nginx/conf.d/default.conf
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PORT=8181
 
-# Copia nossa configuração personalizada
-COPY nginx.conf /etc/nginx/conf.d/
+WORKDIR /app
 
-# Copia TODO o site (HTML + Dados) para dentro da imagem
-COPY public /usr/share/nginx/html
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Ajusta permissões para evitar erros de leitura
-RUN chmod -R 755 /usr/share/nginx/html && \
-    chown -R nginx:nginx /usr/share/nginx/html
+COPY api/requirements.txt /app/api/requirements.txt
+RUN pip install -r /app/api/requirements.txt
 
-EXPOSE 80
+COPY api /app/api
+COPY public /app/public
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 8181
+
+CMD ["sh", "-c", "python -m uvicorn api.app.main:app --host 0.0.0.0 --port ${PORT:-8181}"]

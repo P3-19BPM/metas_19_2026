@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minha Conta - Metas 19 BPM</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f3f5f8; color:#111827; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .card { background:#fff; border:1px solid #dbe2ea; border-radius:12px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.06); }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; }
+    label { display:block; margin:8px 0 4px; font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; }
+    input { width:100%; box-sizing:border-box; border:1px solid #cbd5e1; border-radius:8px; padding:10px; font-size:14px; }
+    button { border:1px solid #cbd5e1; background:#fff; border-radius:8px; padding:9px 12px; cursor:pointer; }
+    button.primary { background:#0f172a; color:#fff; border-color:#0f172a; }
+    .muted { color:#64748b; font-size:12px; }
+    .warn { background:#fff7ed; border:1px solid #fdba74; color:#9a3412; padding:10px 12px; border-radius:8px; margin-bottom:10px; }
+    .ok { color:#166534; }
+    .err { color:#b91c1c; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="actions" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div>
+        <h1 style="margin:0;font-size:22px;">Minha Conta</h1>
+        <div class="muted" id="userMeta">Carregando...</div>
+      </div>
+      <div class="actions">
+        <a href="/"><button>Painel</button></a>
+        <a href="/admin_users.html" id="adminLink" style="display:none;"><button>Administracao</button></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="forceWarn" class="warn" style="display:none;">
+        Sua conta esta com senha provisoria. Troque a senha agora para continuar.
+      </div>
+
+      <form id="pwdForm">
+        <label for="currentPwd">Senha atual</label>
+        <input id="currentPwd" type="password" autocomplete="current-password" required>
+
+        <label for="newPwd">Nova senha</label>
+        <input id="newPwd" type="password" autocomplete="new-password" required>
+
+        <label for="confirmPwd">Confirmar nova senha</label>
+        <input id="confirmPwd" type="password" autocomplete="new-password" required>
+
+        <div class="actions" style="margin-top:12px;">
+          <button type="submit" class="primary">Alterar senha</button>
+        </div>
+        <div id="msg" style="margin-top:10px;font-size:13px;"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function qs(id){ return document.getElementById(id); }
+    function qparam(name){ return new URLSearchParams(location.search).get(name) || ""; }
+    function setMsg(msg, ok){
+      const el = qs("msg");
+      el.textContent = msg || "";
+      el.className = ok === undefined ? "" : (ok ? "ok" : "err");
+    }
+    async function api(url, opts={}) {
+      const r = await fetch(url, {
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+        ...opts,
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.detail || `Erro HTTP ${r.status}`);
+      return data;
+    }
+
+    async function loadMe() {
+      const data = await api("/auth/me");
+      const u = data.user || {};
+      qs("userMeta").textContent = `${u.nome || u.username || "-"} | ${u.username || "-"} | perfil: ${u.perfil || "-"}`;
+      if (u.perfil === "admin" || data.source === "legacy_env") qs("adminLink").style.display = "";
+      const force = qparam("force_password") === "1" || !!u.must_change_password;
+      qs("forceWarn").style.display = force ? "" : "none";
+      return { data, user: u, force };
+    }
+
+    async function submitPwd(ev) {
+      ev.preventDefault();
+      setMsg("");
+      const current_password = qs("currentPwd").value;
+      const new_password = qs("newPwd").value;
+      const confirm = qs("confirmPwd").value;
+      if (!current_password || !new_password) return setMsg("Preencha os campos de senha.", false);
+      if (new_password.length < 6) return setMsg("A nova senha deve ter no minimo 6 caracteres.", false);
+      if (new_password !== confirm) return setMsg("A confirmacao da senha nao confere.", false);
+      try {
+        await api("/auth/me/password", { method: "POST", body: JSON.stringify({ current_password, new_password }) });
+        setMsg("Senha alterada com sucesso.", true);
+        qs("pwdForm").reset();
+        const next = qparam("next");
+        if (next && next.startsWith("/")) {
+          setTimeout(() => { location.href = next; }, 700);
+        }
+      } catch (e) {
+        setMsg(e.message || "Falha ao alterar senha.", false);
+      }
+    }
+
+    (async function init() {
+      try {
+        await loadMe();
+      } catch (e) {
+        setMsg(e.message || "Falha ao carregar usuario.", false);
+      }
+      qs("pwdForm").addEventListener("submit", submitPwd);
+    })();
+  </script>
+</body>
+</html>
