@@ -9,16 +9,17 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+  <link rel="stylesheet" href="./css/identidade_visual.css" />
 </head>
-<body class="bg-gray-100 text-gray-800" x-data="page()" x-init="$nextTick(() => init())">
-  <header class="bg-black text-white border-b-4 border-[#B3A369]">
+<body class="metas-theme text-gray-800" x-data="page()" x-init="$nextTick(() => init())">
+  <header class="metas-topbar bg-black text-white border-b-4 border-[#B3A369]">
     <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-[#B3A369] rounded flex items-center justify-center text-black shadow-inner overflow-hidden">
           <img src="./imagens/Icones_logo_19bpm/android-chrome-192x192.png" alt="Logo 19º BPM" class="w-8 h-8 object-contain">
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-wider leading-tight">METAS 19º bpm - 2026</h1>
+          <h1 class="metas-topbar-title text-lg font-bold tracking-wider leading-tight">METAS 19º bpm - 2026</h1>
           <p class="text-[10px] text-[#B3A369] font-semibold uppercase tracking-widest">19º BPM - PMMG</p>
         </div>
       </div>
@@ -39,54 +40,54 @@
   </header>
 
   <main class="max-w-7xl mx-auto p-4 space-y-4">
-    <div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-gray-100 p-5">
+    <div class="metas-surface bg-white rounded-2xl shadow-lg shadow-black/10 border border-gray-100 p-5">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 class="text-xl font-bold" x-text="titulo"></h1>
+          <h1 class="metas-title-display text-xl font-bold" x-text="titulo"></h1>
           <p class="text-sm text-gray-500">Analises dedicadas: resultado x meta, performance, variacao e exportacao de REDS.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button @click="switchIndicador('meta_imv')" class="px-3 py-2 text-xs font-semibold rounded border"
+          <button @click="switchIndicador('meta_imv')" class="metas-chip-btn px-3 py-2 text-xs font-semibold rounded border"
             :class="indicadorMeta === 'meta_imv' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">IMV</button>
-          <button @click="switchIndicador('meta_icvpe')" class="px-3 py-2 text-xs font-semibold rounded border"
+          <button @click="switchIndicador('meta_icvpe')" class="metas-chip-btn px-3 py-2 text-xs font-semibold rounded border"
             :class="indicadorMeta === 'meta_icvpe' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">ICVPe</button>
-          <button @click="switchIndicador('meta_icvpa')" class="px-3 py-2 text-xs font-semibold rounded border"
+          <button @click="switchIndicador('meta_icvpa')" class="metas-chip-btn px-3 py-2 text-xs font-semibold rounded border"
             :class="indicadorMeta === 'meta_icvpa' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">ICVPa</button>
-          <button @click="switchIndicador('meta_irtd')" class="px-3 py-2 text-xs font-semibold rounded border"
+          <button @click="switchIndicador('meta_irtd')" class="metas-chip-btn px-3 py-2 text-xs font-semibold rounded border"
             :class="indicadorMeta === 'meta_irtd' ? 'bg-black text-[#B3A369] border-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">IRTD</button>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-gray-100 p-5 space-y-4">
+    <div class="metas-surface bg-white rounded-2xl shadow-lg shadow-black/10 border border-gray-100 p-5 space-y-4">
       <div class="flex items-center justify-between gap-3">
         <div>
           <div class="text-sm font-semibold text-gray-700">Filtros e ações</div>
           <p x-show="!filtrosOpen" class="text-xs text-gray-500 mt-0.5">Clique em <span class="font-semibold">Abrir filtros</span> para ajustar ano, nivel, unidade e periodo.</p>
         </div>
-        <button @click="filtrosOpen = !filtrosOpen" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">
+        <button @click="filtrosOpen = !filtrosOpen" class="metas-chip-btn px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">
           <span x-text="filtrosOpen ? 'Ocultar filtros' : 'Abrir filtros'"></span>
         </button>
       </div>
 
       <div x-show="filtrosOpen" x-transition>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="metas-filter-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
           <p class="text-xs text-gray-500 uppercase font-semibold">API Base URL</p>
           <input x-model="apiBaseUrl" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" placeholder="https://meta.19bpm.mmpg.cloud" />
         </div>
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="metas-filter-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
           <p class="text-xs text-gray-500 uppercase font-semibold">Admin Token (opcional)</p>
           <input x-model="adminToken" type="password" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" placeholder="token" />
         </div>
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="metas-filter-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
           <p class="text-xs text-gray-500 uppercase font-semibold">Ano</p>
           <input x-model.number="ano" type="number" min="2000" max="2100" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none" />
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="metas-filter-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
           <p class="text-xs text-gray-500 uppercase font-semibold">Nível</p>
           <select x-model="kpiNivel" @change="kpiUnidadeId=''; mapSelectedKey=''; carregarUnidades(); atualizar()" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none">
             <option value="CIA_PM">Cia PM</option>
@@ -96,7 +97,7 @@
             <option value="MUNICIPIO">Município</option>
           </select>
         </div>
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm md:col-span-2">
+        <div class="metas-filter-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm md:col-span-2">
           <p class="text-xs text-gray-500 uppercase font-semibold">Unidade</p>
           <select x-model="kpiUnidadeId" @change="atualizar()" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none">
             <option value="">Todas</option>
@@ -109,7 +110,7 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="metas-filter-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
           <p class="text-xs text-gray-500 uppercase font-semibold">Período</p>
           <select x-model="periodoModo" @change="if(periodoModo==='ano'){mesFiltro=0}else if(!mesFiltro){mesFiltro=new Date().getMonth()+1}; atualizar()" class="mt-1 w-full bg-white border border-gray-300 text-sm rounded p-2 outline-none">
             <option value="ano">Ano completo</option>
@@ -122,30 +123,30 @@
             <option :value="9">Set</option><option :value="10">Out</option><option :value="11">Nov</option><option :value="12">Dez</option>
           </select>
         </div>
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm md:col-span-2">
+        <div class="metas-filter-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm md:col-span-2">
           <p class="text-xs text-gray-500 uppercase font-semibold">Ações</p>
           <div class="mt-1 flex flex-wrap gap-2">
-            <button @click="atualizar()" class="px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">Atualizar</button>
-            <button @click="abrirDetalhes()" class="px-3 py-2 text-xs font-semibold rounded border bg-black text-[#B3A369] border-black hover:brightness-110">Detalhes</button>
+            <button @click="atualizar()" class="metas-chip-btn px-3 py-2 text-xs font-semibold rounded border bg-white text-gray-700 border-gray-300 hover:bg-gray-50">Atualizar</button>
+            <button @click="abrirDetalhes()" class="metas-chip-btn px-3 py-2 text-xs font-semibold rounded border bg-black text-[#B3A369] border-black hover:brightness-110">Detalhes</button>
           </div>
         </div>
       </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="metas-kpi-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
           <p class="text-xs text-gray-500 uppercase font-semibold">Resultado</p>
           <p class="text-2xl font-bold text-gray-800" x-text="formatNumber(resumo.total_realizado || 0)"></p>
         </div>
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="metas-kpi-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
           <p class="text-xs text-gray-500 uppercase font-semibold" x-text="metaBpmCardLabel()"></p>
           <p class="text-2xl font-bold text-blue-700" x-text="formatNumber(metaBpmAtual())"></p>
         </div>
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm" x-show="kpiNivel === 'CIA_PM' && temPlrIndicador()">
+        <div class="metas-kpi-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm" x-show="kpiNivel === 'CIA_PM' && temPlrIndicador()">
           <p class="text-xs text-gray-500 uppercase font-semibold" x-text="metaPlrCardLabel()"></p>
           <p class="text-2xl font-bold text-blue-700" x-text="formatNumber(metaPlrAtual())"></p>
         </div>
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="metas-kpi-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
           <p class="text-xs text-gray-500 uppercase font-semibold">Cumprimento</p>
           <p class="text-2xl font-bold text-gray-800" x-text="formatNumber(cumprimento) + '%'"></p>
         </div>
@@ -156,43 +157,43 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="metas-kpi-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
           <p class="text-xs text-gray-500 uppercase font-semibold">Variação vs Meta BPM</p>
           <p class="text-2xl font-bold" :class="varMetaClass" x-text="varMetaLabel"></p>
           <p class="text-[10px] text-gray-400 mt-1" x-text="varMetaHint"></p>
         </div>
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm" x-show="kpiNivel === 'CIA_PM' && temPlrIndicador()">
+        <div class="metas-kpi-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm" x-show="kpiNivel === 'CIA_PM' && temPlrIndicador()">
           <p class="text-xs text-gray-500 uppercase font-semibold">Variação vs PLR</p>
           <p class="text-2xl font-bold" :class="varPlrClass" x-text="varPlrLabel"></p>
           <p class="text-[10px] text-gray-400 mt-1" x-text="varPlrHint"></p>
         </div>
-        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-sm md:col-span-2">
+        <div class="metas-kpi-card p-3 bg-white rounded-xl border border-gray-200 shadow-sm md:col-span-2">
           <p class="text-xs text-gray-500 uppercase font-semibold">Observação</p>
           <p class="text-xs text-gray-500 mt-2" x-text="observacaoMetasTexto()"></p>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:col-span-2">
+        <div class="metas-surface-soft bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:col-span-2">
           <div class="flex items-center justify-between">
             <h4 class="text-sm font-semibold text-gray-700">Evolução Mensal</h4>
             <span class="text-[11px] text-gray-400" x-text="periodoLabel()"></span>
           </div>
           <div id="chart-main" class="h-64 mt-3"></div>
         </div>
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-lg p-3 flex flex-col items-center justify-start">
+        <div class="metas-surface-soft bg-white rounded-2xl border border-gray-100 shadow-lg p-3 flex flex-col items-center justify-start">
           <h4 class="text-sm font-semibold text-gray-700 mb-2">Velocímetro</h4>
           <div class="w-80 h-52 -mt-1">
             <div id="gauge-main" class="w-full h-full"></div>
           </div>
         </div>
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:col-span-3" x-show="showCiaComparativoChart()">
+        <div class="metas-surface-soft bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:col-span-3" x-show="showCiaComparativoChart()">
           <div class="flex items-center justify-between">
             <h4 class="text-sm font-semibold text-gray-700" x-text="ciaComparativoTitulo()"></h4>
           </div>
           <div id="chart-cia-presos" class="h-72 mt-3"></div>
         </div>
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:col-span-3">
+        <div class="metas-surface-soft bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:col-span-3">
           <h4 class="text-sm font-semibold text-gray-700 mb-2">Mapa Tático</h4>
           <div id="map-main" class="h-72 w-full rounded-xl border border-gray-100"></div>
         </div>

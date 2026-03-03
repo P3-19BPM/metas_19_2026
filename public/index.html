@@ -16,8 +16,8 @@
     <meta name="theme-color" content="#000000">
         <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./css/identidade_visual.css">
     <!-- Charts/Map moved to /analises.html (keep metas page lightweight) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Alpine.js (Deferido) -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
@@ -29,7 +29,7 @@
                     colors: {
                         pmmg: { gold: '#B3A369', goldLight: '#D4C9A0', red: '#AB2328', black: '#000000', gray: '#373435', bg: '#F3F4F6' }
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                    fontFamily: { sans: ['Rawline', 'sans-serif'] }
                 }
             }
         }
@@ -1289,17 +1289,17 @@
     </script>
 </head>
 
-<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden" x-data="appData">
+<body class="metas-theme text-gray-800 font-sans h-screen flex flex-col overflow-hidden" x-data="appData">
 
     <!-- HEADER -->
-    <header class="bg-pmmg-black text-white shadow-lg z-30 flex-none border-b-4 border-pmmg-gold">
+    <header class="metas-topbar bg-pmmg-black text-white shadow-lg z-30 flex-none border-b-4 border-pmmg-gold">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div @click="openStatusModal()" class="flex items-center gap-3 cursor-pointer hover:opacity-95 transition" title="Abrir status da integracao">
                 <div class="w-10 h-10 bg-pmmg-gold rounded flex items-center justify-center text-pmmg-black shadow-inner overflow-hidden">
                     <img src="./imagens/Icones_logo_19bpm/android-chrome-192x192.png" alt="Logo 19?? BPM" class="w-8 h-8 object-contain">
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold tracking-wider leading-tight">METAS 19º bpm - 2026</h1>
+                    <h1 class="metas-topbar-title text-lg font-bold tracking-wider leading-tight">METAS 19º bpm - 2026</h1>
                     <p class="text-[10px] text-pmmg-gold font-semibold uppercase tracking-widest">19º BPM - PMMG</p>
                 </div>
             </div>
@@ -1324,7 +1324,7 @@
     <div class="flex flex-1 overflow-hidden relative">
         
         <!-- SIDEBAR -->
-        <nav class="bg-white md:w-72 flex-none border-r border-gray-200 flex md:flex-col absolute md:static top-0 w-full z-20 md:z-auto shadow-md md:shadow-none overflow-x-auto">
+        <nav class="metas-sidebar md:w-72 flex-none border-r border-gray-200 flex md:flex-col absolute md:static top-0 w-full z-20 md:z-auto shadow-md md:shadow-none overflow-x-auto">
             <div class="p-4 md:border-b border-gray-100 hidden md:block"><span class="text-xs font-bold text-gray-400 uppercase">Tipos de Metas</span></div>
 
             <div class="hidden md:block px-4 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Metas de Resultado do GDO</div>
@@ -1421,7 +1421,7 @@
         </nav>
 
         <!-- CONTEÚDO -->
-        <main class="flex-1 overflow-y-auto bg-gray-100 p-4 pt-20 md:pt-4 relative w-full">
+        <main class="flex-1 overflow-y-auto p-4 pt-20 md:pt-4 relative w-full">
             <div class="max-w-6xl mx-auto space-y-6">
                 
                 <div x-show="false" class="bg-white rounded-lg shadow-sm border-l-4 border-pmmg-black p-4 md:p-6">
@@ -1468,7 +1468,7 @@
                     <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Atenção:</p>
                     <p x-text="erroCarregamento"></p>
                 </div>
-                <div x-show="currentMeta === 'meta_ppag' && !loading" class="bg-white rounded-lg shadow-sm border-l-4 border-pmmg-gold p-4 md:p-6 space-y-5">
+                <div x-show="currentMeta === 'meta_ppag' && !loading" class="metas-surface bg-white rounded-lg shadow-sm border-l-4 border-pmmg-gold p-4 md:p-6 space-y-5">
                     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         <div>
                             <div class="flex items-center gap-2">
@@ -1683,7 +1683,7 @@
 
                 <!-- Painel Resumo e Filtros -->
 
-                <div x-show="currentMeta !== 'meta_ppag'" class="bg-white rounded-lg shadow-sm border-l-4 border-pmmg-gold p-4 md:p-6">
+                <div x-show="currentMeta !== 'meta_ppag'" class="metas-surface bg-white rounded-lg shadow-sm border-l-4 border-pmmg-gold p-4 md:p-6">
                     
                     <!-- LINHA 1: Título e Cards de Resumo BPM -->
                     <div class="flex flex-col xl:flex-row justify-between xl:items-center gap-6 mb-6">
@@ -1691,7 +1691,7 @@
                         <div class="flex-1 flex flex-col md:flex-row gap-6 md:items-center">
                             <!-- Título -->
                             <div class="shrink-0">
-                                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><span x-text="getNomeMetaAtual()"></span><span class="text-xs bg-pmmg-black text-pmmg-gold px-2 py-0.5 rounded uppercase">2026</span></h2>
+                                <h2 class="metas-title-display text-xl font-bold text-gray-800 flex items-center gap-2"><span x-text="getNomeMetaAtual()"></span><span class="text-xs bg-pmmg-black text-pmmg-gold px-2 py-0.5 rounded uppercase">2026</span></h2>
                                 <p class="text-sm text-gray-500 mt-1">Visão Estratégica</p>
                             </div>
 
