@@ -1,0 +1,466 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qualidade REDS - 19 BPM</title>
+  <style>
+    :root{
+      --bg:#f3eee2;
+      --panel:#fffdf8;
+      --ink:#1b160d;
+      --muted:#6f644c;
+      --line:#d8cfbc;
+      --black:#111;
+      --caqui:#a08f63;
+      --ok:#0c7a43;
+      --warn:#8a5a00;
+      --err:#8f1d22;
+      --card:#f7f2e6;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Segoe UI,Tahoma,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 10%,#fbf8ef,#f2ecdc 45%,#e8deca)}
+    .wrap{max-width:1260px;margin:0 auto;padding:16px}
+    .head{background:linear-gradient(90deg,#121212,#2b2b2b);color:#f4ead4;border:1px solid #000;border-radius:14px;padding:14px 16px;margin-bottom:12px}
+    .head h1{margin:0;font-size:24px}
+    .head p{margin:6px 0 0;color:#d0c6ae}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+    .grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+    .grid .full{grid-column:1/-1}
+    label{font-size:12px;color:var(--muted);font-weight:700;display:grid;gap:4px}
+    input,button,select,textarea{width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:#fff;color:var(--ink);font-size:14px}
+    textarea{height:auto;padding:10px;min-height:84px}
+    button{cursor:pointer;font-weight:700}
+    .btn-main{background:linear-gradient(#1a1a1a,#000);color:#fff;border-color:#000}
+    .btn-sub{background:linear-gradient(#b9aa7f,#a08f63);color:#1c160b;border-color:#8a7a52}
+    .msg{border-radius:10px;padding:10px;font-size:14px;border:1px solid var(--line);background:#f7f1e4}
+    .msg.ok{background:#edf8f2;border-color:#a4d3b9;color:var(--ok)}
+    .msg.warn{background:#fff8e9;border-color:#ead3a0;color:var(--warn)}
+    .msg.err{background:#fff0f1;border-color:#e6b7bb;color:var(--err)}
+    .hidden{display:none}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .card{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:10px}
+    .card .k{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700}
+    .card .v{font-size:22px;font-weight:800;line-height:1.1}
+    .card .s{font-size:12px;color:#5d523d;margin-top:2px}
+    .row-info{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:8px 0}
+    .mono{font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap}
+    .table-wrap{overflow:auto;max-height:62vh;border:1px solid var(--line);border-radius:10px}
+    table{width:100%;border-collapse:collapse;font-size:12px;background:#fff}
+    th,td{border:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
+    th{position:sticky;top:0;background:#f5efdf;z-index:2}
+    .flags{display:flex;flex-wrap:wrap;gap:4px}
+    .tag{border:1px solid #cdbf9e;background:#fff7e4;border-radius:999px;padding:1px 6px;font-size:11px}
+    .dirty{background:#fff8d8}
+    .small{font-size:12px;color:var(--muted)}
+    .chkline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .chkline label{display:flex;align-items:center;gap:4px;font-size:11px;color:#423b2b;font-weight:600}
+    .chkline input{width:auto;height:auto}
+    .cell-actions{display:flex;gap:6px}
+    .cell-actions button{height:30px;padding:0 8px;font-size:12px}
+    @media (max-width:1100px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:700px){.grid,.cards{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <h1>Qualidade REDS - Avaliacao Operacional</h1>
+      <p>Marcacao de ajustes por REDS, progresso de avaliacao e relatorio mensal da comissao.</p>
+    </div>
+
+    <div class="panel">
+      <div class="grid">
+        <label>Numero de Policia
+          <input id="nr" placeholder="Ex: 1438704">
+        </label>
+        <label>Data inicial
+          <input id="dateFrom" type="date">
+        </label>
+        <label>Data final
+          <input id="dateTo" type="date">
+        </label>
+        <label>CIA
+          <select id="cia">
+            <option value="">Selecione...</option>
+            <option value="42">42 CIA PM</option>
+            <option value="47">47 CIA PM</option>
+            <option value="155">155 CIA PM</option>
+            <option value="232">232 CIA PM</option>
+            <option value="74">74 CIA TM</option>
+          </select>
+        </label>
+        <div><button id="bAccess" class="btn-main">Validar acesso</button></div>
+        <div><button id="bRunNow" class="btn-sub">Run Now</button></div>
+        <div><button id="bAnalyze" class="btn-sub">Analisar base</button></div>
+        <div><button id="bLoadReview">Carregar avaliacao</button></div>
+        <div><button id="bSaveAll">Salvar marcacoes</button></div>
+        <div><button id="bMonthly">Gerar relatorio mensal</button></div>
+        <div class="full"><div id="accessMsg" class="msg">Informe numero de policia e valide acesso.</div></div>
+      </div>
+    </div>
+
+    <div id="blockedPanel" class="panel hidden">
+      <div class="msg err">Acesso nao autorizado para consulta de qualidade REDS. Entre em contato com a P3/19 BPM.</div>
+    </div>
+
+    <div id="dataPanel" class="hidden">
+      <div class="panel">
+        <div class="cards" id="kpiCards"></div>
+      </div>
+
+      <div class="panel">
+        <div class="row-info">
+          <div class="small" id="reviewInfo">Nenhum REDS carregado.</div>
+          <div class="small" id="dirtyInfo">0 alteracoes pendentes de salvar.</div>
+        </div>
+        <div class="table-wrap">
+          <table id="reviewTable">
+            <thead>
+              <tr>
+                <th>NR</th>
+                <th>Data</th>
+                <th>Natureza</th>
+                <th>Flags</th>
+                <th>Avaliado</th>
+                <th>Ajustes</th>
+                <th>Observacao</th>
+                <th>Acao</th>
+              </tr>
+            </thead>
+            <tbody id="reviewBody">
+              <tr><td colspan="8" class="small">Sem dados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="grid">
+          <div class="full">
+            <label>Texto relatorio mensal (modelo 1)
+              <textarea id="txtModelo1" readonly></textarea>
+            </label>
+          </div>
+          <div class="full">
+            <label>Texto relatorio mensal (modelo 2)
+              <textarea id="txtModelo2" readonly></textarea>
+            </label>
+          </div>
+          <div class="full"><div id="out" class="mono"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      checked:false,
+      allowed:false,
+      perfil:"",
+      cias:[],
+      rows:[],
+      dirty:new Set(),
+      kpis:null,
+    };
+
+    function detectNumeroPolicia(){
+      const img = document.querySelector("img.c-foto[alt]");
+      if (img && img.alt) $("nr").value = String(img.alt || "").trim();
+    }
+
+    function qs(params={}){
+      const u = new URLSearchParams();
+      Object.entries(params).forEach(([k,v]) => {
+        if (v !== undefined && v !== null && String(v).trim() !== "") u.set(k, String(v).trim());
+      });
+      return u.toString() ? `?${u.toString()}` : "";
+    }
+
+    async function api(path, options={}){
+      const resp = await fetch(path, {
+        credentials:"include",
+        headers:{"Content-Type":"application/json", ...(options.headers || {})},
+        method: options.method || "GET",
+        body: options.body || undefined
+      });
+      const txt = await resp.text();
+      let data = {};
+      try { data = txt ? JSON.parse(txt) : {}; } catch(_) { data = { raw: txt }; }
+      if (!resp.ok) throw new Error(data.detail || data.message || `Erro HTTP ${resp.status}`);
+      return data;
+    }
+
+    function selectedCia(){
+      return String($("cia").value || "").trim();
+    }
+
+    function selectedNr(){
+      return String($("nr").value || "").trim();
+    }
+
+    function renderMsg(msg, cls=""){
+      const el = $("accessMsg");
+      el.className = `msg ${cls}`.trim();
+      el.textContent = msg;
+    }
+
+    function normalizeCiaFromProfile(){
+      if (state.perfil !== "subcomissao") {
+        $("cia").disabled = false;
+        return;
+      }
+      if ((state.cias || []).length === 1) {
+        $("cia").value = String(state.cias[0]);
+        $("cia").disabled = true;
+      }
+    }
+
+    function togglePanels(){
+      $("blockedPanel").classList.toggle("hidden", !state.checked || state.allowed);
+      $("dataPanel").classList.toggle("hidden", !state.allowed);
+      ["bRunNow","bAnalyze","bLoadReview","bSaveAll","bMonthly"].forEach((id)=>{
+        const el = $(id);
+        if (el) el.disabled = !state.allowed;
+      });
+    }
+
+    async function validateAccess(){
+      const nr = selectedNr();
+      if (!nr){
+        state.checked = false;
+        state.allowed = false;
+        renderMsg("Informe o numero de policia.", "warn");
+        togglePanels();
+        return;
+      }
+      try {
+        const d = await api(`/quality/reds/access${qs({user_nr:nr})}`);
+        state.checked = true;
+        state.allowed = !!d.allowed;
+        state.perfil = d.perfil || "";
+        state.cias = d.cias || [];
+        normalizeCiaFromProfile();
+        if (state.allowed) renderMsg(`Acesso autorizado. Perfil: ${state.perfil}.`, "ok");
+        else renderMsg(d.message || "Acesso nao autorizado.", "err");
+      } catch (e) {
+        state.checked = true;
+        state.allowed = false;
+        renderMsg(String(e.message || e), "err");
+      }
+      togglePanels();
+    }
+
+    function mustCia(){
+      const cia = selectedCia();
+      if (!cia) throw new Error("Selecione a CIA.");
+      return cia;
+    }
+
+    function buildFlags(r){
+      const tags = [];
+      if (r.alerta_texto_curto) tags.push("TXT");
+      if (r.erro_ortografico) tags.push("ORT");
+      if (r.ausencia_pontuacao) tags.push("PONT");
+      if (r.historico_incompleto) tags.push("INC");
+      if (r.alerta_convergencia) tags.push("CONV");
+      if (r.alerta_padrao_operacional) tags.push("PAD");
+      if (r.alerta_classificacao) tags.push("CLASS");
+      if (r.alerta_c99) tags.push("C99");
+      if (r.alerta_w01 || r.alerta_w02 || r.alerta_w03 || r.alerta_w04) tags.push("W");
+      return tags;
+    }
+
+    function markDirty(idx){
+      state.dirty.add(idx);
+      $("dirtyInfo").textContent = `${state.dirty.size} alteracoes pendentes de salvar.`;
+    }
+
+    function clearDirty(){
+      state.dirty.clear();
+      $("dirtyInfo").textContent = "0 alteracoes pendentes de salvar.";
+    }
+
+    function renderCards(k){
+      const wrap = $("kpiCards");
+      if (!k) { wrap.innerHTML = ""; return; }
+      const cards = [
+        ["Total REDS no periodo", k.total_registros, `${k.total_avaliados} avaliados`],
+        ["Percentual avaliado", `${k.percentual_avaliado}%`, "progresso da comissao"],
+        ["Crimes violentos (E03012/E03014)", k.cv_total, `${k.cv_avaliados} avaliados`],
+        ["BOS W01-W04", k.w_total, `${k.w_avaliados} avaliados`],
+        ["REDS C99", k.c99_total, `${k.c99_avaliados} avaliados`],
+        ["Sinalizados por analise", k.sinalizados_total, `${k.sinalizados_avaliados} avaliados`],
+      ];
+      wrap.innerHTML = cards.map(c => `<div class="card"><div class="k">${c[0]}</div><div class="v">${c[1]}</div><div class="s">${c[2]}</div></div>`).join("");
+    }
+
+    function renderReviewTable(){
+      const body = $("reviewBody");
+      if (!state.rows.length){
+        body.innerHTML = '<tr><td colspan="8" class="small">Sem REDS para os filtros.</td></tr>';
+        $("reviewInfo").textContent = "Nenhum REDS carregado.";
+        return;
+      }
+      $("reviewInfo").textContent = `${state.rows.length} REDS carregados para avaliacao.`;
+      body.innerHTML = state.rows.map((r, idx) => {
+        const flags = buildFlags(r).map(f => `<span class="tag">${f}</span>`).join("") || "-";
+        const ajustes = new Set(Array.isArray(r.ajustes) ? r.ajustes : []);
+        const rowClass = state.dirty.has(idx) ? "dirty" : "";
+        return `
+          <tr data-idx="${idx}" class="${rowClass}">
+            <td>${r.numero_ocorrencia || ""}</td>
+            <td>${(r.data_fato || "").slice(0,10)}</td>
+            <td><b>${r.natureza_codigo || ""}</b><br><span class="small">${r.natureza_descricao_longa || ""}</span></td>
+            <td><div class="flags">${flags}</div></td>
+            <td><input type="checkbox" class="js-avaliado" ${r.avaliado ? "checked" : ""}></td>
+            <td>
+              <div class="chkline">
+                <label><input type="checkbox" class="js-aj" data-aj="Ajuste textual" ${ajustes.has("Ajuste textual") ? "checked" : ""}>Textual</label>
+                <label><input type="checkbox" class="js-aj" data-aj="Ajuste natureza" ${ajustes.has("Ajuste natureza") ? "checked" : ""}>Natureza</label>
+                <label><input type="checkbox" class="js-aj" data-aj="Ajuste classificacao" ${ajustes.has("Ajuste classificacao") ? "checked" : ""}>Classificacao</label>
+                <label><input type="checkbox" class="js-aj" data-aj="Ajuste procedimento" ${ajustes.has("Ajuste procedimento") ? "checked" : ""}>Procedimento</label>
+              </div>
+            </td>
+            <td><textarea class="js-obs" rows="2">${(r.observacao || "").replace(/</g, "&lt;")}</textarea></td>
+            <td><div class="cell-actions"><button class="js-save">Salvar</button></div></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function runNow(){
+      const nr = selectedNr();
+      const d = await api(`/quality/reds/run-now${qs({user_nr:nr})}`, { method:"POST", body: JSON.stringify({ scripts: [] }) });
+      $("out").textContent = JSON.stringify(d, null, 2);
+    }
+
+    async function analyze(){
+      const nr = selectedNr();
+      const cia = selectedCia();
+      const payload = {
+        date_from: $("dateFrom").value || null,
+        date_to: $("dateTo").value || null,
+        cia_pm: cia || null,
+        limit: 50000,
+        persist: true
+      };
+      const d = await api(`/quality/reds/analyze${qs({user_nr:nr})}`, { method:"POST", body: JSON.stringify(payload) });
+      $("out").textContent = JSON.stringify(d, null, 2);
+    }
+
+    async function loadReview(){
+      const nr = selectedNr();
+      const cia = mustCia();
+      const d = await api(`/quality/reds/review/${encodeURIComponent(cia)}${qs({user_nr:nr, date_from:$("dateFrom").value, date_to:$("dateTo").value, limit:5000})}`);
+      state.rows = (d.rows || []).map(r => ({ ...r, ajustes: Array.isArray(r.ajustes) ? r.ajustes : [] }));
+      clearDirty();
+      renderReviewTable();
+      await loadMonthlyKpis();
+    }
+
+    async function saveRows(rows){
+      const nr = selectedNr();
+      const cia = mustCia();
+      const payload = { rows: rows.map(r => ({
+        numero_ocorrencia: r.numero_ocorrencia,
+        avaliado: !!r.avaliado,
+        ajustes: Array.isArray(r.ajustes) ? r.ajustes : [],
+        observacao: r.observacao || "",
+      }))};
+      return api(`/quality/reds/review/upsert${qs({user_nr:nr, cia_pm:cia})}`, { method:"POST", body: JSON.stringify(payload) });
+    }
+
+    async function saveOne(idx){
+      const row = state.rows[idx];
+      if (!row) return;
+      const d = await saveRows([row]);
+      state.dirty.delete(idx);
+      $("dirtyInfo").textContent = `${state.dirty.size} alteracoes pendentes de salvar.`;
+      $("out").textContent = JSON.stringify(d, null, 2);
+      renderReviewTable();
+      await loadMonthlyKpis();
+    }
+
+    async function saveAll(){
+      if (!state.dirty.size) return;
+      const rows = [...state.dirty].map(i => state.rows[i]).filter(Boolean);
+      const d = await saveRows(rows);
+      clearDirty();
+      $("out").textContent = JSON.stringify(d, null, 2);
+      renderReviewTable();
+      await loadMonthlyKpis();
+    }
+
+    async function loadMonthlyKpis(){
+      const nr = selectedNr();
+      const cia = mustCia();
+      const d = await api(`/quality/reds/monthly-kpis/${encodeURIComponent(cia)}${qs({user_nr:nr, date_from:$("dateFrom").value, date_to:$("dateTo").value})}`);
+      state.kpis = d;
+      renderCards(d);
+    }
+
+    async function loadMonthlyReport(){
+      const nr = selectedNr();
+      const cia = mustCia();
+      const d = await api(`/quality/reds/monthly-report/${encodeURIComponent(cia)}${qs({user_nr:nr, date_from:$("dateFrom").value, date_to:$("dateTo").value})}`);
+      $("txtModelo1").value = d.texto_modelo_1 || "";
+      $("txtModelo2").value = d.texto_modelo_2 || "";
+      if (d.kpis) renderCards(d.kpis);
+      $("out").textContent = JSON.stringify(d.kpis || {}, null, 2);
+    }
+
+    $("reviewBody").addEventListener("change", (ev) => {
+      const tr = ev.target.closest("tr[data-idx]");
+      if (!tr) return;
+      const idx = Number(tr.dataset.idx);
+      const row = state.rows[idx];
+      if (!row) return;
+      if (ev.target.classList.contains("js-avaliado")) {
+        row.avaliado = !!ev.target.checked;
+        markDirty(idx);
+      }
+      if (ev.target.classList.contains("js-aj")) {
+        const aj = String(ev.target.dataset.aj || "");
+        const cur = new Set(Array.isArray(row.ajustes) ? row.ajustes : []);
+        if (ev.target.checked) cur.add(aj); else cur.delete(aj);
+        row.ajustes = [...cur];
+        markDirty(idx);
+      }
+      renderReviewTable();
+    });
+
+    $("reviewBody").addEventListener("input", (ev) => {
+      const tr = ev.target.closest("tr[data-idx]");
+      if (!tr) return;
+      const idx = Number(tr.dataset.idx);
+      const row = state.rows[idx];
+      if (!row) return;
+      if (ev.target.classList.contains("js-obs")) {
+        row.observacao = String(ev.target.value || "");
+        markDirty(idx);
+      }
+    });
+
+    $("reviewBody").addEventListener("click", async (ev) => {
+      if (!ev.target.classList.contains("js-save")) return;
+      const tr = ev.target.closest("tr[data-idx]");
+      if (!tr) return;
+      const idx = Number(tr.dataset.idx);
+      try { await saveOne(idx); } catch(e) { $("out").textContent = String(e.message || e); }
+    });
+
+    $("bAccess").onclick = () => validateAccess();
+    $("bRunNow").onclick = async () => { try { await runNow(); } catch(e){ $("out").textContent = String(e.message||e); } };
+    $("bAnalyze").onclick = async () => { try { await analyze(); } catch(e){ $("out").textContent = String(e.message||e); } };
+    $("bLoadReview").onclick = async () => { try { await loadReview(); } catch(e){ $("out").textContent = String(e.message||e); } };
+    $("bSaveAll").onclick = async () => { try { await saveAll(); } catch(e){ $("out").textContent = String(e.message||e); } };
+    $("bMonthly").onclick = async () => { try { await loadMonthlyReport(); } catch(e){ $("out").textContent = String(e.message||e); } };
+
+    detectNumeroPolicia();
+    if ($("nr").value.trim()) validateAccess();
+    else togglePanels();
+  </script>
+</body>
+</html>

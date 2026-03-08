@@ -82,6 +82,27 @@ from .schemas import (
     MapaAssignmentStatusIn,
     MapaAssignmentUpsertIn,
 )
+from .quality_reds_schemas import (
+    QualityRedsAnalyzeIn,
+    QualityRedsEvaluationUpsertIn,
+    QualityRedsIngestIn,
+    QualityRedsRunNowIn,
+)
+from .quality_reds_service import analyze_quality_rows
+from .quality_reds_store import (
+    build_qr_monthly_report,
+    ensure_quality_tables,
+    get_qr_company_report,
+    get_qr_company_summary,
+    get_qr_dashboard,
+    get_qr_monthly_kpis,
+    list_qr_review_rows,
+    list_qr_raw_rows,
+    upsert_qr_evaluation_rows,
+    upsert_qr_quality_rows,
+    upsert_qr_raw_rows,
+)
+from .services.access_control import can_access_cia, filter_by_permission, normalize_user_nr, resolve_profile
 from .intranet_mapa_utils import (
     build_xlsx_bytes,
     list_mapa_bairro_rows,
@@ -298,8 +319,55 @@ def _check_admin_or_ui(request: Request, x_admin_token: str = Header(default="")
         raise HTTPException(status_code=401, detail="invalid admin token")
 
 
+def _quality_user_nr_from_request(request: Request, user_nr: str | None = None) -> str:
+    q = normalize_user_nr(user_nr or "")
+    if q:
+        return q
+    hdr = normalize_user_nr(request.headers.get("x-numero-policia") or "")
+    if hdr:
+        return hdr
+    db_user = _session_db_user(request) or {}
+    sess = normalize_user_nr(db_user.get("numero_policia") or _session_user_from_request(request) or "")
+    return sess
+
+
+def _quality_require_profile(request: Request, user_nr: str | None = None) -> tuple[str, dict]:
+    nr = _quality_user_nr_from_request(request, user_nr=user_nr)
+    if not nr:
+        raise HTTPException(
+            status_code=400,
+            detail="numero_policia ausente. Envie user_nr ou header x-numero-policia.",
+        )
+    profile = resolve_profile(nr)
+    if str(profile.get("perfil") or "") == "sem_acesso":
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Acesso nao autorizado para qualidade REDS. "
+                "Entre em contato com a P3 para inclusao na comissao/subcomissao."
+            ),
+        )
+    return nr, profile
+
+
 def _mapa_html_path() -> Path:
     return Path(__file__).resolve().parents[2] / "public" / "intranet_mapa_comando.html"
+
+
+def _scripts_sql_root() -> Path:
+    return Path(__file__).resolve().parents[2] / "public" / "data" / "scripts_sql"
+
+
+def _list_sql_catalog() -> list[str]:
+    root = _scripts_sql_root()
+    if not root.exists():
+        return []
+    out: list[str] = []
+    for sql_file in sorted(root.rglob("*.sql")):
+        rel = sql_file.relative_to(root).as_posix()
+        if rel:
+            out.append(rel)
+    return out
 
 
 def _mapa_scope_norm(value: str) -> str:
@@ -613,6 +681,7 @@ def _minio_public_object_url(object_name: str) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    ensure_quality_tables()
     stop = False
 
     async def _loop() -> None:
@@ -1093,6 +1162,12 @@ def manual_job(payload: ManualJobIn, _: None = Depends(_check_admin_or_ui)) -> d
     return {"ok": True, "job_id": job_id}
 
 
+@app.get("/scripts/catalog")
+def scripts_catalog(_: None = Depends(_check_admin_or_ui)) -> dict:
+    scripts = _list_sql_catalog()
+    return {"scripts": scripts, "count": len(scripts), "root": str(_scripts_sql_root())}
+
+
 @app.post("/ingest/kpi")
 def ingest_kpi(payload: KpiIngestIn, _: None = Depends(_check_agent_token)) -> dict:
     stats = upsert_kpi_rows([row.model_dump() for row in payload.rows])
@@ -1295,6 +1370,202 @@ def reds_cia_presos(
         limit=limit,
     )
     return {"rows": rows}
+
+
+@app.post("/quality/reds/ingest")
+def quality_reds_ingest(payload: QualityRedsIngestIn, _: None = Depends(_check_agent_token)) -> dict:
+    stats = upsert_qr_raw_rows([row.model_dump() for row in payload.rows])
+    return {"ok": True, **stats}
+
+
+@app.post("/quality/reds/run-now")
+def quality_reds_run_now(
+    request: Request,
+    payload: QualityRedsRunNowIn,
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr, profile = _quality_require_profile(request, user_nr=user_nr)
+    job_id = create_job(
+        job_type="quality_reds_manual",
+        requested_by=f"ui_quality:{nr}",
+        payload={"run_mode": "quality_reds", "scripts": payload.scripts, "source": "quality_reds_api"},
+    )
+    return {
+        "ok": True,
+        "job_id": job_id,
+        "perfil": profile.get("perfil"),
+        "message": "Job quality_reds enfileirado. Acompanhe pelo status/jobs e depois execute /quality/reds/analyze.",
+    }
+
+
+@app.post("/quality/reds/analyze")
+def quality_reds_analyze(
+    request: Request,
+    payload: QualityRedsAnalyzeIn,
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr, profile = _quality_require_profile(request, user_nr=user_nr)
+    raw_rows = list_qr_raw_rows(
+        date_from=payload.date_from,
+        date_to=payload.date_to,
+        cia_pm=payload.cia_pm,
+        pelotao_pm=payload.pelotao_pm,
+        natureza_codigo=payload.natureza_codigo,
+        limit=payload.limit,
+    )
+    raw_rows = filter_by_permission(nr, payload.cia_pm or "", raw_rows)
+    analysis = analyze_quality_rows(raw_rows)
+    persist_stats = {"received": 0, "upserted": 0}
+    if payload.persist:
+        persist_stats = upsert_qr_quality_rows(analysis.get("rows", []))
+    return {
+        "ok": True,
+        "perfil": profile.get("perfil"),
+        "summary": analysis.get("summary", {}),
+        "persist": payload.persist,
+        "persist_stats": persist_stats,
+    }
+
+
+@app.get("/quality/reds/access")
+def quality_reds_access(
+    request: Request,
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr = _quality_user_nr_from_request(request, user_nr=user_nr)
+    profile = resolve_profile(nr)
+    allowed = str(profile.get("perfil") or "") in {"dev", "comissao", "subcomissao"}
+    return {
+        "numero_policia": nr,
+        "perfil": profile.get("perfil"),
+        "cias": profile.get("cias") or [],
+        "allowed": allowed,
+        "message": (
+            "Acesso autorizado."
+            if allowed
+            else "Acesso nao autorizado. Entre em contato com a P3 para inclusao."
+        ),
+    }
+
+
+@app.get("/quality/reds/dashboard")
+def quality_reds_dashboard(
+    request: Request,
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr, profile = _quality_require_profile(request, user_nr=user_nr)
+    cia_forced = None
+    if str(profile.get("perfil") or "") == "subcomissao":
+        cias = profile.get("cias") or []
+        cia_forced = str(cias[0]) if cias else "__SEM_CIA__"
+    return get_qr_dashboard(date_from=date_from, date_to=date_to, cia_pm=cia_forced)
+
+
+@app.get("/quality/reds/company/{cia_pm}")
+def quality_reds_company(
+    request: Request,
+    cia_pm: str,
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr, _ = _quality_require_profile(request, user_nr=user_nr)
+    if not can_access_cia(nr, cia_pm):
+        raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    return get_qr_company_summary(cia_pm=cia_pm, date_from=date_from, date_to=date_to)
+
+
+@app.get("/quality/reds/report/{cia_pm}")
+def quality_reds_report(
+    request: Request,
+    cia_pm: str,
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    limit: int = Query(default=2000, ge=1, le=50000),
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr, _ = _quality_require_profile(request, user_nr=user_nr)
+    if not can_access_cia(nr, cia_pm):
+        raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    rows = get_qr_company_report(cia_pm=cia_pm, date_from=date_from, date_to=date_to, limit=limit)
+    return {"rows": rows}
+
+
+@app.get("/quality/reds/review/{cia_pm}")
+def quality_reds_review_rows(
+    request: Request,
+    cia_pm: str,
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    only_pending: bool = Query(default=False),
+    limit: int = Query(default=2000, ge=1, le=50000),
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr, _ = _quality_require_profile(request, user_nr=user_nr)
+    if not can_access_cia(nr, cia_pm):
+        raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    rows = list_qr_review_rows(
+        cia_pm=cia_pm,
+        date_from=date_from,
+        date_to=date_to,
+        limit=limit,
+        only_pending=only_pending,
+    )
+    return {"rows": rows}
+
+
+@app.post("/quality/reds/review/upsert")
+def quality_reds_review_upsert(
+    request: Request,
+    payload: QualityRedsEvaluationUpsertIn,
+    user_nr: str | None = Query(default=None),
+    cia_pm: str = Query(...),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr, _ = _quality_require_profile(request, user_nr=user_nr)
+    if not can_access_cia(nr, cia_pm):
+        raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    stats = upsert_qr_evaluation_rows([row.model_dump() for row in payload.rows], avaliado_por=nr)
+    return {"ok": True, **stats}
+
+
+@app.get("/quality/reds/monthly-kpis/{cia_pm}")
+def quality_reds_monthly_kpis(
+    request: Request,
+    cia_pm: str,
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr, _ = _quality_require_profile(request, user_nr=user_nr)
+    if not can_access_cia(nr, cia_pm):
+        raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    return get_qr_monthly_kpis(cia_pm=cia_pm, date_from=date_from, date_to=date_to)
+
+
+@app.get("/quality/reds/monthly-report/{cia_pm}")
+def quality_reds_monthly_report(
+    request: Request,
+    cia_pm: str,
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    nr, _ = _quality_require_profile(request, user_nr=user_nr)
+    if not can_access_cia(nr, cia_pm):
+        raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    return build_qr_monthly_report(cia_pm=cia_pm, date_from=date_from, date_to=date_to)
 
 
 @app.get("/intranet_mapa_comando.html", response_class=HTMLResponse)

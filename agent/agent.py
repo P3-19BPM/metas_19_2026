@@ -71,11 +71,41 @@ def _sanitize_json_value(value: Any) -> Any:
     return value
 
 
+def _is_quality_reds_script(path: str) -> bool:
+    p = str(path or "").strip().replace("\\", "/").lower()
+    if not p:
+        return False
+    return p.endswith("/qualidade_reds.sql") or p == "qualidade_reds.sql" or "qualidade_reds/" in p
+
+
 def execute_job(job: dict[str, Any]) -> dict[str, Any]:
     payload = job.get('payload', {}) if isinstance(job, dict) else {}
     run_mode = payload.get('run_mode', 'all')
     scripts = payload.get('scripts', [])
+    run_mode_norm = str(run_mode).strip().lower()
+    if run_mode_norm == 'selected' and scripts and all(_is_quality_reds_script(s) for s in scripts):
+        _log("run_mode selected detectou apenas script de qualidade REDS; redirecionando para run_mode=quality_reds")
+        run_mode = 'quality_reds'
+        run_mode_norm = 'quality_reds'
     _log(f"job iniciado: run_mode={run_mode} scripts={scripts}")
+
+    if run_mode_norm == 'quality_reds':
+        from quality_reds_pipeline import run_quality_reds_pipeline
+        result = run_quality_reds_pipeline(scripts=scripts)
+        quality_rows = result.pop('quality_rows', [])
+        if quality_rows:
+            _log(f"enviando quality reds: {len(quality_rows)} linhas")
+            batch_size = 1000
+            total_upserted = 0
+            for i in range(0, len(quality_rows), batch_size):
+                chunk = quality_rows[i:i + batch_size]
+                ingest_resp = post('/quality/reds/ingest', {'rows': chunk})
+                total_upserted += int(ingest_resp.get('upserted', 0))
+            result['quality_ingest'] = {'received': len(quality_rows), 'upserted': total_upserted}
+            _log(f"quality reds ingest: received={len(quality_rows)} upserted={total_upserted}")
+        result['agent_id'] = AGENT_ID
+        return result
+
     result = run_extraction(run_mode=run_mode, scripts=scripts)
     _log(
         "extracao concluida: "
