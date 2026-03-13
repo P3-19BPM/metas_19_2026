@@ -78,11 +78,38 @@ def _is_quality_reds_script(path: str) -> bool:
     return p.endswith("/qualidade_reds.sql") or p == "qualidade_reds.sql" or "qualidade_reds/" in p
 
 
+def _run_quality_reds_job(scripts: list[str]) -> dict[str, Any]:
+    from quality_reds_pipeline import run_quality_reds_pipeline
+
+    result = run_quality_reds_pipeline(scripts=scripts)
+    quality_rows = result.pop('quality_rows', [])
+    if quality_rows:
+        _log(f"enviando quality reds: {len(quality_rows)} linhas")
+        batch_size = 1000
+        total_upserted = 0
+        for i in range(0, len(quality_rows), batch_size):
+            chunk = quality_rows[i:i + batch_size]
+            ingest_resp = post('/quality/reds/ingest', {'rows': chunk})
+            total_upserted += int(ingest_resp.get('upserted', 0))
+        result['quality_ingest'] = {'received': len(quality_rows), 'upserted': total_upserted}
+        _log(f"quality reds ingest: received={len(quality_rows)} upserted={total_upserted}")
+    result['agent_id'] = AGENT_ID
+    return result
+
+
 def execute_job(job: dict[str, Any]) -> dict[str, Any]:
     payload = job.get('payload', {}) if isinstance(job, dict) else {}
     run_mode = payload.get('run_mode', 'all')
     scripts = payload.get('scripts', [])
     run_mode_norm = str(run_mode).strip().lower()
+    run_quality_after: list[str] = []
+    if run_mode_norm == 'selected' and scripts:
+        quality_scripts = [s for s in scripts if _is_quality_reds_script(s)]
+        normal_scripts = [s for s in scripts if not _is_quality_reds_script(s)]
+        if quality_scripts and normal_scripts:
+            _log("run_mode selected com scripts mistos; separando qualidade REDS para pipeline dedicado")
+            scripts = normal_scripts
+            run_quality_after = quality_scripts
     if run_mode_norm == 'selected' and scripts and all(_is_quality_reds_script(s) for s in scripts):
         _log("run_mode selected detectou apenas script de qualidade REDS; redirecionando para run_mode=quality_reds")
         run_mode = 'quality_reds'
@@ -90,21 +117,7 @@ def execute_job(job: dict[str, Any]) -> dict[str, Any]:
     _log(f"job iniciado: run_mode={run_mode} scripts={scripts}")
 
     if run_mode_norm == 'quality_reds':
-        from quality_reds_pipeline import run_quality_reds_pipeline
-        result = run_quality_reds_pipeline(scripts=scripts)
-        quality_rows = result.pop('quality_rows', [])
-        if quality_rows:
-            _log(f"enviando quality reds: {len(quality_rows)} linhas")
-            batch_size = 1000
-            total_upserted = 0
-            for i in range(0, len(quality_rows), batch_size):
-                chunk = quality_rows[i:i + batch_size]
-                ingest_resp = post('/quality/reds/ingest', {'rows': chunk})
-                total_upserted += int(ingest_resp.get('upserted', 0))
-            result['quality_ingest'] = {'received': len(quality_rows), 'upserted': total_upserted}
-            _log(f"quality reds ingest: received={len(quality_rows)} upserted={total_upserted}")
-        result['agent_id'] = AGENT_ID
-        return result
+        return _run_quality_reds_job(scripts=scripts)
 
     result = run_extraction(run_mode=run_mode, scripts=scripts)
     _log(
@@ -201,6 +214,14 @@ def execute_job(job: dict[str, Any]) -> dict[str, Any]:
             result['fact_ingest'] = fact_ingest
         if fact_errors:
             result['fact_errors'] = fact_errors
+
+    if run_quality_after:
+        q = _run_quality_reds_job(scripts=run_quality_after)
+        result['quality_reds'] = q
+        _log(
+            "quality reds integrado ao job misto: "
+            f"rows_total={q.get('rows_total')} upserted={((q.get('quality_ingest') or {}).get('upserted'))}"
+        )
     result['agent_id'] = AGENT_ID
     return result
 

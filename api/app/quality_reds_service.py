@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 from collections import Counter
 from typing import Any
 
@@ -30,6 +31,25 @@ _NATURE_KEYWORDS = {
     "ESTUPRO": ("estupro", "conjuncao carnal"),
 }
 
+_PLATE_PATTERNS = (
+    re.compile(r"^[A-Z]{3}[0-9]{4}$"),  # antigo: ABC1234
+    re.compile(r"^[A-Z]{3}[0-9][A-Z][0-9]{2}$"),  # mercosul: ABC1D23
+    re.compile(r"^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$"),  # tolerante
+)
+
+_ALPHANUM_CODE_PATTERNS = (
+    re.compile(r"^[A-Z][0-9]{5,}$"),  # ex: W01000
+    re.compile(r"^[A-Z]{2,}[0-9]{2,}$"),
+    re.compile(r"^[0-9]{5,}[A-Z]?$"),
+)
+
+_COMMON_MISSPELLINGS = {
+    "ocorencia", "ocorrenciaa", "veiulo", "veciulo", "vitma", "vitinma",
+    "testmunha", "abordajem", "condusido", "suspeitoo", "apreensaoo",
+    "delegaciaa", "flagrantee", "homiicidio", "homissidio", "furtto",
+    "rouboo", "ameacaa", "historioco", "guarnicaoo",
+}
+
 
 def _norm_text(value: Any) -> str:
     text = str(value or "").strip().lower()
@@ -38,7 +58,73 @@ def _norm_text(value: Any) -> str:
 
 
 def _tokenize(text: str) -> list[str]:
-    return re.findall(r"[a-zA-ZÀ-ÿ0-9]+", text or "")
+    return re.findall(r"[A-Za-z\u00C0-\u00FF0-9]+", text or "")
+
+
+def _strip_accents(text: str) -> str:
+    norm = unicodedata.normalize("NFD", text or "")
+    return "".join(ch for ch in norm if unicodedata.category(ch) != "Mn")
+
+
+def _norm_token(token: str) -> str:
+    return _strip_accents(str(token or "").strip().lower())
+
+
+def _is_vehicle_plate_token(token: str) -> bool:
+    t = re.sub(r"[^A-Za-z0-9]", "", str(token or "")).upper()
+    if len(t) < 7 or len(t) > 8:
+        return False
+    return any(p.match(t) for p in _PLATE_PATTERNS)
+
+
+def _is_known_code_token(token: str) -> bool:
+    t = re.sub(r"[^A-Za-z0-9]", "", str(token or "")).upper()
+    return any(p.match(t) for p in _ALPHANUM_CODE_PATTERNS)
+
+
+def _orthography_error_flag(words: list[str]) -> bool:
+    valid_words = 0
+    suspicious = 0
+    explicit_miss = 0
+    for raw in words:
+        tok = str(raw or "").strip()
+        if len(tok) <= 1:
+            continue
+        lw = _norm_token(tok)
+        if not lw:
+            continue
+
+        # Ignore identifiers (placas/codigos) to reduce false positives.
+        if _is_vehicle_plate_token(tok) or _is_known_code_token(tok):
+            continue
+        if lw.isdigit():
+            continue
+
+        valid_words += 1
+        cur_suspicious = False
+        if lw in _COMMON_MISSPELLINGS:
+            explicit_miss += 1
+            cur_suspicious = True
+        if re.search(r"(.)\1{3,}", lw):
+            cur_suspicious = True
+        if len(lw) >= 7 and not re.search(r"[aeiou]", lw):
+            cur_suspicious = True
+        if re.search(r"[0-9]", tok) and re.search(r"[A-Za-z]", tok):
+            cur_suspicious = True
+
+        if cur_suspicious:
+            suspicious += 1
+
+    if valid_words == 0:
+        return False
+    ratio = suspicious / max(1, valid_words)
+    if explicit_miss >= 1:
+        return True
+    if valid_words <= 12 and suspicious >= 1:
+        return True
+    if suspicious >= 2:
+        return True
+    return ratio >= 0.12
 
 
 def _text_quality(historico: str) -> dict[str, Any]:
@@ -58,19 +144,7 @@ def _text_quality(historico: str) -> dict[str, Any]:
     short_text = word_count < 20
     no_punct = not bool(re.search(r"[.;,:!?]", t))
     generic = any(p in t for p in _GENERIC_PATTERNS)
-
-    weird_words = 0
-    for w in words:
-        lw = w.lower()
-        if re.search(r"(.)\1{3,}", lw):
-            weird_words += 1
-            continue
-        if re.search(r"[0-9]", lw) and re.search(r"[a-zA-ZÀ-ÿ]", lw):
-            weird_words += 1
-            continue
-        if len(lw) >= 6 and not re.search(r"[aeiouáéíóúãõâêôà]", lw):
-            weird_words += 1
-    typo = (word_count >= 8) and (weird_words / max(1, word_count) >= 0.2)
+    typo = _orthography_error_flag(words)
 
     essential_hits = 0
     for _, keys in _ESSENTIAL_BLOCKS.items():
@@ -266,4 +340,5 @@ def analyze_quality_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "score_medio": score_medio,
         },
     }
+
 

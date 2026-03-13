@@ -28,12 +28,15 @@ def _normalize_quality_df(df: pd.DataFrame) -> pd.DataFrame:
     out["cia_pm"] = df.get(_pick_col(df, ["cia_pm"]), None)
     out["pelotao_pm"] = df.get(_pick_col(df, ["pelotao_pm", "pelotao"]), None)
     out["data_hora_fato"] = pd.to_datetime(df.get(_pick_col(df, ["data_hora_fato"])), errors="coerce")
+    out["data_hora_inclusao"] = pd.to_datetime(df.get(_pick_col(df, ["data_hora_inclusao"])), errors="coerce")
+    out["data_hora_final"] = pd.to_datetime(df.get(_pick_col(df, ["data_hora_final"])), errors="coerce")
     out["data_fato"] = pd.to_datetime(df.get(_pick_col(df, ["data_fato"])), errors="coerce")
     out["mes"] = pd.to_numeric(df.get(_pick_col(df, ["mes"])), errors="coerce")
     out["ano"] = pd.to_numeric(df.get(_pick_col(df, ["ano"])), errors="coerce")
     out["data_hora_fechamento"] = pd.to_datetime(
         df.get(_pick_col(df, ["data_hora_fechamento"])), errors="coerce"
     )
+    out["descricao_estado"] = df.get(_pick_col(df, ["descricao_estado"]), None)
     out["data_hora_alteracao"] = pd.to_datetime(
         df.get(_pick_col(df, ["data_hora_alteracao"])), errors="coerce"
     )
@@ -49,6 +52,12 @@ def _normalize_quality_df(df: pd.DataFrame) -> pd.DataFrame:
     out["natureza_descricao_longa"] = df.get(
         _pick_col(df, ["natureza_descricao_longa", "natureza_descricao"]), None
     )
+    out["natureza_secundaria1_codigo"] = df.get(_pick_col(df, ["natureza_secundaria1_codigo"]), None)
+    out["natureza_secundaria1_descricao"] = df.get(_pick_col(df, ["natureza_secundaria1_descricao"]), None)
+    out["natureza_secundaria2_codigo"] = df.get(_pick_col(df, ["natureza_secundaria2_codigo"]), None)
+    out["natureza_secundaria2_descricao"] = df.get(_pick_col(df, ["natureza_secundaria2_descricao"]), None)
+    out["natureza_secundaria3_codigo"] = df.get(_pick_col(df, ["natureza_secundaria3_codigo"]), None)
+    out["natureza_secundaria3_descricao"] = df.get(_pick_col(df, ["natureza_secundaria3_descricao"]), None)
     out["historico_ocorrencia"] = df.get(_pick_col(df, ["historico_ocorrencia"]), None)
 
     if out["data_fato"].isna().all():
@@ -58,7 +67,16 @@ def _normalize_quality_df(df: pd.DataFrame) -> pd.DataFrame:
     if out["ano"].isna().all():
         out["ano"] = out["data_hora_fato"].dt.year
 
-    for col in ("numero_ocorrencia", "cia_pm", "pelotao_pm", "natureza_codigo"):
+    for col in (
+        "numero_ocorrencia",
+        "cia_pm",
+        "pelotao_pm",
+        "descricao_estado",
+        "natureza_codigo",
+        "natureza_secundaria1_codigo",
+        "natureza_secundaria2_codigo",
+        "natureza_secundaria3_codigo",
+    ):
         out[col] = out[col].astype("string")
     return out
 
@@ -67,6 +85,8 @@ def _rows_from_quality_df(df: pd.DataFrame) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     dt_cols = {
         "data_hora_fato",
+        "data_hora_inclusao",
+        "data_hora_final",
         "data_hora_fechamento",
         "data_hora_alteracao",
         "data_hora_primeiro_fim_preenchimento",
@@ -166,4 +186,3 @@ def run_quality_reds_pipeline(scripts: list[str] | None = None) -> dict[str, Any
         "normalized_csv": str(norm_csv),
         "quality_rows": rows,
     }
-

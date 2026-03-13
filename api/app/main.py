@@ -84,6 +84,7 @@ from .schemas import (
 )
 from .quality_reds_schemas import (
     QualityRedsAnalyzeIn,
+    QualityRedsComissaoConfigIn,
     QualityRedsEvaluationUpsertIn,
     QualityRedsIngestIn,
     QualityRedsRunNowIn,
@@ -102,7 +103,13 @@ from .quality_reds_store import (
     upsert_qr_quality_rows,
     upsert_qr_raw_rows,
 )
-from .services.access_control import can_access_cia, filter_by_permission, normalize_user_nr, resolve_profile
+from .services.access_control import (
+    can_access_cia,
+    filter_by_permission,
+    load_permissions,
+    normalize_user_nr,
+    resolve_profile,
+)
 from .intranet_mapa_utils import (
     build_xlsx_bytes,
     list_mapa_bairro_rows,
@@ -321,13 +328,16 @@ def _check_admin_or_ui(request: Request, x_admin_token: str = Header(default="")
 
 def _quality_user_nr_from_request(request: Request, user_nr: str | None = None) -> str:
     q = normalize_user_nr(user_nr or "")
-    if q:
-        return q
     hdr = normalize_user_nr(request.headers.get("x-numero-policia") or "")
-    if hdr:
-        return hdr
+    request_nr = q or hdr
     db_user = _session_db_user(request) or {}
     sess = normalize_user_nr(db_user.get("numero_policia") or _session_user_from_request(request) or "")
+    if _is_ui_authenticated(request) and sess:
+        if request_nr and request_nr != sess:
+            raise HTTPException(status_code=403, detail="numero_policia divergente da sessao autenticada")
+        return sess
+    if request_nr:
+        return request_nr
     return sess
 
 
@@ -336,7 +346,10 @@ def _quality_require_profile(request: Request, user_nr: str | None = None) -> tu
     if not nr:
         raise HTTPException(
             status_code=400,
-            detail="numero_policia ausente. Envie user_nr ou header x-numero-policia.",
+            detail=(
+                "numero_policia ausente. "
+                "Autentique-se pela interface ou envie user_nr/header x-numero-policia."
+            ),
         )
     profile = resolve_profile(nr)
     if str(profile.get("perfil") or "") == "sem_acesso":
@@ -356,6 +369,130 @@ def _mapa_html_path() -> Path:
 
 def _scripts_sql_root() -> Path:
     return Path(__file__).resolve().parents[2] / "public" / "data" / "scripts_sql"
+
+
+def _quality_comissao_file() -> Path:
+    return Path(__file__).resolve().parents[2] / "public" / "data" / "comissao_qualidade_reds.json"
+
+
+def _quality_comissao_can_manage(request: Request, user_nr: str) -> bool:
+    if _is_ui_admin(request):
+        return True
+    return normalize_user_nr(user_nr) == "1438704"
+
+
+def _quality_comissao_member_nr(row: dict | str | None) -> str:
+    if isinstance(row, dict):
+        return normalize_user_nr(
+            row.get("id")
+            or row.get("numero_policia")
+            or row.get("nr")
+            or row.get("matricula")
+            or ""
+        )
+    return normalize_user_nr(row or "")
+
+
+def _quality_comissao_normalize_member(row: dict | str | None, cia: str = "") -> dict:
+    src = row if isinstance(row, dict) else {"id": row}
+    nr = _quality_comissao_member_nr(src)
+    nome_completo = str(src.get("nome_completo") or src.get("nome") or "").strip()
+    nome_guerra = str(src.get("nome_guerra") or "").strip()
+    posto = str(src.get("posto_graduacao") or src.get("posto") or src.get("graduacao") or "").strip()
+    funcao_raw = str(src.get("funcao") or "").strip().lower()
+    funcao = "Presidente" if funcao_raw.startswith("pres") else "Membro"
+    ordem_val = src.get("ordem")
+    try:
+        ordem = int(ordem_val) if ordem_val is not None and str(ordem_val).strip() != "" else None
+    except Exception:
+        ordem = None
+    if ordem is not None and ordem < 1:
+        ordem = None
+    out = {
+        "id": nr,
+        "nome": nome_completo,
+        "nome_completo": nome_completo,
+        "nome_guerra": nome_guerra,
+        "posto_graduacao": posto,
+        "funcao": funcao,
+    }
+    if ordem is not None:
+        out["ordem"] = ordem
+    cia_norm = "".join(ch for ch in str(cia or src.get("cia") or "").strip() if ch.isdigit())
+    if cia_norm:
+        out["cia"] = str(int(cia_norm))
+    return out
+
+
+def _quality_comissao_sort_and_reindex_members(members: list[dict]) -> list[dict]:
+    staged: list[tuple[int, int, dict]] = []
+    for idx, raw in enumerate(members or []):
+        item = _quality_comissao_normalize_member(raw)
+        if not item.get("id"):
+            continue
+        ordem_raw = item.get("ordem")
+        try:
+            ordem_norm = int(ordem_raw) if ordem_raw is not None else 9999
+        except Exception:
+            ordem_norm = 9999
+        staged.append((ordem_norm, idx, item))
+    staged.sort(key=lambda x: (x[0], x[1]))
+    out: list[dict] = []
+    for pos, (_, __, item) in enumerate(staged, start=1):
+        item["ordem"] = pos
+        out.append(item)
+    return out
+
+
+def _quality_comissao_normalize_config(cfg: dict | None) -> dict:
+    src = cfg or {}
+    dev: list[str] = []
+    for raw in (src.get("dev") or []):
+        nr = _quality_comissao_member_nr(raw)
+        if nr:
+            dev.append(nr)
+
+    comissao = _quality_comissao_sort_and_reindex_members(src.get("comissao") or [])
+
+    subcomissoes: dict[str, list[dict]] = {}
+    for key, members in (src.get("subcomissoes") or {}).items():
+        cia_digits = "".join(ch for ch in str(key or "") if ch.isdigit())
+        if not cia_digits:
+            continue
+        cia_norm = str(int(cia_digits))
+        lst = _quality_comissao_sort_and_reindex_members(
+            [
+                {**(raw if isinstance(raw, dict) else {"id": raw}), "cia": cia_norm}
+                for raw in (members or [])
+            ]
+        )
+        subcomissoes[cia_norm] = lst
+
+    return {
+        "dev": sorted(set(dev)),
+        "comissao": comissao,
+        "subcomissoes": dict(sorted(subcomissoes.items(), key=lambda kv: int(kv[0]))),
+    }
+
+
+def _quality_comissao_load() -> dict:
+    p = _quality_comissao_file()
+    if not p.exists():
+        return {"dev": [], "comissao": [], "subcomissoes": {}}
+    try:
+        raw = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return {"dev": [], "comissao": [], "subcomissoes": {}}
+    return _quality_comissao_normalize_config(raw if isinstance(raw, dict) else {})
+
+
+def _quality_comissao_save(cfg: dict) -> dict:
+    normalized = _quality_comissao_normalize_config(cfg if isinstance(cfg, dict) else {})
+    p = _quality_comissao_file()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(normalized, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    load_permissions.cache_clear()
+    return normalized
 
 
 def _list_sql_catalog() -> list[str]:
@@ -1451,6 +1588,32 @@ def quality_reds_access(
     }
 
 
+@app.get("/quality/reds/comissao-config")
+def quality_reds_comissao_config(
+    request: Request,
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    if not _is_ui_authenticated(request):
+        raise HTTPException(status_code=401, detail="not authenticated")
+    return _quality_comissao_load()
+
+
+@app.post("/quality/reds/comissao-config")
+def quality_reds_comissao_config_upsert(
+    request: Request,
+    payload: QualityRedsComissaoConfigIn,
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> dict:
+    if not _is_ui_authenticated(request):
+        raise HTTPException(status_code=401, detail="not authenticated")
+    actor_nr = _quality_user_nr_from_request(request, user_nr=user_nr)
+    if not _quality_comissao_can_manage(request, actor_nr):
+        raise HTTPException(status_code=403, detail="apenas o gestor autorizado pode editar a comissao")
+    cfg = _quality_comissao_save(payload.model_dump())
+    return {"ok": True, "config": cfg}
+
+
 @app.get("/quality/reds/dashboard")
 def quality_reds_dashboard(
     request: Request,
@@ -1505,6 +1668,8 @@ def quality_reds_review_rows(
     cia_pm: str,
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
+    natureza_grupo: str | None = Query(default=None),
+    nome_tipo_relatorio: str | None = Query(default=None),
     only_pending: bool = Query(default=False),
     limit: int = Query(default=2000, ge=1, le=50000),
     user_nr: str | None = Query(default=None),
@@ -1517,6 +1682,8 @@ def quality_reds_review_rows(
         cia_pm=cia_pm,
         date_from=date_from,
         date_to=date_to,
+        natureza_grupo=natureza_grupo,
+        nome_tipo_relatorio=nome_tipo_relatorio,
         limit=limit,
         only_pending=only_pending,
     )
@@ -1544,13 +1711,21 @@ def quality_reds_monthly_kpis(
     cia_pm: str,
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
+    natureza_grupo: str | None = Query(default=None),
+    nome_tipo_relatorio: str | None = Query(default=None),
     user_nr: str | None = Query(default=None),
     _: None = Depends(_check_admin_or_ui),
 ) -> dict:
     nr, _ = _quality_require_profile(request, user_nr=user_nr)
     if not can_access_cia(nr, cia_pm):
         raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
-    return get_qr_monthly_kpis(cia_pm=cia_pm, date_from=date_from, date_to=date_to)
+    return get_qr_monthly_kpis(
+        cia_pm=cia_pm,
+        date_from=date_from,
+        date_to=date_to,
+        natureza_grupo=natureza_grupo,
+        nome_tipo_relatorio=nome_tipo_relatorio,
+    )
 
 
 @app.get("/quality/reds/monthly-report/{cia_pm}")
@@ -1559,13 +1734,27 @@ def quality_reds_monthly_report(
     cia_pm: str,
     date_from: str | None = Query(default=None),
     date_to: str | None = Query(default=None),
+    natureza_grupo: str | None = Query(default=None),
+    nome_tipo_relatorio: str | None = Query(default=None),
+    data_reuniao: str | None = Query(default=None),
+    comissao: str | None = Query(default=None),
+    periodo_label: str | None = Query(default=None),
     user_nr: str | None = Query(default=None),
     _: None = Depends(_check_admin_or_ui),
 ) -> dict:
     nr, _ = _quality_require_profile(request, user_nr=user_nr)
     if not can_access_cia(nr, cia_pm):
         raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
-    return build_qr_monthly_report(cia_pm=cia_pm, date_from=date_from, date_to=date_to)
+    return build_qr_monthly_report(
+        cia_pm=cia_pm,
+        date_from=date_from,
+        date_to=date_to,
+        natureza_grupo=natureza_grupo,
+        nome_tipo_relatorio=nome_tipo_relatorio,
+        data_reuniao=data_reuniao,
+        comissao=comissao,
+        periodo_label=periodo_label,
+    )
 
 
 @app.get("/intranet_mapa_comando.html", response_class=HTMLResponse)

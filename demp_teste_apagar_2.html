@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Solicitar Alvará de Evento</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="HOUs2dtdtcok9R3p0x360CcO3ZwLFaT7jSJ3CeLI">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <!-- Material Symbols (Google Icons) -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" rel="stylesheet">
+
+    <style>
+        :root {
+            --color-primary: #46ce4aff;
+            --color-secondary: #105c96ff;
+            --color-accent: #ffb703;
+        }
+
+        body {
+            background-color: #f9fafb;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: background 0.3s ease;
+        }
+
+        .navbar-brand img {
+            height: 44px;
+            margin-right: 10px;
+        }
+
+        .navbar-brand span {
+            font-weight: 700;
+            color: #fff;
+            font-size: 1.1rem;
+            letter-spacing: .6px;
+        }
+
+        .navbar-nav .nav-link {
+            color: #fff !important;
+            font-weight: 500;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: var(--color-accent) !important;
+        }
+
+        .btn-solicitar {
+            background-color: var(--color-accent);
+            color: #000;
+            font-weight: 600;
+            border-radius: 50px;
+            padding: 6px 16px;
+            transition: 0.3s;
+        }
+
+        .btn-solicitar:hover {
+            background-color: #ffd166;
+            transform: translateY(-2px);
+        }
+
+        main {
+            flex: 1;
+            padding: 90px 1.5rem 2rem 1.5rem;
+        }
+
+        footer {
+            background: #ffffff;
+            color: #444;
+            font-size: .9rem;
+            border-top: 1px solid #eee;
+        }
+
+        footer a {
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+        }
+
+        .text-gradient {
+            background: linear-gradient(45deg, #7b2ff7, #00c6ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-gradient {
+            background: linear-gradient(45deg, #7b2ff7, #00c6ff);
+            color: #fff;
+            border: none;
+            transition: 0.3s ease;
+        }
+
+        .btn-gradient:hover {
+            background: linear-gradient(45deg, #643dcf, #00a3e1);
+            color: #fff;
+        }
+
+        .md-field {
+            position: relative;
+            margin-bottom: 1.3rem;
+        }
+
+        .md-field input,
+        .md-field select,
+        .md-field textarea {
+            width: 100%;
+            border: none;
+            border-bottom: 2px solid #ccc;
+            background: transparent;
+            padding: 10px 0 6px 0;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+
+        .md-field input:focus,
+        .md-field select:focus,
+        .md-field textarea:focus {
+            border-bottom: 2px solid #7b2ff7;
+            outline: none;
+        }
+
+        .md-field label {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            color: #888;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            pointer-events: none;
+        }
+
+        .md-field input:focus+label,
+        .md-field input:not(:placeholder-shown)+label,
+        .md-field select:focus+label,
+        .md-field select:not([value=""])+label,
+        .md-field textarea:focus+label,
+        .md-field textarea:not(:placeholder-shown)+label {
+            top: -12px;
+            font-size: 0.8rem;
+            color: #7b2ff7;
+        }
+
+        /* Style for Google Places Autocomplete */
+        .pac-container {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: none;
+        }
+
+        .pac-item {
+            padding: 10px;
+            font-size: 1rem;
+            border: none;
+        }
+
+        .pac-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .pac-item-query {
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center"
+                href="https://alvaraeventos.divinoapp.com.br/public/alvara">
+                <img src="https://alvaraeventos.divinoapp.com.br/assets/images/logopmto.png" alt="Logo Prefeitura">
+                <span>AlvaráTO</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPublic">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarPublic">
+                <form class="d-flex mx-auto my-2 my-lg-0" method="GET"
+                    action="https://alvaraeventos.divinoapp.com.br/public/alvara">
+                    <input class="form-control form-control-sm me-2 rounded-pill" type="search" name="busca"
+                        placeholder="Buscar evento..." value="">
+                    <button class="btn btn-sm btn-light rounded-pill px-3">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    <li class="nav-item me-2">
+                        <a href="https://alvaraeventos.divinoapp.com.br/public/usuario/alvara/step"
+                            class="btn btn-solicitar">
+                            <i class="fas fa-file-signature me-1"></i> Solicitar Alvará
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userMenu" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i> VALFRIDO N SANTOS
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item"
+                                    href="https://alvaraeventos.divinoapp.com.br/public/usuario/perfil">
+                                    <i class="fas fa-id-card me-2"></i> Meu Perfil
+                                </a>
+                            </li>
+                            <li>
+                                <form action="https://alvaraeventos.divinoapp.com.br/public/usuario/logout"
+                                    method="POST">
+                                    <input type="hidden" name="_token" value="HOUs2dtdtcok9R3p0x360CcO3ZwLFaT7jSJ3CeLI"
+                                        autocomplete="off">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="fas fa-sign-out-alt me-2"></i> Sair
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div
+            style="min-height: 100vh; padding: 65px 0 35px 0; background: linear-gradient(135deg, #d6f5e3 50%, #b3e6cc 50%);">
+            <div class="container" style="max-width: 1800px;">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold text-primary">Solicitação de Alvará para Eventos</h2>
+                    <p class="text-muted">Preencha todas as etapas abaixo para solicitar a autorização do seu evento.
+                    </p>
+                </div>
+
+                <form action="https://alvaraeventos.divinoapp.com.br/public/usuario/alvara/step/3" method="POST">
+                    <input type="hidden" name="_token" value="HOUs2dtdtcok9R3p0x360CcO3ZwLFaT7jSJ3CeLI"
+                        autocomplete="off">
+                    <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 mb-5">
+                        <h4 class="fw-bold mb-4 text-gradient">
+                            <span class="material-symbols-rounded align-middle me-2">location_on</span> 3. Local do
+                            Evento
+                        </h4>
+
+                        <div class="mb-4">
+                            <h5 class="fw-semibold text-gradient mb-3">Tipo de Domínio</h5>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input tipo-dominio" type="radio" name="dominio"
+                                        id="dominio_publico" value="publico" required>
+                                    <label class="form-check-label fw-semibold" for="dominio_publico">
+                                        <span
+                                            class="material-symbols-rounded align-middle me-1 text-primary">public</span>
+                                        Área de Domínio Público
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input tipo-dominio" type="radio" name="dominio"
+                                        id="dominio_particular" value="particular" required>
+                                    <label class="form-check-label fw-semibold" for="dominio_particular">
+                                        <span
+                                            class="material-symbols-rounded align-middle me-1 text-primary">home_work</span>
+                                        Área de Domínio Particular
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Container do Mapa e Busca -->
+                        <div id="map-container" class="mb-4 d-none">
+                            <div class="md-field">
+                                <input id="pac-input" class="form-control" type="text" placeholder=" " />
+                                <label for="pac-input">Buscar por Endereço ou Ponto de Referência</label>
+                            </div>
+                            <p class="text-muted small mt-3">Clique no mapa para definir o local do evento ou pesquise
+                                acima.</p>
+                            <div id="map"></div>
+                        </div>
+
+                        <div id="bloco_publico" class="d-none">
+                            <hr class="my-4">
+                            <h5 class="fw-bold text-gradient mb-3">Evento(s) em Área de Domínio Público</h5>
+                            <input type="hidden" name="latitude_publico" id="latitude_publico">
+                            <input type="hidden" name="longitude_publico" id="longitude_publico">
+                            <div class="row g-4">
+                                <div class="col-12">
+                                    <div class="md-field">
+                                        <input type="text" name="coordenadas_publico" id="coordenadas_publico" value=""
+                                            placeholder=" " readonly>
+                                        <label>Coordenadas e Endereço (Automático)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="md-field">
+                                        <input type="text" name="nome_referencia_publico" id="nome_referencia_publico"
+                                            value="" placeholder=" ">
+                                        <label>Nome de Referência (Ex: Fazenda, Igreja)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="md-field">
+                                        <input type="text" name="endereco_publico" id="endereco_publico" value=""
+                                            placeholder=" ">
+                                        <label>Local *</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="md-field">
+                                        <input type="text" name="bairro_publico" id="bairro_publico" value=""
+                                            placeholder=" ">
+                                        <label>Bairro *</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="md-field">
+                                        <input type="text" name="cep_publico" id="cep_publico" value="" placeholder=" ">
+                                        <label>CEP *</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="md-field">
+                                        <input type="text" name="zona_publico" id="zona_publico" value=""
+                                            placeholder=" " readonly>
+                                        <label>Zona (Automático)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="bloco_particular" class="d-none">
+                            <hr class="my-4">
+                            <h5 class="fw-bold text-gradient mb-3">Evento(s) em Área de Domínio Particular</h5>
+                            <input type="hidden" name="latitude_particular" id="latitude_particular">
+                            <input type="hidden" name="longitude_particular" id="longitude_particular">
+                            <div class="row g-4">
+                                <div class="col-12">
+                                    <div class="md-field">
+                                        <input type="text" name="coordenadas_particular" id="coordenadas_particular"
+                                            value="" placeholder=" " readonly>
+                                        <label>Coordenadas e Endereço (Automático)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="md-field">
+                                        <input type="text" name="nome_referencia_particular"
+                                            id="nome_referencia_particular" value="" placeholder=" ">
+                                        <label>Nome de Referência (Ex: Fazenda, Igreja)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="md-field">
+                                        <input type="text" name="nome_estabelecimento" value="" placeholder=" ">
+                                        <label>Nome do Estabelecimento *</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="md-field">
+                                        <input type="text" name="endereco_particular" id="endereco_particular" value=""
+                                            placeholder=" ">
+                                        <label>Endereço *</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="md-field">
+                                        <input type="text" name="bairro_particular" id="bairro_particular" value=""
+                                            placeholder=" ">
+                                        <label>Bairro *</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="md-field">
+                                        <input type="text" name="cep_particular" id="cep_particular" value=""
+                                            placeholder=" ">
+                                        <label>CEP *</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="md-field">
+                                        <input type="text" name="zona_particular" id="zona_particular" value=""
+                                            placeholder=" " readonly>
+                                        <label>Zona (Automático)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="https://alvaraeventos.divinoapp.com.br/public/usuario/alvara/step/2"
+                            class="btn btn-light border px-4 rounded-pill">
+                            <span class="material-symbols-rounded align-middle me-1">arrow_back</span> Voltar
+                        </a>
+                        <button type="submit" class="btn btn-gradient px-4 rounded-pill">
+                            Próximo <span class="material-symbols-rounded align-middle ms-1">arrow_forward</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-3 shadow-sm">
+        &copy; 2025 Prefeitura de Teófilo Otoni —
+        <strong>Alvará de Eventos</strong> |
+        <a href="https://www.pmto.mg.gov.br">Portal Oficial</a>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+
+    <script>
+        let map;
+        let marker;
+        let geocoder;
+
+        function initMap() {
+            const teofiloOtoni = { lat: -17.859, lng: -41.506 };
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 12,
+                center: teofiloOtoni,
+                mapTypeControl: false,
+                streetViewControl: false,
+            });
+
+            geocoder = new google.maps.Geocoder();
+            const input = document.getElementById("pac-input");
+            const searchBox = new google.maps.places.SearchBox(input);
+
+            map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+            map.addListener("bounds_changed", () => {
+                searchBox.setBounds(map.getBounds());
+            });
+
+            searchBox.addListener("places_changed", () => {
+                const places = searchBox.getPlaces();
+                if (places.length == 0) return;
+
+                const place = places[0];
+                if (!place.geometry || !place.geometry.location) {
+                    console.log("Returned place contains no geometry");
+                    return;
+                }
+
+                placeMarkerAndPanTo(place.geometry.location, map);
+                processLocation(place.geometry.location, place);
+            });
+
+            map.addListener("click", (e) => {
+                placeMarkerAndPanTo(e.latLng, map);
+                processLocation(e.latLng);
+            });
+        }
+
+        function placeMarkerAndPanTo(latLng, map) {
+            if (marker) marker.setMap(null);
+            marker = new google.maps.Marker({
+                position: latLng,
+                map: map,
+                animation: google.maps.Animation.DROP,
+            });
+            map.panTo(latLng);
+            map.setZoom(17);
+        }
+
+        function processLocation(latlng, placeResult = null) {
+            geocoder.geocode({ location: latlng }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    const fullFormattedAddress = results[0].formatted_address;
+                    const addressComponents = results[0].address_components;
+                    let street_number = '', route = '', neighborhood = '', postal_code = '';
+                    let isUrban = false;
+
+                    addressComponents.forEach(component => {
+                        const types = component.types;
+                        if (types.includes("street_number")) {
+                            street_number = component.long_name;
+                            isUrban = true;
+                        }
+                        if (types.includes("route")) route = component.long_name;
+                        if (types.includes("sublocality_level_1") || types.includes("political") && types.includes("sublocality")) neighborhood = component.long_name;
+                        if (types.includes("postal_code")) postal_code = component.long_name;
+                    });
+
+                    const localAddress = `${route}, ${street_number}`.trim().replace(/^,|,$/g, '');
+                    const zona = isUrban ? 'Urbana' : 'Rural';
+                    const coordinatesText = `(Lat: ${latlng.lat().toFixed(8)}, Long: ${latlng.lng().toFixed(8)})`;
+                    const addressWithoutPlusCode = fullFormattedAddress.replace(/^[A-Z0-9]{4}\+[A-Z0-9]{2,}\s/, '');
+                    const combinedCoordinatesAndAddress = `${coordinatesText} -> ${addressWithoutPlusCode}`;
+                    const referenceName = placeResult ? placeResult.name : '';
+
+                    fillFields({
+                        coordenadas: combinedCoordinatesAndAddress,
+                        referencia: referenceName,
+                        local: localAddress,
+                        bairro: neighborhood,
+                        cep: postal_code,
+                        zona: zona,
+                        lat: latlng.lat(),
+                        lng: latlng.lng()
+                    });
+
+                } else {
+                    window.alert("Não foi possível obter o endereço para estas coordenadas. Tente um local próximo.");
+                }
+            });
+        }
+
+        function fillFields(data) {
+            const tipo = $('input[name="dominio"]:checked').val();
+            const prefix = tipo === 'publico' ? 'publico' : 'particular';
+
+            // ✅ FIX: jQuery selectors must be valid strings.
+            $('#coordenadas_' + prefix).val(data.coordenadas);
+            $('#nome_referencia_' + prefix).val(data.referencia);
+            $('#endereco_' + prefix).val(data.local);
+            $('#bairro_' + prefix).val(data.bairro);
+            $('#cep_' + prefix).val(data.cep).trigger('input');
+            $('#zona_' + prefix).val(data.zona);
+            $('#latitude_' + prefix).val(data.lat);
+            $('#longitude_' + prefix).val(data.lng);
+
+            // ✅ FIX: The selector for the .each() loop must also be a string.
+            $('#bloco_' + prefix + ' input').each(function () {
+                if ($(this).val()) {
+                    $(this).next('label').css({ 'top': '-12px', 'font-size': '0.8rem', 'color': '#7b2ff7' });
+                }
+            });
+        }
+
+        $(function () {
+            $('#cep_publico, #cep_particular').mask('00000-000');
+
+            function toggleDominios(tipo) {
+                const publico = $('#bloco_publico');
+                const particular = $('#bloco_particular');
+                const mapContainer = $('#map-container');
+
+                publico.toggleClass('d-none', tipo !== 'publico');
+                particular.toggleClass('d-none', tipo !== 'particular');
+                mapContainer.toggleClass('d-none', !tipo);
+
+                publico.find('input, select, textarea').prop('disabled', tipo !== 'publico');
+                particular.find('input, select, textarea').prop('disabled', tipo !== 'particular');
+            }
+
+            const atual = $('input[name="dominio"]:checked').val();
+            if (atual) toggleDominios(atual);
+
+            $('.tipo-dominio').on('change', function () {
+                toggleDominios($(this).val());
+            });
+        });
+    </script>
+
+    <!-- ✅ FIX: Removed 'defer' to follow best practices and resolve the warning. -->
+    <script async
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBlN6DNGIYgSs3G9KOOq-l2vkeXSRieYEU&libraries=places&callback=initMap"></script>
+
+</body>
+
+</html>

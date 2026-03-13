@@ -1414,6 +1414,15 @@
                     <i :class="meta.icon" class="text-lg opacity-80"></i><span x-text="meta.nome"></span>
                 </button>
             </template>
+            <div class="hidden md:block px-4 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Qualidade REDS</div>
+            <a
+                href="/qualidade_reds.html"
+                class="hidden md:flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all border-l-4 border-transparent text-gray-600 hover:text-pmmg-black hover:bg-gray-50"
+                title="Qualidade REDS - Avaliacao Operacional"
+            >
+                <i class="fa-solid fa-clipboard-check text-lg opacity-80"></i>
+                <span>Avaliacao Operacional</span>
+            </a>
 
             <div class="md:hidden p-2 flex gap-2 overflow-x-auto">
                 <template x-for="meta in metasDisponiveis" :key="`m-${meta.id}`">
@@ -1435,6 +1444,13 @@
                         </template>
                     </div>
                 </template>
+                <a
+                    href="/qualidade_reds.html"
+                    class="items-center gap-2 px-3 py-2 text-xs font-semibold rounded border whitespace-nowrap bg-white text-gray-600 border-gray-300 inline-flex"
+                    title="Qualidade REDS - Avaliacao Operacional"
+                >
+                    <i class="fa-solid fa-clipboard-check"></i><span>Qualidade REDS</span>
+                </a>
                 <a
                     id="sidebar-mapa-intranet-mobile-index"
                     href="/intranet_mapa_comando.html"

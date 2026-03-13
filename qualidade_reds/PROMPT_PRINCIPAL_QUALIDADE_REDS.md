@@ -261,3 +261,32 @@ E também:
 furtos
 estupro
 estupro de vulnerável
+--------------------------------------------------
+
+REGRA TEMPORAL BISP (INCREMENTAL 12 DIAS)
+
+Para reduzir volume de extracao sem perder alteracoes recentes:
+
+1) Colunas de controle temporal:
+- data_hora_inclusao: data/hora da inclusao inicial do REDS
+- data_hora_alteracao: ultima alteracao no registro
+- data_hora_fechamento: fechamento final do REDS
+- data_hora_fato: inicio do fato/atividade
+- data_hora_final: termino do fato/atividade
+- data_hora_primeiro_fim_preenchimento: primeiro fechamento do preenchimento
+
+2) Janela de extracao:
+- Extrair apenas ocorrencias com referencia temporal >= D-12.
+- Referencia temporal prioritaria:
+  COALESCE(
+    data_hora_primeiro_fim_preenchimento,
+    data_hora_alteracao,
+    data_hora_fechamento,
+    data_hora_inclusao,
+    data_hora_fato
+  )
+
+3) Historico e auditoria:
+- Manter estado atual por numero_ocorrencia.
+- Registrar versoes (snapshots) quando houver mudanca real de conteudo.
+- Contabilizar quantidade de alteracoes por numero_ocorrencia.

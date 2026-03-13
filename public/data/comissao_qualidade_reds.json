@@ -1,40 +1,206 @@
 {
-  "dev": [
-    "1438704"
-  ],
-
-  "comissao": [
-    "1227982",
-    "1514751",
-    "1694371",
-    "1738129"
-  ],
-
-  "subcomissoes": {
-    "42": [
-      "1398213",
-      "1761956",
-      "1029040"
-    ],
-    "47": [
-      "1417559",
-      "1251081",
-      "1453364"
-    ],
-    "74": [
-      "1424605",
-      "1384585",
-      "1309442"
-    ],
-    "155": [
-      "1596352",
-      "1458868"
-    ],
-    "232": [
-      "1375435",
-      "1389188",
-      "1537620",
-      "1484468"
-    ]
-  }
+    "dev":  [
+                "1438704"
+            ],
+    "comissao":  [
+                     {
+                         "id":  "1227982",
+                         "nome":  "Paulo Henrique Brant Vieira",
+                         "nome_completo":  "Paulo Henrique Brant Vieira",
+                         "nome_guerra":  "",
+                         "posto_graduacao":  "Maj PM",
+                         "funcao":  "Presidente",
+                         "ordem":  1
+                     },
+                     {
+                         "id":  "1514751",
+                         "nome":  "Andresson Chaves Campelo",
+                         "nome_completo":  "Andresson Chaves Campelo",
+                         "nome_guerra":  "",
+                         "posto_graduacao":  "Cap PM",
+                         "funcao":  "Membro",
+                         "ordem":  2
+                     },
+                     {
+                         "id":  "1694371",
+                         "nome":  "Maiara Raianny Soares Carvalho",
+                         "nome_completo":  "Maiara Raianny Soares Carvalho",
+                         "nome_guerra":  "",
+                         "posto_graduacao":  "1Âº Ten PM",
+                         "funcao":  "Membro",
+                         "ordem":  3
+                     },
+                     {
+                         "id":  "1738129",
+                         "nome":  "Bruno AtaÃ­de Avelino",
+                         "nome_completo":  "Bruno AtaÃ­de Avelino",
+                         "nome_guerra":  "",
+                         "posto_graduacao":  "1 Ten PM",
+                         "funcao":  "Membro",
+                         "ordem":  4
+                     }
+                 ],
+    "subcomissoes":  {
+                         "42":  [
+                                    {
+                                        "id":  "1398213",
+                                        "nome":  "Thalles Dohler Schutte",
+                                        "nome_completo":  "Thalles Dohler Schutte",
+                                        "nome_guerra":  "",
+                                        "posto_graduacao":  "Cap PM",
+                                        "funcao":  "Presidente",
+                                        "ordem":  1,
+                                        "cia":  "42"
+                                    },
+                                    {
+                                        "id":  "1761956",
+                                        "nome":  "Marcelo Furtado de Oliveira Junior",
+                                        "nome_completo":  "Marcelo Furtado de Oliveira Junior",
+                                        "nome_guerra":  "",
+                                        "posto_graduacao":  "1 Ten PM",
+                                        "funcao":  "Membro",
+                                        "ordem":  2,
+                                        "cia":  "42"
+                                    },
+                                    {
+                                        "id":  "1029040",
+                                        "nome":  "Antonio Marcos Mariotti",
+                                        "nome_completo":  "Antonio Marcos Mariotti",
+                                        "nome_guerra":  "",
+                                        "posto_graduacao":  "2 Ten PM",
+                                        "funcao":  "Membro",
+                                        "ordem":  3,
+                                        "cia":  "42"
+                                    }
+                                ],
+                         "47":  [
+                                    {
+                                        "id":  "1417559",
+                                        "nome":  "Diego Lima Ricardo",
+                                        "nome_completo":  "Diego Lima Ricardo",
+                                        "nome_guerra":  "",
+                                        "posto_graduacao":  "1Âº Ten PM",
+                                        "funcao":  "Presidente",
+                                        "ordem":  1,
+                                        "cia":  "47"
+                                    },
+                                    {
+                                        "id":  "1251081",
+                                        "nome":  "Welington Ferreira Gomes",
+                                        "nome_completo":  "Welington Ferreira Gomes",
+                                        "nome_guerra":  "",
+                                        "posto_graduacao":  "1Âº Ten PM",
+                                        "funcao":  "Membro",
+                                        "ordem":  2,
+                                        "cia":  "47"
+                                    },
+                                    {
+                                        "id":  "1453364",
+                                        "nome":  "Abner Cassiel Martins Alves",
+                                        "nome_completo":  "Abner Cassiel Martins Alves",
+                                        "nome_guerra":  "",
+                                        "posto_graduacao":  "1 Ten PM",
+                                        "funcao":  "Membro",
+                                        "ordem":  3,
+                                        "cia":  "47"
+                                    }
+                                ],
+                         "74":  [
+                                    {
+                                        "id":  "1424605",
+                                        "nome":  "Lucas Silva De Oliveira",
+                                        "nome_completo":  "Lucas Silva De Oliveira",
+                                        "nome_guerra":  "",
+                                        "posto_graduacao":  "2Âº Ten PM",
+                                        "funcao":  "Presidente",
+                                        "ordem":  1,
+                                        "cia":  "74"
+                                    },
+                                    {
+                                        "id":  "1384585",
+                                        "nome":  "Kerton Gualberto de Souza",
+                                        "nome_completo":  "Kerton Gualberto de Souza",
+                                        "nome_guerra":  "",
+                                        "posto_graduacao":  "1Â° Sgt PM",
+                                        "funcao":  "Membro",
+                                        "ordem":  2,
+                                        "cia":  "74"
+                                    },
+                                    {
+                                        "id":  "1309442",
+                                        "nome":  "GetÃºlio Bessa Leal",
+                                        "nome_completo":  "GetÃºlio Bessa Leal",
+                                        "nome_guerra":  "",
+                                        "posto_graduacao":  "1Âº Sgt PM",
+                                        "funcao":  "Membro",
+                                        "ordem":  3,
+                                        "cia":  "74"
+                                    }
+                                ],
+                         "155":  [
+                                     {
+                                         "id":  "1596352",
+                                         "nome":  "John GonÃ§alves Langholz",
+                                         "nome_completo":  "John GonÃ§alves Langholz",
+                                         "nome_guerra":  "",
+                                         "posto_graduacao":  "Cap PM",
+                                         "funcao":  "Presidente",
+                                         "ordem":  1,
+                                         "cia":  "155"
+                                     },
+                                     {
+                                         "id":  "1458868",
+                                         "nome":  "Vicenzo Dartanhan Silva Bezerra",
+                                         "nome_completo":  "Vicenzo Dartanhan Silva Bezerra",
+                                         "nome_guerra":  "",
+                                         "posto_graduacao":  "2Â° Ten PM",
+                                         "funcao":  "Membro",
+                                         "ordem":  2,
+                                         "cia":  "155"
+                                     }
+                                 ],
+                         "232":  [
+                                     {
+                                         "id":  "1375435",
+                                         "nome":  "Bruno Andrade da Silva",
+                                         "nome_completo":  "Bruno Andrade da Silva",
+                                         "nome_guerra":  "",
+                                         "posto_graduacao":  "Cap PM",
+                                         "funcao":  "Presidente",
+                                         "ordem":  1,
+                                         "cia":  "232"
+                                     },
+                                     {
+                                         "id":  "1389188",
+                                         "nome":  "Gisuel Oliveira Guimaraes",
+                                         "nome_completo":  "Gisuel Oliveira Guimaraes",
+                                         "nome_guerra":  "",
+                                         "posto_graduacao":  "1 Ten PM",
+                                         "funcao":  "Membro",
+                                         "ordem":  2,
+                                         "cia":  "232"
+                                     },
+                                     {
+                                         "id":  "1537620",
+                                         "nome":  "JoÃ£o Paulo Viana Silva",
+                                         "nome_completo":  "JoÃ£o Paulo Viana Silva",
+                                         "nome_guerra":  "",
+                                         "posto_graduacao":  "1Â° Ten PM",
+                                         "funcao":  "Membro",
+                                         "ordem":  3,
+                                         "cia":  "232"
+                                     },
+                                     {
+                                         "id":  "1484468",
+                                         "nome":  "Edson Santana Pinheiro Junior",
+                                         "nome_completo":  "Edson Santana Pinheiro Junior",
+                                         "nome_guerra":  "",
+                                         "posto_graduacao":  "2 Ten PM",
+                                         "funcao":  "Membro",
+                                         "ordem":  4,
+                                         "cia":  "232"
+                                     }
+                                 ]
+                     }
 }
+

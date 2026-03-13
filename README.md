@@ -42,6 +42,55 @@ metas_19_2026/
 *   **Frontend:** HTML5, Alpine.js (Lógica Reativa), Tailwind CSS (Estilização).
 *   **Infraestrutura:** Docker, Nginx.
 *   **Dados:** JSON estruturado.
+*   **Backend/Agent:** Python 3.11+ com dependências do arquivo `agent/requirements.txt`.
+
+## ⚙️ Configuração do Ambiente Virtual (Windows)
+
+### Ativar o Ambiente Virtual
+
+No PowerShell, execute na pasta raiz do projeto:
+```powershell
+# Para PowerShell
+.\venvMETAS\Scripts\Activate.ps1
+
+# Se receber erro de execução, execute primeiro:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+No Command Prompt (CMD), execute:
+```cmd
+venvMETAS\Scripts\activate.bat
+```
+
+Após ativar, você verá `(venvMETAS)` no início da linha do terminal.
+
+### Instalar Dependências
+
+Com o ambiente ativado, execute:
+```powershell
+pip install -r agent/requirements.txt
+```
+
+## 🤖 Como Executar o Agent
+
+Com o ambiente virtual ativado, execute na pasta raiz:
+```powershell
+python agent/agent.py
+
+cd E:\GitHub\metas_19_2026 
+.\venvMETAS\Scripts\python.exe -u .\agent\agent.py                                                            
+   
+```
+
+**Nota:** O agent requer um arquivo `.env` na pasta `agent/` com as seguintes variáveis:
+```
+AGENT_API_URL=http://localhost:8000
+AGENT_TOKEN=seu_token_aqui
+AGENT_ID=pc-local
+AGENT_VERSION=0.1.0
+AGENT_HEARTBEAT_SECONDS=30
+AGENT_POLL_SECONDS=20
+```
 
 ## 🐳 Como Rodar (Desenvolvimento Local)
 

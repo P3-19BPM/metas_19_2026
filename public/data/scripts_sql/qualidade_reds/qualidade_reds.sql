@@ -35,26 +35,43 @@
             ELSE '3 PEL/42 CIA PM/19 BPM'
         END AS PELOTAO_PM,
         OCO.data_hora_fato AS data_hora_fato,
+        OCO.data_hora_inclusao AS data_hora_inclusao,
+        OCO.data_hora_final AS data_hora_final,
         CAST(OCO.data_hora_fato AS DATE) AS data_fato,
         YEAR(OCO.data_hora_fato) AS ano,
         MONTH(OCO.data_hora_fato) AS mes,
         OCO.data_hora_fechamento ,
+        OCO.descricao_estado,  -- Estado da ocorrência (ex: Fechado, Aberto)
+        OCO.nome_tipo_relatorio,  -- Tipo de relatório (ex: Policial, REFAP, Trânsito)
+        OCO.natureza_codigo,  -- Código da natureza principal da ocorrência
+        OCO.natureza_descricao,  -- Descrição da natureza principal
+        OCO.natureza_secundaria1_codigo,  -- Código da primeira natureza secundária
+        OCO.natureza_secundaria1_descricao,  -- Descrição da primeira natureza secundária
+        OCO.natureza_secundaria2_codigo,  -- Código da segunda natureza secundária
+        OCO.natureza_secundaria2_descricao,  -- Descrição da segunda natureza secundária
+        OCO.natureza_secundaria3_codigo,  -- Código da terceira natureza secundária
+        OCO.natureza_secundaria3_descricao,  -- Descrição da terceira natureza secundária      
         OCO.data_hora_alteracao ,
         OCO.data_hora_primeiro_fim_preenchimento ,
-        OCO.nome_tipo_relatorio ,
         OCO.digitador_cargo_efetivo ,
         OCO.digitador_matricula ,
         OCO.digitador_nome ,
         OCO.digitador_nome_unidade ,
-        OCO.natureza_codigo ,
-        OCO.natureza_descricao_longa ,
         OCO.historico_ocorrencia 
 	FROM
 		db_bisp_reds_reporting.tb_ocorrencia AS OCO
 	WHERE 1=1
 		AND (OCO.nome_tipo_relatorio IN ('POLICIAL', 'AMBIENTAL', 'TRANSITO') OR OCO.natureza_codigo IN ('W01000', 'W02000', 'W03000', 'W04000'))
 		AND OCO.unidade_responsavel_registro_nome LIKE '%19 BPM%'
-		AND YEAR(data_hora_fato) = 2026 
-		AND MONTH(data_hora_fato)>= 1
-		AND OCO.digitador_sigla_orgao = 'PM'
+		-- Janela incremental: somente ocorrencias "quentes" dos ultimos 12 dias.
+		-- Regra: prioriza o primeiro fechamento; quando nulo, usa alteracao/fechamento/inclusao/fato.
+		AND COALESCE(
+			OCO.data_hora_primeiro_fim_preenchimento,
+			OCO.data_hora_alteracao,
+			OCO.data_hora_fechamento,
+			OCO.data_hora_inclusao,
+			OCO.data_hora_fato
+		) >= CAST(date_sub(current_date(), 12) AS TIMESTAMP)
+		AND OCO.digitador_sigla_orgao = 'PM';
 	
+

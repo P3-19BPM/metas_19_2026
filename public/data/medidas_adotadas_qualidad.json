@@ -1,0 +1,34 @@
+{
+  "medidas_adotadas": [
+    {
+      "id": 1,
+      "codigo": "01",
+      "descricao": "Recomendação ao relator para emissão de um novo recibo com destinação correta"
+    },
+    {
+      "id": 2,
+      "codigo": "02",
+      "descricao": "Orientação ao relator quanto ao correto preenchimento do(s) campo(s)"
+    },
+    {
+      "id": 3,
+      "codigo": "03",
+      "descricao": "Indicação do militar para treinamento específico sobre o REDS"
+    },
+    {
+      "id": 4,
+      "codigo": "04",
+      "descricao": "Advertência do CMT da CIA/PEL/DST em detrimento das reincidências"
+    },
+    {
+      "id": 5,
+      "codigo": "05",
+      "descricao": "Comunicação disciplinar"
+    },
+    {
+      "id": 6,
+      "codigo": "99",
+      "descricao": "Outras medidas não listadas (descrever no campo 'Outras Informações Úteis')"
+    }
+  ]
+}

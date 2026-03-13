@@ -13,6 +13,27 @@ def normalize_user_nr(value: Any) -> str:
     return "".join(ch for ch in str(value or "") if ch.isdigit())
 
 
+def _member_nr(value: Any) -> str:
+    if isinstance(value, dict):
+        return normalize_user_nr(
+            value.get("id")
+            or value.get("numero_policia")
+            or value.get("nr")
+            or value.get("matricula")
+            or ""
+        )
+    return normalize_user_nr(value)
+
+
+def _member_nr_list(values: list[Any]) -> list[str]:
+    out: list[str] = []
+    for value in (values or []):
+        nr = _member_nr(value)
+        if nr:
+            out.append(nr)
+    return out
+
+
 def normalize_cia(value: Any) -> str:
     text = str(value or "").strip().upper()
     m = re.search(r"\b(\d{1,3})\b", text)
@@ -31,12 +52,12 @@ def load_permissions() -> dict[str, Any]:
     except Exception:
         return {"dev": [], "comissao": [], "subcomissoes": {}}
 
-    dev = [normalize_user_nr(x) for x in (data.get("dev") or []) if normalize_user_nr(x)]
-    comissao = [normalize_user_nr(x) for x in (data.get("comissao") or []) if normalize_user_nr(x)]
+    dev = _member_nr_list(data.get("dev") or [])
+    comissao = _member_nr_list(data.get("comissao") or [])
     sub = {}
     for cia_key, members in (data.get("subcomissoes") or {}).items():
         key_norm = normalize_cia(cia_key)
-        sub[key_norm] = [normalize_user_nr(x) for x in (members or []) if normalize_user_nr(x)]
+        sub[key_norm] = _member_nr_list(members or [])
     return {"dev": dev, "comissao": comissao, "subcomissoes": sub}
 
 
@@ -107,4 +128,3 @@ def filter_by_permission(user_nr: str, cia: str, df):
         return out
 
     return df
-

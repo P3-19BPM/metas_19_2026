@@ -5,6 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Qualidade REDS - 19 BPM</title>
   <style>
+    @font-face{
+      font-family:"Rawline";
+      src:url("./fonts/Rawline_FamiliaCompleta/rawline-400.woff2") format("woff2"),
+          url("./fonts/Rawline_FamiliaCompleta/rawline-400.woff") format("woff");
+      font-weight:400;
+      font-style:normal;
+      font-display:swap;
+    }
+    @font-face{
+      font-family:"Rawline";
+      src:url("./fonts/Rawline_FamiliaCompleta/rawline-700.woff2") format("woff2"),
+          url("./fonts/Rawline_FamiliaCompleta/rawline-700.woff") format("woff");
+      font-weight:700;
+      font-style:normal;
+      font-display:swap;
+    }
+    @font-face{
+      font-family:"Teko";
+      src:url("./fonts/Teko/static/Teko-Regular.woff2") format("woff2"),
+          url("./fonts/Teko/static/Teko-Regular.woff") format("woff");
+      font-weight:400;
+      font-style:normal;
+      font-display:swap;
+    }
+    @font-face{
+      font-family:"Teko";
+      src:url("./fonts/Teko/static/Teko-SemiBold.woff2") format("woff2"),
+          url("./fonts/Teko/static/Teko-SemiBold.woff") format("woff");
+      font-weight:600;
+      font-style:normal;
+      font-display:swap;
+    }
     :root{
       --bg:#f3eee2;
       --panel:#fffdf8;
@@ -17,18 +49,52 @@
       --warn:#8a5a00;
       --err:#8f1d22;
       --card:#f7f2e6;
+      --report-title-font:"Teko","Arial Narrow",sans-serif;
+      --report-body-font:"Rawline","Arial",sans-serif;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Segoe UI,Tahoma,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 10%,#fbf8ef,#f2ecdc 45%,#e8deca)}
-    .wrap{max-width:1260px;margin:0 auto;padding:16px}
-    .head{background:linear-gradient(90deg,#121212,#2b2b2b);color:#f4ead4;border:1px solid #000;border-radius:14px;padding:14px 16px;margin-bottom:12px}
-    .head h1{margin:0;font-size:24px}
-    .head p{margin:6px 0 0;color:#d0c6ae}
-    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+    body{margin:0;font-family:var(--report-body-font);color:var(--ink);background:radial-gradient(circle at 10% 10%,#fbf8ef,#f2ecdc 45%,#e8deca)}
+    .wrap{max-width:1280px;margin:0 auto;padding:18px}
+    .head{background:linear-gradient(90deg,#121212,#2b2b2b);color:#f4ead4;border:1px solid #000;border-radius:14px;padding:18px 18px 16px;margin-bottom:14px}
+    .head h1{margin:0;font-size:36px;letter-spacing:.4px;line-height:1;font-family:var(--report-title-font);font-weight:600}
+    .head p{margin:8px 0 0;color:#d0c6ae;font-size:15px}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+    .sticky-controls{position:sticky;top:10px;z-index:12}
+    .steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:10px}
+    .step{border:1px solid var(--line);border-radius:10px;background:#f6f0e2;padding:9px 10px}
+    .step .n{font-size:10px;font-weight:700;color:#6f644c;text-transform:uppercase;letter-spacing:.3px}
+    .step .t{font-size:12px;font-weight:800;color:#3f3625}
+    .step.done{border-color:#8e7d52;background:#efe5cc}
+    .step.active{border-color:#111;background:#f2ead7}
+    .toolbar{display:flex;gap:6px;flex-wrap:wrap}
+    .toolbar button{width:auto;padding:0 12px}
+    .toggle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#4e432e}
+    .toggle input{width:auto;height:auto}
     .grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
     .grid .full{grid-column:1/-1}
-    label{font-size:12px;color:var(--muted);font-weight:700;display:grid;gap:4px}
-    input,button,select,textarea{width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:#fff;color:var(--ink);font-size:14px}
+    label{font-size:11px;color:var(--muted);font-weight:800;display:grid;gap:5px;text-transform:uppercase;letter-spacing:.35px}
+    input,button,select,textarea{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 11px;background:#fff;color:var(--ink);font-size:14px}
+    input[readonly]{background:#f2eee3;color:#5d523d;cursor:not-allowed}
+    input[type="date"]{
+      border-color:#c9bb9a;
+      background:linear-gradient(180deg,#fff,#f8f2e4);
+      color:#1b160d;
+      color-scheme:light;
+      accent-color:#a08f63;
+    }
+    input[type="date"]:focus{
+      outline:none;
+      border-color:#111;
+      box-shadow:0 0 0 2px rgba(160,143,99,.25);
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator{
+      filter:sepia(1) saturate(1.7) brightness(.7);
+      cursor:pointer;
+      border:1px solid #8a7a52;
+      border-radius:6px;
+      padding:2px;
+      background-color:#e9dfc6;
+    }
     textarea{height:auto;padding:10px;min-height:84px}
     button{cursor:pointer;font-weight:700}
     .btn-main{background:linear-gradient(#1a1a1a,#000);color:#fff;border-color:#000}
@@ -38,28 +104,191 @@
     .msg.warn{background:#fff8e9;border-color:#ead3a0;color:var(--warn)}
     .msg.err{background:#fff0f1;border-color:#e6b7bb;color:var(--err)}
     .hidden{display:none}
-    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-    .card{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:10px}
-    .card .k{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700}
-    .card .v{font-size:22px;font-weight:800;line-height:1.1}
-    .card .s{font-size:12px;color:#5d523d;margin-top:2px}
-    .row-info{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:8px 0}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .card{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:12px}
+    .card .k{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:.25px}
+    .card .v{font-size:24px;font-weight:900;line-height:1.05;margin-top:2px}
+    .card .s{font-size:12px;color:#5d523d;margin-top:4px}
+    .row-info{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:9px 0}
     .mono{font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap}
     .table-wrap{overflow:auto;max-height:62vh;border:1px solid var(--line);border-radius:10px}
     table{width:100%;border-collapse:collapse;font-size:12px;background:#fff}
-    th,td{border:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
-    th{position:sticky;top:0;background:#f5efdf;z-index:2}
+    th,td{border:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+    th{position:sticky;top:0;background:#f5efdf;z-index:2;font-size:12px;font-weight:800;letter-spacing:.2px}
     .flags{display:flex;flex-wrap:wrap;gap:4px}
-    .tag{border:1px solid #cdbf9e;background:#fff7e4;border-radius:999px;padding:1px 6px;font-size:11px}
+    .tag{border:1px solid #cdbf9e;background:#fff7e4;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700}
     .dirty{background:#fff8d8}
     .small{font-size:12px;color:var(--muted)}
     .chkline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .chkline label{display:flex;align-items:center;gap:4px;font-size:11px;color:#423b2b;font-weight:600}
+    .chkline label{display:flex;align-items:center;gap:4px;font-size:11px;color:#423b2b;font-weight:700}
     .chkline input{width:auto;height:auto}
     .cell-actions{display:flex;gap:6px}
-    .cell-actions button{height:30px;padding:0 8px;font-size:12px}
+    .cell-actions button{height:31px;padding:0 10px;font-size:12px}
+    .selected-row{outline:2px solid rgba(160,143,99,.45);outline-offset:-2px}
+    .nr-link{border:0;background:transparent;color:#1f3b5c;font-weight:700;padding:0;cursor:pointer;text-decoration:underline;height:auto;width:auto}
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .detail-box{border:1px solid var(--line);border-radius:10px;background:#fcf8ee;padding:10px}
+    .detail-box.full{grid-column:1/-1}
+    .detail-k{font-size:11px;text-transform:uppercase;font-weight:800;color:#6f644c;margin-bottom:7px;letter-spacing:.25px}
+    .detail-pairs{display:grid;grid-template-columns:1fr;gap:4px}
+    .detail-pair{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+    .detail-label{display:inline-flex;align-items:center;gap:6px}
+    .detail-pair span{color:#5d523d}
+    .detail-pair b{font-weight:700;color:#1b160d}
+    .detail-text{white-space:pre-wrap;max-height:160px;overflow:auto;font-size:12px;line-height:1.4}
+    .hl-ortho{color:#a11616;background:#ffe7e7;border-radius:3px;padding:0 1px;font-weight:700}
+    .hl-concord{color:#1d4ed8;background:#e6efff;border-radius:3px;padding:0 1px;font-weight:700}
+    .detail-tags{display:flex;flex-wrap:wrap;gap:4px}
+    .detail-tag{font-size:11px;border:1px solid #cfbf99;background:#fff7e8;color:#473d29;border-radius:999px;padding:2px 7px}
+    .detail-tag.on{background:#fff0d8;border-color:#b99855}
+    .detail-tag.off{background:#f3efe4;border-color:#d4c8ae;color:#7a6f58}
+    .help-tip{
+      display:inline-flex;align-items:center;justify-content:center;
+      width:16px;height:16px;flex:0 0 16px;border-radius:999px;
+      border:1px solid #b9ab88;background:#fff6df;color:#6a5730;
+      font-size:11px;font-weight:900;line-height:1;cursor:help;
+      position:relative;vertical-align:middle;
+    }
+    .help-tip::after{
+      content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);
+      transform:translateX(-50%);min-width:180px;max-width:280px;
+      background:#2c2418;color:#fff;border-radius:8px;padding:7px 8px;
+      font-size:11px;font-weight:500;line-height:1.35;text-transform:none;
+      letter-spacing:0;white-space:normal;box-shadow:0 4px 16px rgba(0,0,0,.22);
+      opacity:0;pointer-events:none;z-index:20;transition:opacity .12s ease;
+    }
+    .help-tip::before{
+      content:"";position:absolute;left:50%;bottom:calc(100% + 2px);transform:translateX(-50%);
+      border:6px solid transparent;border-top-color:#2c2418;opacity:0;
+      pointer-events:none;transition:opacity .12s ease;
+    }
+    .help-tip:hover::after,.help-tip:focus::after,.help-tip:hover::before,.help-tip:focus::before{opacity:1}
+    .help-tip:focus{outline:2px solid #8f7a4c;outline-offset:1px}
+    .detail-tag .help-tip{width:14px;height:14px;flex-basis:14px;font-size:10px}
+    .detail-note{font-size:12px;color:#574c36;white-space:pre-wrap}
+    .detail-legend{margin-top:6px}
+    .assist-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .assist-box{border:1px solid var(--line);border-radius:10px;background:#fcf8ee;padding:10px;max-height:300px;overflow:auto}
+    .assist-group{border:1px solid #d9cdaa;border-radius:8px;background:#fff;padding:6px;margin-bottom:6px}
+    .assist-group-title{font-size:11px;font-weight:700;color:#5b513c;margin-bottom:4px;text-transform:uppercase}
+    .assist-item{display:flex;align-items:flex-start;gap:6px;font-size:12px;color:#2c2619;padding:2px 0}
+    .assist-item input{width:auto;height:auto;margin-top:2px}
+    .assist-chip-wrap{display:flex;flex-wrap:wrap;gap:5px}
+    .assist-chip{font-size:11px;border:1px solid #cfbf99;background:#fff7e8;color:#473d29;border-radius:999px;padding:2px 7px}
+    .assist-empty{font-size:12px;color:#7b7058}
+    .status-pill{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;text-transform:uppercase}
+    .status-pendente{background:#fff5e9;color:#8a5a00;border-color:#e7c78b}
+    .status-edicao{background:#fff1f1;color:#8f1d22;border-color:#e2b0b0}
+    .status-salvo{background:#edf8f2;color:#0c7a43;border-color:#a4d3b9}
+    .oco-pill{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;text-transform:uppercase}
+    .oco-aberto{background:linear-gradient(135deg,#ffd8db,#ffb4be);color:#6b0f18;border-color:#de8b96}
+    .oco-fechado{background:linear-gradient(135deg,#e9f7ef,#cdebd8);color:#0b6738;border-color:#9dcdb1}
+    .oco-indefinido{background:#f1ebde;color:#5a4f3b;border-color:#d8cfbc}
+    #reviewBody tr.row-oco-aberto td{background-image:linear-gradient(90deg,rgba(255,116,130,.16),rgba(255,116,130,0));}
+    #reviewBody tr.row-oco-aberto.selected-row td{background-image:linear-gradient(90deg,rgba(255,116,130,.22),rgba(255,116,130,.06));}
+    .drawer{position:fixed;right:0;top:0;height:100vh;width:min(580px,100vw);background:#fffdf8;border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(0,0,0,.12);padding:14px;overflow:auto;z-index:40}
+    .drawer.hidden{display:none}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;background:#fffdf8;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+    .drawer-close{width:auto;padding:6px 10px;height:auto}
+    .mobile-cards{display:none;gap:8px;flex-direction:column}
+    .mcard{border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px}
+    .mcard .r{font-size:12px;color:#5d523d}
+    .mcard .a{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+    .mcard .a button{width:auto;height:30px;padding:0 10px;font-size:12px}
+    .toast-wrap{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:60}
+    .toast{min-width:220px;max-width:360px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:#fffaf0;font-size:12px;box-shadow:0 6px 16px rgba(0,0,0,.12)}
+    .toast.ok{border-color:#a4d3b9;background:#edf8f2;color:#0c7a43}
+    .toast.err{border-color:#e2b0b0;background:#fff0f1;color:#8f1d22}
+    .modal-shell{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:80;display:none;align-items:center;justify-content:center;padding:14px}
+    .modal-shell.is-open{display:flex}
+    .modal-shell.hidden,.modal-shell[aria-hidden="true"]{display:none !important}
+    .modal-box{width:min(980px,100%);max-height:90vh;overflow:auto;background:#fffdf8;border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.24);padding:14px}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:0;background:#fffdf8;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:10px}
+    .modal-head button{width:auto;min-width:140px}
+    .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;position:sticky;bottom:0;background:#fffdf8;padding-top:10px;border-top:1px solid var(--line)}
+    .modal-controls{display:grid;grid-template-columns:minmax(260px,1fr) auto;gap:8px;align-items:end;margin-bottom:8px}
+    .modal-controls .toolbar{justify-content:flex-end}
+    .modal-controls .toolbar button{width:auto;min-width:160px}
+    .modal-members{display:grid;grid-template-columns:1fr;gap:8px}
+    .cm-card{border:1px solid #d9cdaa;border-radius:10px;background:#fff;padding:10px}
+    .cm-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+    .cm-title{font-size:12px;font-weight:700;color:#423b2b}
+    .cm-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .cm-actions button{width:auto;min-width:96px;height:32px;padding:0 10px}
+    .cm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .cm-grid label{text-transform:none;letter-spacing:0;font-size:11px}
+    .cm-empty{font-size:12px;color:#7b7058;border:1px dashed #cfbf99;border-radius:10px;background:#fff9eb;padding:10px}
+    .unsaved-box{width:min(560px,100%)}
+    @keyframes savePulse{
+      0%{box-shadow:0 0 0 0 rgba(143,29,34,.40);transform:scale(1)}
+      50%{box-shadow:0 0 0 8px rgba(143,29,34,0);transform:scale(1.02)}
+      100%{box-shadow:0 0 0 0 rgba(143,29,34,0);transform:scale(1)}
+    }
+    .save-attention{
+      border-color:#8f1d22 !important;
+      background:linear-gradient(#fff3f3,#ffe6e8) !important;
+      color:#6f1318 !important;
+      animation:savePulse .9s ease-in-out infinite;
+    }
+    .audit-box{border:1px dashed #ccb98f;border-radius:10px;background:#fff9eb;padding:8px}
+    .audit-pre{white-space:pre-wrap;font-family:Consolas,monospace;font-size:11px}
+    .report-preview{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px}
+    .report-doc{font-family:var(--report-body-font);color:#1b160d}
+    .report-cover{border:1px solid #d8cfbc;border-radius:10px;background:#fffdf8;padding:14px 16px;margin-bottom:14px}
+    .report-head{display:flex;align-items:center;gap:14px;margin-bottom:10px;border-bottom:2px solid #d8cfbc;padding-bottom:10px}
+    .report-logo{width:68px;height:68px;object-fit:contain}
+    .report-head-kicker{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#5a4f39;font-weight:700}
+    .report-head h2{margin:0;font-family:var(--report-title-font);font-size:34px;line-height:1;font-weight:600;letter-spacing:.4px;color:#1f1a10}
+    .report-head p{margin:4px 0 0 0;font-size:13px;color:#514632}
+    .report-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .report-meta-item{border:1px solid #d8cfbc;border-radius:8px;background:#fff;padding:8px 10px}
+    .report-meta-item .k{font-size:11px;text-transform:uppercase;letter-spacing:.35px;color:#6e6249;font-weight:700}
+    .report-meta-item .v{font-size:13px;color:#1f1a10;font-weight:700;margin-top:3px}
+    .report-meta-item .v ul{font-weight:400;margin:0}
+    .report-doc .meta{font-size:12px;color:#4e432e;margin-bottom:10px}
+    .report-section-title{
+      margin:16px 0 8px 0;
+      font-family:var(--report-title-font);
+      font-size:28px;
+      font-weight:600;
+      letter-spacing:.5px;
+      border-bottom:1px solid #c9bc9d;
+      padding-bottom:4px;
+    }
+    .report-block{border:1px solid #d8cfbc;border-radius:10px;padding:12px;background:#fffdf8;margin-bottom:12px;break-inside:avoid-page;page-break-inside:avoid}
+    .report-block h3{margin:0 0 8px 0;font-family:var(--report-title-font);font-size:26px;line-height:1.05;font-weight:600;letter-spacing:.4px}
+    .report-open{font-size:13px;line-height:1.6;margin:8px 0 10px;text-align:justify}
+    .report-mini{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+    .report-mini th,.report-mini td{border:1px solid #d8cfbc;padding:6px 8px}
+    .report-mini th{width:170px;background:#f6efdd;font-weight:700;text-transform:uppercase;letter-spacing:.3px;font-size:11px}
+    .report-criteria{width:100%;border-collapse:collapse;font-size:12px}
+    .report-criteria th,.report-criteria td{border:1px solid #d8cfbc;padding:8px;vertical-align:top;line-height:1.5}
+    .report-criteria thead{display:table-header-group}
+    .report-criteria th{background:#f0e8d5;font-size:11px;text-transform:uppercase;letter-spacing:.35px}
+    .report-criteria tbody tr:nth-child(even){background:#fbf7ed}
+    .report-comissao-list{margin:0;padding-left:18px}
+    .report-comissao-list li{margin:2px 0;font-size:12px}
+    .report-empty{font-size:13px;color:#6f644c}
+    .report-controls{display:flex;justify-content:flex-end;gap:8px}
+    body.meeting .sticky-controls, body.meeting #assistPanel, body.meeting #debugPanel{display:none}
+    body.meeting .wrap{max-width:1600px}
     @media (max-width:1100px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:700px){.grid,.cards{grid-template-columns:1fr}}
+    @media (max-width:700px){.grid,.cards,.detail-grid,.assist-grid,.steps,.cm-grid,.modal-controls{grid-template-columns:1fr}.table-wrap{display:none}.mobile-cards{display:flex}}
+    @media print{
+      @page{
+        size:A4 portrait;
+        margin:2.2cm 2cm 2cm 3cm;
+      }
+      body{background:#fff}
+      .wrap{max-width:none;padding:0}
+      body *{visibility:hidden}
+      #reportPreviewPanel,#reportPreviewPanel *{visibility:visible}
+      #reportPreviewPanel{position:absolute;left:0;top:0;width:100%;border:0;margin:0;padding:0}
+      #reportPreviewPanel .no-print{display:none}
+      #reportPreview{border:0;padding:0}
+      .report-cover{page-break-inside:avoid}
+      .report-block{page-break-inside:avoid}
+    }
   </style>
 </head>
 <body>
@@ -69,16 +298,28 @@
       <p>Marcacao de ajustes por REDS, progresso de avaliacao e relatorio mensal da comissao.</p>
     </div>
 
-    <div class="panel">
+    <div class="panel sticky-controls" id="controlsPanel">
+      <div id="stepFlow" class="steps"></div>
       <div class="grid">
         <label>Numero de Policia
-          <input id="nr" placeholder="Ex: 1438704">
+          <input id="nr" placeholder="Ex: 1438704" inputmode="numeric" autocomplete="off">
         </label>
         <label>Data inicial
           <input id="dateFrom" type="date">
         </label>
         <label>Data final
           <input id="dateTo" type="date">
+        </label>
+        <label>Data reuniao
+          <input id="dataReuniao" type="date">
+        </label>
+        <label>Periodo relatorio
+          <input id="periodoLabel" placeholder="Ex: JANEIRO" autocomplete="off" readonly>
+        </label>
+        <label>Bloco da comissao
+          <select id="comissaoBloco">
+            <option value="">Selecione...</option>
+          </select>
         </label>
         <label>CIA
           <select id="cia">
@@ -90,13 +331,44 @@
             <option value="74">74 CIA TM</option>
           </select>
         </label>
+        <label>Grupo natureza
+          <select id="naturezaGroup">
+            <option value="">Todas</option>
+            <option value="CV">CV (lista oficial)</option>
+            <option value="ARMA">ARMA (E03012/E03014/E03016)</option>
+            <option value="GRUPO_W">GRUPO_W (W01000-W04000)</option>
+            <option value="C99000">C99000</option>
+            <option value="OUTROS">Outras</option>
+          </select>
+        </label>
+        <label>Tipo relatorio
+          <input id="tipoRelatorio" placeholder="Contem... (ex: BO, REDS)" autocomplete="off">
+        </label>
+        <label>Busca NR
+          <input id="quickSearchNr" placeholder="Numero ocorrencia..." autocomplete="off">
+        </label>
+        <label>Busca no historico
+          <input id="quickSearchText" placeholder="Texto livre..." autocomplete="off">
+        </label>
+        <label class="toggle">Pendentes apenas
+          <input id="onlyPendingLocal" type="checkbox">
+        </label>
         <div><button id="bAccess" class="btn-main">Validar acesso</button></div>
         <div><button id="bRunNow" class="btn-sub">Run Now</button></div>
         <div><button id="bAnalyze" class="btn-sub">Analisar base</button></div>
         <div><button id="bLoadReview">Carregar avaliacao</button></div>
         <div><button id="bSaveAll">Salvar marcacoes</button></div>
         <div><button id="bMonthly">Gerar relatorio mensal</button></div>
-        <div class="full"><div id="accessMsg" class="msg">Informe numero de policia e valide acesso.</div></div>
+        <div><button id="bPrintReport">Imprimir preview</button></div>
+        <div class="toolbar">
+          <button id="bReload" type="button">Recarregar dados</button>
+          <button id="bMeeting" type="button">Modo reuniao</button>
+          <button id="bComissaoManage" type="button" class="hidden">Gerir comissao</button>
+          <span class="small" id="jobStatusInfo">Sem carga nesta sessao.</span>
+        </div>
+        <div class="full"><div id="accessMsg" class="msg">Validacao pendente.</div></div>
+        <div class="full small" id="comissaoInfo">Comissao do relatorio: nao selecionada.</div>
+        <div class="full small">Atalhos: <b>↑/↓</b> navegar, <b>A</b> marcar avaliado, <b>S</b> salvar atual, <b>L</b> recarregar.</div>
       </div>
     </div>
 
@@ -120,6 +392,7 @@
               <tr>
                 <th>NR</th>
                 <th>Data</th>
+                <th>Estado REDS</th>
                 <th>Natureza</th>
                 <th>Flags</th>
                 <th>Avaliado</th>
@@ -129,13 +402,87 @@
               </tr>
             </thead>
             <tbody id="reviewBody">
-              <tr><td colspan="8" class="small">Sem dados.</td></tr>
+              <tr><td colspan="9" class="small">Sem dados.</td></tr>
             </tbody>
           </table>
         </div>
+        <div id="reviewCardsMobile" class="mobile-cards"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel hidden" id="reportPreviewPanel">
+        <div class="row-info no-print">
+          <div><b>Preview do relatorio mensal</b></div>
+          <div class="report-controls">
+            <button id="bPrintReportTop" class="btn-sub" type="button">Imprimir / Salvar PDF</button>
+          </div>
+        </div>
+        <div id="reportPreview" class="report-preview">
+          <div class="report-empty">Gere o relatorio para visualizar o preview.</div>
+        </div>
+      </div>
+
+      <div class="drawer hidden" id="detailPanel">
+        <div class="drawer-head">
+          <div><b id="detailTitle">Detalhes do REDS</b></div>
+          <div class="toolbar">
+            <div class="small" id="detailMeta"></div>
+            <button id="bCloseDrawer" class="drawer-close" type="button">Fechar</button>
+          </div>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-box full">
+            <div class="detail-k">Historico da Ocorrencia</div>
+            <div id="detailHistorico" class="detail-text">Selecione um REDS para visualizar.</div>
+            <div id="detailLegend" class="small detail-legend">Vermelho: ortografia provavel | Azul: concordancia provavel.</div>
+          </div>
+          <div class="detail-box">
+            <div class="detail-k">Motor 1 - Qualidade Textual</div>
+            <div id="detailMotor1" class="detail-pairs"></div>
+          </div>
+          <div class="detail-box">
+            <div class="detail-k">Motor 2 - Convergencia</div>
+            <div id="detailMotor2" class="detail-pairs"></div>
+          </div>
+          <div class="detail-box">
+            <div class="detail-k">Motor 3 - Padroes Operacionais</div>
+            <div id="detailMotor3" class="detail-tags"></div>
+          </div>
+          <div class="detail-box">
+            <div class="detail-k">Avaliacao da Comissao</div>
+            <div id="detailEval" class="detail-pairs"></div>
+          </div>
+          <div class="detail-box full">
+            <div class="detail-k">Recomendacoes dos Motores</div>
+            <div id="detailRecs" class="detail-note">-</div>
+          </div>
+          <div class="detail-box full">
+            <div class="detail-k">Auditoria da observacao</div>
+            <div id="obsAudit" class="audit-box">
+              <div class="small">Sem alteracoes.</div>
+              <div id="obsDiff" class="audit-pre"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="assistPanel">
+        <div class="row-info">
+          <div><b>Guia de avaliacao (catalogo)</b></div>
+          <div class="small" id="assistInfo">Selecione um REDS para marcar erros e medidas.</div>
+        </div>
+        <div class="assist-grid">
+          <div class="assist-box">
+            <div class="detail-k">Erros de qualidade</div>
+            <div id="assistErrors"></div>
+          </div>
+          <div class="assist-box">
+            <div class="detail-k">Medidas adotadas</div>
+            <div id="assistMeasures"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="debugPanel">
         <div class="grid">
           <div class="full">
             <label>Texto relatorio mensal (modelo 1)
@@ -147,11 +494,58 @@
               <textarea id="txtModelo2" readonly></textarea>
             </label>
           </div>
-          <div class="full"><div id="out" class="mono"></div></div>
+          <div class="full">
+            <details>
+              <summary class="small">Debug tecnico</summary>
+              <div id="out" class="mono"></div>
+            </details>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  <div id="comissaoModal" class="modal-shell hidden" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <b>Gestao da Comissao REDS</b>
+          <div class="small">Edicao restrita ao gestor autorizado.</div>
+        </div>
+        <button id="bComissaoClose" type="button" data-close-comissao="1">Fechar</button>
+      </div>
+      <div class="modal-controls">
+        <label>Bloco da comissao
+          <select id="comissaoEditBlock"></select>
+        </label>
+        <div class="toolbar">
+          <button id="bComissaoAdd" type="button">Adicionar militar</button>
+        </div>
+      </div>
+      <div id="comissaoMembers" class="modal-members"></div>
+      <div class="modal-foot">
+        <button id="bComissaoCancel" type="button" data-close-comissao="1">Cancelar</button>
+        <button id="bComissaoSave" type="button" class="btn-main">Salvar comissao</button>
+      </div>
+    </div>
+  </div>
+  <div id="unsavedExitModal" class="modal-shell hidden" aria-hidden="true">
+    <div class="modal-box unsaved-box">
+      <div class="modal-head">
+        <div>
+          <b>Alteracoes pendentes</b>
+          <div class="small">Existem dados sem salvar nesta tela.</div>
+        </div>
+      </div>
+      <div class="msg warn">
+        Existem marcacoes sem salvar. Deseja sair assim mesmo?
+      </div>
+      <div class="modal-foot">
+        <button id="bUnsavedStay" type="button">Nao, continuar editando</button>
+        <button id="bUnsavedLeave" type="button" class="btn-main">Sim, sair sem salvar</button>
+      </div>
+    </div>
+  </div>
+  <div id="toastWrap" class="toast-wrap"></div>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -163,11 +557,174 @@
       rows:[],
       dirty:new Set(),
       kpis:null,
+      sessionNr:"",
+      nrLocked:false,
+      selectedIdx:-1,
+      catalogErrors:[],
+      catalogMeasures:[],
+      catalogErrorByCode:{},
+      catalogMeasureByCode:{},
+      visibleIdxs:[],
+      didAnalyze:false,
+      didLoad:false,
+      didMonthly:false,
+      meetingMode:false,
+      rowsLoadedAt:null,
+      lastSaveAt:null,
+      lastRunNowAt:null,
+      kpiProd:{avaliadosHoje:0, pendentes:0, tempoMedioSessao:"-"},
+      sessionStartedAt: Date.now(),
+      saveCountSession: 0,
+      suggestedByRow:{},
+      drawerClosed:false,
+      monthlyPreview:null,
+      comissaoConfig:null,
+      comissaoBlocks:[],
+      canManageComissao:false,
+      comissaoDraft:null,
+      comissaoEditBlock:"",
+      pendingLeaveAction:null,
+      skipBeforeUnload:false,
+      saveAttentionTimer:0,
     };
 
+    const MOTOR_HELP = {
+      motor1: {
+        score_textual: "Indice geral da qualidade textual do historico. Quanto maior, melhor.",
+        texto_curto: "Sinaliza historico com quantidade de texto abaixo do minimo esperado.",
+        erro_ortografico: "Indica provavel erro ortografico detectado no historico.",
+        sem_pontuacao: "Indica ausencia de pontuacao no historico da ocorrencia.",
+        historico_incompleto: "Indica narracao possivelmente incompleta, sem elementos essenciais.",
+      },
+      motor2: {
+        alerta_convergencia: "Compara campos do REDS e historico para apontar possiveis inconsistencias.",
+        alerta_classificacao: "Sinaliza possivel classificacao inadequada da ocorrencia.",
+        tempo_empenho_suspeito: "Aponta tempo de empenho fora do padrao esperado para o tipo de fato.",
+        possivel_erro_violenta: "Sinaliza indicio de natureza violenta possivelmente classificada de forma incorreta.",
+        natureza_sugerida: "Natureza sugerida pelo motor como opcao mais aderente ao texto.",
+      },
+      motor3: {
+        padrao_operacional: "Indica padrao operacional identificado pelos criterios do motor.",
+        c99: "Marcador C99 detectado pela analise automatica.",
+        w01: "Marcador W01 detectado pela analise automatica.",
+        w02: "Marcador W02 detectado pela analise automatica.",
+        w03: "Marcador W03 detectado pela analise automatica.",
+        w04: "Marcador W04 detectado pela analise automatica.",
+        copia_historico: "Detecta alta similaridade com outros historicos, com indicio de copia.",
+        repeticao_guarnicao: "Sinaliza repeticao recorrente de padrao para a mesma guarnicao.",
+      },
+    };
+
+    function bindClick(id, handler){
+      const el = $(id);
+      if (!el) return;
+      el.addEventListener("click", handler);
+    }
+
     function detectNumeroPolicia(){
+      const spanMeta = document.getElementById("auth-user-meta-index");
+      if (spanMeta) {
+        const txt = String(spanMeta.textContent || "");
+        const m = txt.match(/NR\s*PM\s*(\d{6,8})/i);
+        if (m && m[1]) {
+          $("nr").value = digitsOnly(m[1]);
+          return true;
+        }
+      }
       const img = document.querySelector("img.c-foto[alt]");
-      if (img && img.alt) $("nr").value = String(img.alt || "").trim();
+      if (img && img.alt) {
+        const nr = digitsOnly(img.alt || "");
+        if (nr) {
+          $("nr").value = nr;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    async function initSessionNumeroPolicia(){
+      try {
+        const d = await api("/auth/me");
+        const nr = digitsOnly((d && d.user && d.user.numero_policia) || "");
+        if (nr) {
+          state.sessionNr = nr;
+          state.nrLocked = true;
+          $("nr").value = nr;
+          $("nr").readOnly = true;
+          return;
+        }
+      } catch (_) {}
+      state.nrLocked = false;
+      $("nr").readOnly = false;
+    }
+
+    function applyDefaultPreviousMonthRange(){
+      const from = $("dateFrom");
+      const to = $("dateTo");
+      if (!from || !to) return;
+      if (String(from.value || "").trim() && String(to.value || "").trim()) return;
+      const now = new Date();
+      const firstPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastPrev = new Date(now.getFullYear(), now.getMonth(), 0);
+      const fmt = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      };
+      if (!String(from.value || "").trim()) from.value = fmt(firstPrev);
+      if (!String(to.value || "").trim()) to.value = fmt(lastPrev);
+    }
+
+    function monthBoundsFromDate(value){
+      const v = String(value || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+      const y = Number(v.slice(0, 4));
+      const m = Number(v.slice(5, 7));
+      if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) return null;
+      const mm = String(m).padStart(2, "0");
+      const first = `${y}-${mm}-01`;
+      const lastDate = new Date(y, m, 0);
+      const last = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}-${String(lastDate.getDate()).padStart(2, "0")}`;
+      return { first, last };
+    }
+
+    function syncMonthlyDateConstraints(){
+      const from = $("dateFrom");
+      const to = $("dateTo");
+      const periodo = $("periodoLabel");
+      if (!from || !to) return;
+      const bounds = monthBoundsFromDate(from.value || "");
+      if (!bounds) {
+        to.removeAttribute("min");
+        to.removeAttribute("max");
+        return;
+      }
+      to.min = bounds.first;
+      to.max = bounds.last;
+      if (!String(to.value || "").trim() || to.value < bounds.first || to.value > bounds.last) {
+        to.value = bounds.last;
+      }
+      if (periodo) periodo.value = monthNamePt(bounds.first);
+    }
+
+    function monthNamePt(value){
+      const v = String(value || "").trim();
+      if (v.length < 7) return "";
+      const mm = v.slice(5, 7);
+      const map = {
+        "01":"JANEIRO","02":"FEVEREIRO","03":"MARCO","04":"ABRIL","05":"MAIO","06":"JUNHO",
+        "07":"JULHO","08":"AGOSTO","09":"SETEMBRO","10":"OUTUBRO","11":"NOVEMBRO","12":"DEZEMBRO"
+      };
+      return map[mm] || "";
+    }
+
+    function applyDefaultReportHeader(){
+      const dr = $("dataReuniao");
+      if (dr && !String(dr.value || "").trim()) {
+        dr.value = new Date().toISOString().slice(0, 10);
+      }
+      syncMonthlyDateConstraints();
     }
 
     function qs(params={}){
@@ -192,12 +749,900 @@
       return data;
     }
 
+    function setDebugOut(value){
+      $("out").textContent = typeof value === "string" ? value : JSON.stringify(value || {}, null, 2);
+    }
+
+    function toast(msg, kind="ok", timeout=3200){
+      const wrap = $("toastWrap");
+      const el = document.createElement("div");
+      el.className = `toast ${kind === "err" ? "err" : "ok"}`;
+      el.textContent = String(msg || "");
+      wrap.appendChild(el);
+      window.setTimeout(() => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, timeout);
+    }
+
+    function setSaveAttention(active){
+      const saveBtn = $("bSaveAll");
+      if (!saveBtn) return;
+      saveBtn.classList.toggle("save-attention", !!active);
+    }
+
+    function nudgeSaveAction(){
+      window.clearTimeout(state.saveAttentionTimer || 0);
+      setSaveAttention(true);
+      const btn = $("bSaveAll");
+      if (btn && typeof btn.scrollIntoView === "function") {
+        btn.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      state.saveAttentionTimer = window.setTimeout(() => setSaveAttention(false), 7000);
+    }
+
+    function openUnsavedExitModal(action){
+      state.pendingLeaveAction = typeof action === "function" ? action : null;
+      const modal = $("unsavedExitModal");
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeUnsavedExitModal(){
+      const modal = $("unsavedExitModal");
+      if (!modal) return;
+      modal.classList.remove("is-open");
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function runPendingLeaveAction(){
+      const action = state.pendingLeaveAction;
+      state.pendingLeaveAction = null;
+      closeUnsavedExitModal();
+      if (typeof action !== "function") return;
+      state.skipBeforeUnload = true;
+      try {
+        const result = action();
+        if (result && typeof result.then === "function") {
+          result.finally(() => {
+            window.setTimeout(() => { state.skipBeforeUnload = false; }, 1000);
+          });
+          return;
+        }
+      } catch (_) {}
+      window.setTimeout(() => { state.skipBeforeUnload = false; }, 1000);
+    }
+
+    function guardUnsavedBefore(action){
+      if (!state.dirty.size) {
+        action();
+        return;
+      }
+      openUnsavedExitModal(action);
+    }
+
+    function renderStepFlow(){
+      const el = $("stepFlow");
+      const hasDirty = state.dirty.size > 0;
+      const steps = [
+        { n: "1", t: "Validar acesso", done: state.allowed, active: !state.allowed },
+        { n: "2", t: "Carregar base", done: state.didLoad, active: state.allowed && !state.didLoad },
+        { n: "3", t: "Marcar ajustes", done: state.didLoad && (hasDirty || state.saveCountSession > 0), active: state.didLoad && !hasDirty && state.saveCountSession === 0 },
+        { n: "4", t: "Salvar", done: !!state.lastSaveAt && !hasDirty, active: hasDirty },
+        { n: "5", t: "Relatorio", done: state.didMonthly, active: !!state.lastSaveAt && !state.didMonthly },
+      ];
+      el.innerHTML = steps.map((s) => `<div class="step ${s.done ? "done" : ""} ${s.active ? "active" : ""}"><div class="n">Passo ${s.n}</div><div class="t">${esc(s.t)}</div></div>`).join("");
+    }
+
     function selectedCia(){
       return String($("cia").value || "").trim();
     }
 
+    function selectedNaturezaGroup(){
+      return String($("naturezaGroup").value || "").trim().toUpperCase();
+    }
+
+    function selectedTipoRelatorio(){
+      return String($("tipoRelatorio").value || "").trim();
+    }
+
+    function ciaLabelByCode(cia){
+      const code = String(cia || "").trim();
+      const map = {
+        "42":"42 CIA PM",
+        "47":"47 CIA PM",
+        "155":"155 CIA PM",
+        "232":"232 CIA PM",
+        "74":"74 CIA TM",
+      };
+      return map[code] || `${code} CIA PM`;
+    }
+
+    function normalizePostoGraduacao(value){
+      const raw = String(value || "").trim();
+      const norm = raw
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Za-z0-9 ]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toUpperCase();
+      if (!norm) return "MILITAR";
+      if (norm.includes("MAJ")) return "MAJ PM";
+      if (norm.includes("CAP")) return "CAP PM";
+      if (/1\s*TEN/.test(norm)) return "1 TEN PM";
+      if (/2\s*TEN/.test(norm)) return "2 TEN PM";
+      if (norm.includes("SUB TEN") || norm.includes("SUBTEN")) return "SUB TEN PM";
+      if (/1\s*SGT/.test(norm)) return "1 SGT PM";
+      if (/2\s*SGT/.test(norm)) return "2 SGT PM";
+      return raw.toUpperCase();
+    }
+
+    function hierarchyWeight(postoNorm){
+      const order = {
+        "MAJ PM": 10,
+        "CAP PM": 20,
+        "1 TEN PM": 30,
+        "2 TEN PM": 40,
+        "SUB TEN PM": 50,
+        "1 SGT PM": 60,
+        "2 SGT PM": 70,
+      };
+      return order[String(postoNorm || "").toUpperCase()] || 999;
+    }
+
+    function digitsOnly(value){
+      return String(value || "").replace(/\D/g, "");
+    }
+
+    function normalizeComissaoMember(row){
+      if (row && typeof row === "object" && !Array.isArray(row)) {
+        const id = digitsOnly(row.id || row.numero_policia || row.nr || row.matricula || "");
+        const nomeCompleto = String(row.nome_completo || row.nome || row.name || "").trim();
+        const nomeGuerra = String(row.nome_guerra || "").trim();
+        const postoRaw = String(row.posto_graduacao || row.posto || row.graduacao || "").trim();
+        const posto = normalizePostoGraduacao(postoRaw || "");
+        const funcaoRaw = String(row.funcao || "").trim().toLowerCase();
+        const funcao = funcaoRaw.startsWith("pres") ? "Presidente" : "Membro";
+        const ordemNum = Number(row.ordem);
+        const ordem = Number.isFinite(ordemNum) && ordemNum > 0 ? Math.floor(ordemNum) : null;
+        const nome = nomeCompleto || (id ? `NR PM ${id}` : "Militar");
+        return {
+          id,
+          nome,
+          nome_completo: nomeCompleto || nome,
+          nome_guerra: nomeGuerra,
+          posto,
+          posto_graduacao: postoRaw || posto,
+          funcao,
+          ordem,
+        };
+      }
+      const id = digitsOnly(row || "");
+      return {
+        id,
+        nome: id ? `NR PM ${id}` : "Militar",
+        nome_completo: id ? `NR PM ${id}` : "Militar",
+        nome_guerra: "",
+        posto: "MILITAR",
+        posto_graduacao: "",
+        funcao: "Membro",
+        ordem: null,
+      };
+    }
+
+    function reorderComissaoMembers(list){
+      const rows = (Array.isArray(list) ? list : []).map((raw, idx) => ({
+        ...normalizeComissaoMember(raw),
+        __idx: idx,
+      }));
+      rows.sort((a, b) => {
+        const ao = Number.isFinite(Number(a.ordem)) && Number(a.ordem) > 0 ? Number(a.ordem) : 9999;
+        const bo = Number.isFinite(Number(b.ordem)) && Number(b.ordem) > 0 ? Number(b.ordem) : 9999;
+        if (ao !== bo) return ao - bo;
+        return Number(a.__idx || 0) - Number(b.__idx || 0);
+      });
+      return rows.map((m, i) => {
+        const clean = { ...m };
+        delete clean.__idx;
+        clean.ordem = i + 1;
+        return clean;
+      });
+    }
+
+    function sortComissaoMembers(rows){
+      return reorderComissaoMembers(rows);
+    }
+
+    function formatComissaoMemberLine(row){
+      const m = normalizeComissaoMember(row);
+      const posto = m.posto !== "MILITAR" ? `${m.posto} ` : "";
+      const nome = String(m.nome_completo || m.nome || "").trim();
+      const funcao = String(m.funcao || "Membro").trim();
+      const line = `${funcao} - ${posto}${nome || "Sem nome"}`.trim();
+      return m.id ? `${line} (NR ${m.id})` : line;
+    }
+
+    function formatComissaoMembers(rows){
+      return sortComissaoMembers(rows)
+        .map((m) => formatComissaoMemberLine(m))
+        .join(", ");
+    }
+
+    function selectedComissaoText(){
+      const sel = $("comissaoBloco");
+      if (!sel) return "";
+      const idx = Number(sel.value || -1);
+      const block = Number.isInteger(idx) ? state.comissaoBlocks[idx] : null;
+      return block ? formatComissaoMembers(block.members) : "";
+    }
+
+    function currentFilterParams(){
+      return {
+        date_from: $("dateFrom").value || "",
+        date_to: $("dateTo").value || "",
+        natureza_grupo: selectedNaturezaGroup(),
+        nome_tipo_relatorio: selectedTipoRelatorio(),
+        only_pending: localOnlyPending() ? "true" : "",
+      };
+    }
+
+    function localOnlyPending(){
+      return !!$("onlyPendingLocal").checked;
+    }
+
+    function quickSearchNr(){
+      return String($("quickSearchNr").value || "").trim().toLowerCase();
+    }
+
+    function quickSearchText(){
+      return String($("quickSearchText").value || "").trim().toLowerCase();
+    }
+
+    function rowMatchesLocalFilters(row){
+      if (localOnlyPending() && !!row.avaliado) return false;
+      const qNr = quickSearchNr();
+      if (qNr && !String(row.numero_ocorrencia || "").toLowerCase().includes(qNr)) return false;
+      const qTxt = quickSearchText();
+      if (qTxt) {
+        const blob = [
+          row.historico_ocorrencia,
+          row.natureza_codigo,
+          row.natureza_descricao_longa,
+          row.natureza_secundaria1_codigo,
+          row.natureza_secundaria1_descricao,
+          row.natureza_secundaria2_codigo,
+          row.natureza_secundaria2_descricao,
+          row.natureza_secundaria3_codigo,
+          row.natureza_secundaria3_descricao,
+          row.descricao_estado,
+          row.nome_tipo_relatorio,
+          row.observacao,
+        ].join(" ").toLowerCase();
+        if (!blob.includes(qTxt)) return false;
+      }
+      return true;
+    }
+
     function selectedNr(){
-      return String($("nr").value || "").trim();
+      if (state.nrLocked && state.sessionNr) return digitsOnly(state.sessionNr);
+      return digitsOnly($("nr").value || "");
+    }
+
+    function withUserNr(params={}){
+      const out = { ...params };
+      const nr = selectedNr();
+      if (nr) out.user_nr = nr;
+      return out;
+    }
+
+    function esc(v){
+      return String(v == null ? "" : v)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;");
+    }
+
+    function boolTxt(v){
+      return v ? "Sim" : "Nao";
+    }
+
+    function fmtDate(value){
+      const v = String(value || "").trim();
+      if (!v) return "-";
+      if (v.length >= 10) return v.slice(0, 10);
+      return v;
+    }
+
+    function fmtDateTime(value){
+      const v = String(value || "").trim();
+      if (!v) return "-";
+      return v.replace("T", " ").slice(0, 19);
+    }
+
+    function normalizeStateText(value){
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toUpperCase();
+    }
+
+    function ocorrenciaState(row){
+      const raw = String((row || {}).descricao_estado || "").trim();
+      const norm = normalizeStateText(raw);
+      if (!norm) {
+        const hasFech = String((row || {}).data_hora_fechamento || "").trim();
+        return hasFech ? { key: "fechado", label: "Fechado (inferido)" } : { key: "aberto", label: "Aberto (inferido)" };
+      }
+      if (norm.includes("ABERTO")) return { key: "aberto", label: raw };
+      if (norm.includes("FECH")) return { key: "fechado", label: raw };
+      if (norm.includes("ENCERR")) return { key: "fechado", label: raw };
+      return { key: "indefinido", label: raw };
+    }
+
+    function secondaryNaturezasLabel(row){
+      const out = [];
+      [["natureza_secundaria1_codigo","natureza_secundaria1_descricao"],["natureza_secundaria2_codigo","natureza_secundaria2_descricao"],["natureza_secundaria3_codigo","natureza_secundaria3_descricao"]]
+        .forEach(([codKey, descKey]) => {
+          const cod = String((row || {})[codKey] || "").trim();
+          const desc = String((row || {})[descKey] || "").trim();
+          if (!cod && !desc) return;
+          out.push(cod && desc ? `${cod} - ${desc}` : (cod || desc));
+        });
+      return out;
+    }
+
+    function helpIconHtml(helpText){
+      if (!helpText) return "";
+      const tip = esc(helpText);
+      return `<span class="help-tip" tabindex="0" title="${tip}" aria-label="${tip}" data-tip="${tip}">?</span>`;
+    }
+
+    function pairHtml(label, value, helpText=""){
+      return `<div class="detail-pair"><span class="detail-label">${esc(label)}${helpIconHtml(helpText)}</span><b>${esc(value)}</b></div>`;
+    }
+
+    function tagHtml(label, on, helpText=""){
+      return `<span class="detail-tag ${on ? "on" : "off"}"><span class="detail-label">${esc(label)}${helpIconHtml(helpText)}</span>: ${on ? "SIM" : "NAO"}</span>`;
+    }
+
+    function buildObsDiff(beforeText, afterText){
+      const b = String(beforeText || "");
+      const a = String(afterText || "");
+      if (b === a) return "Sem alteracoes na observacao.";
+      return `--- Antes ---\n${b || "(vazio)"}\n\n+++ Depois +++\n${a || "(vazio)"}`;
+    }
+
+    function normalizeWord(value){
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    }
+
+    const COMMON_MISSPELLINGS = new Set([
+      "ocorencia","ocorrenciaa","veiulo","veciulo","vitma","vitinma",
+      "testmunha","abordajem","condusido","suspeitoo","apreensaoo",
+      "delegaciaa","flagrantee","homiicidio","homissidio","furtto",
+      "rouboo","ameacaa","historioco","guarnicaoo",
+    ]);
+
+    function isVehiclePlateToken(token){
+      const t = String(token || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+      if (t.length < 7 || t.length > 8) return false;
+      return /^[A-Z]{3}[0-9]{4}$/.test(t) || /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(t) || /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(t);
+    }
+
+    function isKnownCodeToken(token){
+      const t = String(token || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+      return /^[A-Z][0-9]{5,}$/.test(t) || /^[A-Z]{2,}[0-9]{2,}$/.test(t) || /^[0-9]{5,}[A-Z]?$/.test(t);
+    }
+
+    function splitTextTokens(text){
+      const src = String(text || "");
+      const tokens = [];
+      const re = /([A-Za-zÀ-ÿ0-9]+)/g;
+      let last = 0;
+      let m;
+      while ((m = re.exec(src)) !== null){
+        if (m.index > last) tokens.push({ text: src.slice(last, m.index), isWord: false, cls: "" });
+        tokens.push({ text: m[0], isWord: true, cls: "" });
+        last = re.lastIndex;
+      }
+      if (last < src.length) tokens.push({ text: src.slice(last), isWord: false, cls: "" });
+      return tokens;
+    }
+
+    function markConcordanceTokens(tokens){
+      const words = [];
+      tokens.forEach((t, idx) => { if (t.isWord) words.push({ idx, lw: normalizeWord(t.text) }); });
+      const pluralVerbAfterAGente = new Set(["fomos","vamos","estamos","chegamos","saimos","fizemos","foram"]);
+      const commonConcordanceWords = new Set(["menas","seje","houveram","fazem","truxe"]);
+      for (let i = 0; i < words.length; i += 1){
+        const cur = words[i];
+        const next = words[i + 1];
+        const next2 = words[i + 2];
+        if (commonConcordanceWords.has(cur.lw)) tokens[cur.idx].cls = tokens[cur.idx].cls || "hl-concord";
+        if (cur.lw === "mim" && next && /(ar|er|ir)$/.test(next.lw)){
+          tokens[cur.idx].cls = tokens[cur.idx].cls || "hl-concord";
+          tokens[next.idx].cls = tokens[next.idx].cls || "hl-concord";
+        }
+        if (cur.lw === "nos" && next && ["foi","vai","era","esta","fui"].includes(next.lw)){
+          tokens[cur.idx].cls = tokens[cur.idx].cls || "hl-concord";
+          tokens[next.idx].cls = tokens[next.idx].cls || "hl-concord";
+        }
+        if (cur.lw === "a" && next && next.lw === "gente" && next2 && pluralVerbAfterAGente.has(next2.lw)){
+          tokens[cur.idx].cls = tokens[cur.idx].cls || "hl-concord";
+          tokens[next.idx].cls = tokens[next.idx].cls || "hl-concord";
+          tokens[next2.idx].cls = tokens[next2.idx].cls || "hl-concord";
+        }
+      }
+    }
+
+    function markOrthographyTokens(tokens){
+      tokens.forEach((t) => {
+        if (!t.isWord) return;
+        const lw = normalizeWord(t.text);
+        if (!lw) return;
+        if (isVehiclePlateToken(t.text) || isKnownCodeToken(t.text)) return;
+        if (/^\d+$/.test(lw)) return;
+        const repeated = /(.)\1{3,}/.test(lw);
+        const mixedAlphaNum = /[0-9]/.test(lw) && /[a-z]/.test(lw);
+        const noVowelLong = lw.length >= 7 && !/[aeiou]/.test(lw);
+        const commonMiss = COMMON_MISSPELLINGS.has(lw);
+        if (repeated || mixedAlphaNum || noVowelLong || commonMiss) t.cls = "hl-ortho";
+      });
+    }
+
+    function highlightHistorico(text){
+      const tokens = splitTextTokens(text);
+      markConcordanceTokens(tokens);
+      markOrthographyTokens(tokens);
+      let ortho = 0;
+      let concord = 0;
+      const html = tokens.map((t) => {
+        if (!t.isWord) return esc(t.text);
+        if (t.cls === "hl-ortho") ortho += 1;
+        if (t.cls === "hl-concord") concord += 1;
+        if (t.cls) return `<span class="${t.cls}">${esc(t.text)}</span>`;
+        return esc(t.text);
+      }).join("");
+      return { html, ortho, concord };
+    }
+
+    function normalizeCodes(values){
+      const out = [];
+      const seen = new Set();
+      (Array.isArray(values) ? values : []).forEach((v) => {
+        const c = String(v || "").trim();
+        if (!c || seen.has(c)) return;
+        seen.add(c);
+        out.push(c);
+      });
+      return out;
+    }
+
+    function parseCodes(text){
+      return normalizeCodes(String(text || "").split(/[,\n;]+/g).map((x) => x.trim()));
+    }
+
+    function parseObsCatalogMarkers(obs){
+      const txt = String(obs || "");
+      const mErr = txt.match(/\[ERROS_COD\]\s*([^\r\n]+)/i);
+      const mMed = txt.match(/\[MEDIDAS_COD\]\s*([^\r\n]+)/i);
+      return {
+        erros: parseCodes(mErr ? mErr[1] : ""),
+        medidas: parseCodes(mMed ? mMed[1] : ""),
+      };
+    }
+
+    function stripObsCatalogMarkers(obs){
+      return String(obs || "")
+        .replace(/\n?\[ERROS_COD\][^\r\n]*/gi, "")
+        .replace(/\n?\[MEDIDAS_COD\][^\r\n]*/gi, "")
+        .trim();
+    }
+
+    function syncObsCatalogMarkers(row){
+      const clean = stripObsCatalogMarkers(row.observacao || "");
+      const lines = [];
+      if (clean) lines.push(clean);
+      if (Array.isArray(row.catalogErros) && row.catalogErros.length) lines.push(`[ERROS_COD] ${row.catalogErros.join(", ")}`);
+      if (Array.isArray(row.catalogMedidas) && row.catalogMedidas.length) lines.push(`[MEDIDAS_COD] ${row.catalogMedidas.join(", ")}`);
+      row.observacao = lines.join("\n");
+    }
+
+    function suggestCatalogForRow(row){
+      const errs = new Set(Array.isArray(row.catalogErros) ? row.catalogErros : []);
+      const meds = new Set(Array.isArray(row.catalogMedidas) ? row.catalogMedidas : []);
+      const rec = [];
+      if (!errs.size){
+        if (row.alerta_classificacao) { errs.add("5.01"); rec.push("5.01"); }
+        if (row.erro_ortografico) { errs.add("12.01"); rec.push("12.01"); }
+        if (row.alerta_texto_curto || row.historico_incompleto) { errs.add("13.01"); rec.push("13.01"); }
+        if (row.tempo_empenho_suspeito) { errs.add("15.01"); rec.push("15.01"); }
+      }
+      if (!meds.size && errs.size){
+        meds.add("02");
+      }
+      row.catalogErros = normalizeCodes([...errs]);
+      row.catalogMedidas = normalizeCodes([...meds]);
+      state.suggestedByRow[row.numero_ocorrencia || ""] = rec;
+    }
+
+    async function loadQualityCatalogs(){
+      try {
+        const [errData, medData] = await Promise.all([
+          api("/data/erros_qualidade.json"),
+          api("/data/medidas_adotadas_qualidad.json"),
+        ]);
+        const cats = Array.isArray((errData || {}).categorias_erro) ? errData.categorias_erro : [];
+        const meds = Array.isArray((medData || {}).medidas_adotadas) ? medData.medidas_adotadas : [];
+        state.catalogErrors = cats.map((c) => ({
+          id: c.id,
+          campo: c.campo || "",
+          erros: Array.isArray(c.erros) ? c.erros.map((e) => ({ codigo: String(e.codigo || "").trim(), descricao: String(e.descricao || "").trim() })) : [],
+        }));
+        state.catalogMeasures = meds.map((m) => ({
+          id: m.id,
+          codigo: String(m.codigo || "").trim(),
+          descricao: String(m.descricao || "").trim(),
+        }));
+        const errMap = {};
+        state.catalogErrors.forEach((g) => {
+          g.erros.forEach((e) => { if (e.codigo) errMap[e.codigo] = e.descricao || e.codigo; });
+        });
+        const medMap = {};
+        state.catalogMeasures.forEach((m) => { if (m.codigo) medMap[m.codigo] = m.descricao || m.codigo; });
+        state.catalogErrorByCode = errMap;
+        state.catalogMeasureByCode = medMap;
+      } catch (_) {
+        state.catalogErrors = [];
+        state.catalogMeasures = [];
+        state.catalogErrorByCode = {};
+        state.catalogMeasureByCode = {};
+      }
+    }
+
+    function normalizeComissaoConfig(cfg){
+      const src = (cfg && typeof cfg === "object") ? cfg : {};
+      const dev = Array.isArray(src.dev) ? src.dev.map((v) => digitsOnly(v)).filter(Boolean) : [];
+      const comissao = reorderComissaoMembers(Array.isArray(src.comissao) ? src.comissao : []);
+      const subcomissoes = {};
+      Object.entries(src.subcomissoes || {}).forEach(([cia, members]) => {
+        const ciaNorm = digitsOnly(cia);
+        if (!ciaNorm) return;
+        subcomissoes[ciaNorm] = reorderComissaoMembers(Array.isArray(members) ? members : []);
+      });
+      return {
+        dev: [...new Set(dev)],
+        comissao,
+        subcomissoes,
+      };
+    }
+
+    function comissaoMemberToSave(member, cia=""){
+      const m = normalizeComissaoMember(member);
+      const id = digitsOnly(m.id);
+      const nomeCompleto = String(m.nome_completo || m.nome || "").trim();
+      if (!id || !nomeCompleto) return null;
+      const ordemNum = Number(m.ordem);
+      const out = {
+        id,
+        nome: nomeCompleto,
+        nome_completo: nomeCompleto,
+        nome_guerra: String(m.nome_guerra || "").trim(),
+        posto_graduacao: String(m.posto_graduacao || m.posto || "").trim(),
+        funcao: String(m.funcao || "Membro").trim().toLowerCase().startsWith("pres") ? "Presidente" : "Membro",
+        ordem: Number.isFinite(ordemNum) && ordemNum > 0 ? Math.floor(ordemNum) : 1,
+      };
+      const ciaNorm = digitsOnly(cia);
+      if (ciaNorm) out.cia = ciaNorm;
+      return out;
+    }
+
+    function buildComissaoSavePayload(cfg){
+      const src = normalizeComissaoConfig(cfg);
+      const comissao = reorderComissaoMembers(src.comissao || [])
+        .map((m) => comissaoMemberToSave(m))
+        .filter(Boolean);
+      const subcomissoes = {};
+      Object.entries(src.subcomissoes || {}).forEach(([cia, members]) => {
+        const ciaNorm = digitsOnly(cia);
+        if (!ciaNorm) return;
+        const list = reorderComissaoMembers(Array.isArray(members) ? members : [])
+          .map((m) => comissaoMemberToSave(m, ciaNorm))
+          .filter(Boolean);
+        if (list.length) subcomissoes[ciaNorm] = list;
+      });
+      return {
+        dev: [...new Set((src.dev || []).map((v) => digitsOnly(v)).filter(Boolean))],
+        comissao,
+        subcomissoes,
+      };
+    }
+
+    function buildComissaoBlocksFromConfig(cfg){
+      const blocks = [];
+      const geral = Array.isArray((cfg || {}).comissao) ? cfg.comissao : [];
+      if (geral.length) {
+        blocks.push({
+          kind: "comissao",
+          cia: "",
+          label: "Comissao Geral - Todas as CIAs",
+          members: sortComissaoMembers(geral),
+        });
+      }
+      const subs = (cfg || {}).subcomissoes || {};
+      Object.keys(subs).sort((a, b) => Number(a) - Number(b)).forEach((cia) => {
+        const members = sortComissaoMembers(Array.isArray(subs[cia]) ? subs[cia] : []);
+        blocks.push({
+          kind: "subcomissao",
+          cia: String(cia),
+          label: `Subcomissao ${ciaLabelByCode(cia)}`,
+          members,
+        });
+      });
+      return blocks;
+    }
+
+    function applyComissaoConfig(cfg){
+      state.comissaoConfig = normalizeComissaoConfig(cfg);
+      state.comissaoBlocks = buildComissaoBlocksFromConfig(state.comissaoConfig);
+      renderComissaoBlocks();
+      syncComissaoByCia(true);
+    }
+
+    function renderComissaoManageButton(){
+      const btn = $("bComissaoManage");
+      if (!btn) return;
+      const nrTyped = digitsOnly(selectedNr() || state.sessionNr || "");
+      const privileged = !!state.canManageComissao || nrTyped === "1438704" || state.perfil === "dev";
+      const show = !!state.allowed && privileged;
+      btn.classList.toggle("hidden", !show);
+      btn.disabled = !show;
+    }
+
+    function renderComissaoInfo(){
+      const el = $("comissaoInfo");
+      if (!el) return;
+      const sel = $("comissaoBloco");
+      const idx = Number(sel ? (sel.value || -1) : -1);
+      const block = Number.isInteger(idx) ? state.comissaoBlocks[idx] : null;
+      if (!block) {
+        el.textContent = "Comissao do relatorio: nao selecionada.";
+        return;
+      }
+      const label = block.label || "Bloco";
+      const members = formatComissaoMembers(block.members || []);
+      el.textContent = `Comissao do relatorio: ${label} (${(block.members || []).length} militar(es))${members ? ` - ${members}` : ""}`;
+    }
+
+    function renderComissaoBlocks(){
+      const sel = $("comissaoBloco");
+      if (!sel) return;
+      const blocks = Array.isArray(state.comissaoBlocks) ? state.comissaoBlocks : [];
+      const comissao = blocks
+        .map((b, i) => ({ ...b, idx: i }))
+        .filter((b) => b.kind === "comissao");
+      const subs = blocks
+        .map((b, i) => ({ ...b, idx: i }))
+        .filter((b) => b.kind === "subcomissao");
+      const options = ['<option value="">Selecione...</option>'];
+      if (comissao.length) {
+        options.push('<optgroup label="Comissao Geral">');
+        options.push(...comissao.map((b) => `<option value="${b.idx}">${esc(b.label)} (${(b.members || []).length})</option>`));
+        options.push("</optgroup>");
+      }
+      if (subs.length) {
+        options.push('<optgroup label="Subcomissoes por CIA">');
+        options.push(...subs.map((b) => `<option value="${b.idx}">${esc(b.label)} (${(b.members || []).length})</option>`));
+        options.push("</optgroup>");
+      }
+      sel.innerHTML = options.join("");
+      renderComissaoInfo();
+    }
+
+    function syncComissaoByCia(force=false){
+      const sel = $("comissaoBloco");
+      if (!sel) return;
+      const cia = selectedCia();
+      const currIdx = Number(sel.value || -1);
+      const current = Number.isInteger(currIdx) ? state.comissaoBlocks[currIdx] : null;
+      if (!force && current && (current.cia === cia || !cia)) {
+        renderComissaoInfo();
+        return;
+      }
+      const subIdx = state.comissaoBlocks.findIndex((b) => b.kind === "subcomissao" && String(b.cia) === String(cia));
+      if (subIdx >= 0) {
+        sel.value = String(subIdx);
+        renderComissaoInfo();
+        return;
+      }
+      const comIdx = state.comissaoBlocks.findIndex((b) => b.kind === "comissao");
+      sel.value = comIdx >= 0 ? String(comIdx) : "";
+      renderComissaoInfo();
+    }
+
+    async function loadComissaoBlocks(){
+      let cfg = null;
+      try {
+        cfg = await api(`/quality/reds/comissao-config${qs({t: Date.now()})}`);
+      } catch (_) {
+        try {
+          cfg = await api(`/data/comissao_qualidade_reds.json${qs({t: Date.now()})}`);
+        } catch (__){
+          cfg = { dev: [], comissao: [], subcomissoes: {} };
+        }
+      }
+      applyComissaoConfig(cfg);
+    }
+
+    function comissaoDraftBlockOptions(){
+      const cfg = normalizeComissaoConfig(state.comissaoDraft || state.comissaoConfig || {});
+      const options = [{ key: "comissao", label: "Comissao Geral - Todas as CIAs" }];
+      const cias = new Set(["42", "47", "74", "155", "232"]);
+      Object.keys(cfg.subcomissoes || {}).forEach((cia) => {
+        const ciaNorm = digitsOnly(cia);
+        if (ciaNorm) cias.add(ciaNorm);
+      });
+      [...cias].sort((a, b) => Number(a) - Number(b)).forEach((cia) => {
+        options.push({ key: `sub:${cia}`, label: `Subcomissao ${ciaLabelByCode(cia)}` });
+      });
+      return options;
+    }
+
+    function comissaoDraftCurrentMembers(){
+      if (!state.comissaoDraft) state.comissaoDraft = normalizeComissaoConfig(state.comissaoConfig || {});
+      if (!state.comissaoEditBlock || state.comissaoEditBlock === "comissao") {
+        state.comissaoEditBlock = "comissao";
+        if (!Array.isArray(state.comissaoDraft.comissao)) state.comissaoDraft.comissao = [];
+        return state.comissaoDraft.comissao;
+      }
+      const cia = digitsOnly(state.comissaoEditBlock.replace(/^sub:/, ""));
+      if (!cia) {
+        state.comissaoEditBlock = "comissao";
+        if (!Array.isArray(state.comissaoDraft.comissao)) state.comissaoDraft.comissao = [];
+        return state.comissaoDraft.comissao;
+      }
+      if (!state.comissaoDraft.subcomissoes || typeof state.comissaoDraft.subcomissoes !== "object") {
+        state.comissaoDraft.subcomissoes = {};
+      }
+      if (!Array.isArray(state.comissaoDraft.subcomissoes[cia])) state.comissaoDraft.subcomissoes[cia] = [];
+      return state.comissaoDraft.subcomissoes[cia];
+    }
+
+    function normalizeDraftCurrentMembers(){
+      const members = comissaoDraftCurrentMembers();
+      const ordered = reorderComissaoMembers(members);
+      members.splice(0, members.length, ...ordered);
+      return members;
+    }
+
+    function updateComissaoMemberField(target){
+      if (!target || !target.classList || !target.classList.contains("js-cm-field")) return false;
+      const idx = Number(target.dataset.idx);
+      if (Number.isNaN(idx)) return false;
+      const field = String(target.dataset.field || "");
+      const members = comissaoDraftCurrentMembers();
+      if (!members[idx]) return false;
+      let val = String(target.value || "");
+      if (field === "id") val = digitsOnly(val);
+      if (field === "funcao") val = val.trim().toLowerCase().startsWith("pres") ? "Presidente" : "Membro";
+      const next = {
+        ...normalizeComissaoMember(members[idx]),
+        [field]: val,
+      };
+      if (field === "nome_completo") next.nome = String(val || "").trim();
+      members[idx] = next;
+      return true;
+    }
+
+    function renderComissaoDraftBlockOptions(){
+      const sel = $("comissaoEditBlock");
+      if (!sel) return;
+      const opts = comissaoDraftBlockOptions();
+      if (!state.comissaoEditBlock) state.comissaoEditBlock = "comissao";
+      sel.innerHTML = opts.map((o) => `<option value="${esc(o.key)}">${esc(o.label)}</option>`).join("");
+      if (!opts.some((o) => o.key === state.comissaoEditBlock)) state.comissaoEditBlock = "comissao";
+      sel.value = state.comissaoEditBlock;
+      if (!sel.value && sel.options.length) {
+        sel.selectedIndex = 0;
+        state.comissaoEditBlock = String(sel.value || "comissao");
+      }
+    }
+
+    function renderComissaoDraftMembers(){
+      const wrap = $("comissaoMembers");
+      if (!wrap) return;
+      const members = normalizeDraftCurrentMembers();
+      if (!members.length) {
+        wrap.innerHTML = '<div class="cm-empty">Nenhum militar neste bloco. Clique em "Adicionar militar".</div>';
+        return;
+      }
+      const total = members.length;
+      wrap.innerHTML = members.map((raw, idx) => {
+        const m = normalizeComissaoMember(raw);
+        const resumo = formatComissaoMemberLine(m);
+        return `
+          <div class="cm-card" data-idx="${idx}">
+            <div class="cm-top">
+              <div class="cm-title">${esc(resumo || `Militar ${idx + 1}`)} | Ordem ${idx + 1}</div>
+              <div class="cm-actions">
+                <button type="button" class="js-cm-up" ${idx <= 0 ? "disabled" : ""}>Subir</button>
+                <button type="button" class="js-cm-down" ${idx >= total - 1 ? "disabled" : ""}>Descer</button>
+                <button type="button" class="js-cm-remove">Remover</button>
+              </div>
+            </div>
+            <div class="cm-grid">
+              <label>Funcao
+                <select class="js-cm-field" data-field="funcao" data-idx="${idx}">
+                  <option value="Presidente" ${String(m.funcao || "") === "Presidente" ? "selected" : ""}>Presidente</option>
+                  <option value="Membro" ${String(m.funcao || "") !== "Presidente" ? "selected" : ""}>Membro</option>
+                </select>
+              </label>
+              <label>Nome completo
+                <input type="text" class="js-cm-field" data-field="nome_completo" data-idx="${idx}" value="${esc(m.nome_completo || "")}" placeholder="Ex: Fulano de Tal">
+              </label>
+              <label>Nome de guerra
+                <input type="text" class="js-cm-field" data-field="nome_guerra" data-idx="${idx}" value="${esc(m.nome_guerra || "")}" placeholder="Ex: FULANO">
+              </label>
+              <label>Posto/Graduacao
+                <input type="text" class="js-cm-field" data-field="posto_graduacao" data-idx="${idx}" value="${esc(m.posto_graduacao || "")}" placeholder="Ex: 1 TEN PM">
+              </label>
+              <label>NR PM
+                <input type="text" class="js-cm-field" data-field="id" data-idx="${idx}" value="${esc(m.id || "")}" placeholder="Ex: 1234567" inputmode="numeric">
+              </label>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function openComissaoModal(){
+      if (!state.canManageComissao) {
+        toast("Somente o gestor autorizado pode editar a comissao.", "err");
+        return;
+      }
+      if (!state.comissaoConfig || !state.comissaoBlocks.length) {
+        await loadComissaoBlocks();
+      }
+      state.comissaoDraft = normalizeComissaoConfig(state.comissaoConfig || {});
+      const currIdx = Number($("comissaoBloco").value || -1);
+      const curr = Number.isInteger(currIdx) ? state.comissaoBlocks[currIdx] : null;
+      state.comissaoEditBlock = curr && curr.kind === "subcomissao" ? `sub:${curr.cia}` : "comissao";
+      renderComissaoDraftBlockOptions();
+      renderComissaoDraftMembers();
+      const modal = $("comissaoModal");
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeComissaoModal(){
+      const modal = $("comissaoModal");
+      if (modal) {
+        modal.classList.remove("is-open");
+        modal.classList.add("hidden");
+        modal.setAttribute("aria-hidden", "true");
+      }
+      state.comissaoDraft = null;
+    }
+
+    async function saveComissaoModal(){
+      const payload = buildComissaoSavePayload(state.comissaoDraft || {});
+      const d = await api(`/quality/reds/comissao-config${qs(withUserNr())}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      applyComissaoConfig((d || {}).config || payload);
+      closeComissaoModal();
+      toast("Comissao atualizada com sucesso.", "ok");
     }
 
     function renderMsg(msg, cls=""){
@@ -209,21 +1654,25 @@
     function normalizeCiaFromProfile(){
       if (state.perfil !== "subcomissao") {
         $("cia").disabled = false;
+        syncComissaoByCia();
         return;
       }
       if ((state.cias || []).length === 1) {
         $("cia").value = String(state.cias[0]);
         $("cia").disabled = true;
       }
+      syncComissaoByCia(true);
     }
 
     function togglePanels(){
       $("blockedPanel").classList.toggle("hidden", !state.checked || state.allowed);
       $("dataPanel").classList.toggle("hidden", !state.allowed);
-      ["bRunNow","bAnalyze","bLoadReview","bSaveAll","bMonthly"].forEach((id)=>{
+      ["bRunNow","bAnalyze","bLoadReview","bSaveAll","bMonthly","bReload","bPrintReport","bPrintReportTop"].forEach((id)=>{
         const el = $(id);
         if (el) el.disabled = !state.allowed;
       });
+      renderComissaoManageButton();
+      renderStepFlow();
     }
 
     async function validateAccess(){
@@ -231,23 +1680,36 @@
       if (!nr){
         state.checked = false;
         state.allowed = false;
-        renderMsg("Informe o numero de policia.", "warn");
+        renderMsg("Numero de policia nao identificado na sessao.", "warn");
         togglePanels();
         return;
       }
+      $("nr").value = nr;
       try {
-        const d = await api(`/quality/reds/access${qs({user_nr:nr})}`);
+        const d = await api(`/quality/reds/access${qs(withUserNr())}`);
         state.checked = true;
         state.allowed = !!d.allowed;
         state.perfil = d.perfil || "";
         state.cias = d.cias || [];
+        if (d.numero_policia && (!state.nrLocked || !state.sessionNr)) {
+          $("nr").value = digitsOnly(d.numero_policia || "");
+        }
+        const nrAtual = digitsOnly(d.numero_policia || state.sessionNr || $("nr").value || "");
+        state.canManageComissao = nrAtual === "1438704" || String(state.perfil || "") === "dev";
         normalizeCiaFromProfile();
-        if (state.allowed) renderMsg(`Acesso autorizado. Perfil: ${state.perfil}.`, "ok");
-        else renderMsg(d.message || "Acesso nao autorizado.", "err");
+        if (state.allowed) {
+          renderMsg(`Acesso autorizado. Perfil: ${state.perfil}.`, "ok");
+          toast(`Acesso validado (${state.perfil}).`, "ok");
+        } else {
+          renderMsg(d.message || "Acesso nao autorizado.", "err");
+          toast(d.message || "Acesso nao autorizado.", "err");
+        }
       } catch (e) {
         state.checked = true;
         state.allowed = false;
+        state.canManageComissao = false;
         renderMsg(String(e.message || e), "err");
+        toast(String(e.message || e), "err");
       }
       togglePanels();
     }
@@ -275,44 +1737,317 @@
     function markDirty(idx){
       state.dirty.add(idx);
       $("dirtyInfo").textContent = `${state.dirty.size} alteracoes pendentes de salvar.`;
+      renderStepFlow();
     }
 
     function clearDirty(){
       state.dirty.clear();
       $("dirtyInfo").textContent = "0 alteracoes pendentes de salvar.";
+      setSaveAttention(false);
+      renderStepFlow();
+    }
+
+    function rowStatus(idx, row){
+      if (state.dirty.has(idx)) return { key: "edicao", label: "em edicao" };
+      if (row.avaliado) return { key: "salvo", label: "salvo" };
+      return { key: "pendente", label: "pendente" };
+    }
+
+    function updateProductivityKpis(){
+      const today = new Date().toISOString().slice(0,10);
+      const avaliadosHoje = state.rows.filter((r) => String(r.avaliado_em || "").slice(0,10) === today).length;
+      const pendentes = state.rows.filter((r) => !r.avaliado).length;
+      const elapsedMin = Math.max(1, Math.round((Date.now() - state.sessionStartedAt) / 60000));
+      const tempoMedio = state.saveCountSession > 0 ? `${Math.round((elapsedMin * 60) / state.saveCountSession)}s` : "-";
+      state.kpiProd = { avaliadosHoje, pendentes, tempoMedioSessao: tempoMedio };
     }
 
     function renderCards(k){
       const wrap = $("kpiCards");
       if (!k) { wrap.innerHTML = ""; return; }
+      updateProductivityKpis();
       const cards = [
         ["Total REDS no periodo", k.total_registros, `${k.total_avaliados} avaliados`],
         ["Percentual avaliado", `${k.percentual_avaliado}%`, "progresso da comissao"],
-        ["Crimes violentos (E03012/E03014)", k.cv_total, `${k.cv_avaliados} avaliados`],
-        ["BOS W01-W04", k.w_total, `${k.w_avaliados} avaliados`],
+        ["Naturezas CV", k.cv_total, `${k.cv_avaliados} avaliados`],
+        ["Naturezas ARMA", k.arma_total ?? 0, `${k.arma_avaliados ?? 0} avaliados`],
+        ["BOS Grupo W", k.w_total, `${k.w_avaliados} avaliados`],
         ["REDS C99", k.c99_total, `${k.c99_avaliados} avaliados`],
         ["Sinalizados por analise", k.sinalizados_total, `${k.sinalizados_avaliados} avaliados`],
+        ["Avaliados hoje", state.kpiProd.avaliadosHoje, "produtividade diaria"],
+        ["Pendentes da comissao", state.kpiProd.pendentes, "fila de revisao"],
+        ["Tempo medio (sessao)", state.kpiProd.tempoMedioSessao, "por registro salvo"],
       ];
       wrap.innerHTML = cards.map(c => `<div class="card"><div class="k">${c[0]}</div><div class="v">${c[1]}</div><div class="s">${c[2]}</div></div>`).join("");
+    }
+
+    function currentReportParams(){
+      return {
+        data_reuniao: $("dataReuniao").value || "",
+        periodo_label: $("periodoLabel").value || "",
+        comissao: selectedComissaoText(),
+      };
+    }
+
+    function withNl(text){
+      return esc(String(text || "")).replace(/\n/g, "<br>");
+    }
+
+    function renderReportPreview(preview){
+      const panel = $("reportPreviewPanel");
+      const wrap = $("reportPreview");
+      if (!preview || !preview.meta || !Array.isArray(preview.blocos)) {
+        state.monthlyPreview = null;
+        panel.classList.add("hidden");
+        wrap.innerHTML = '<div class="report-empty">Gere o relatorio para visualizar o preview.</div>';
+        return;
+      }
+      state.monthlyPreview = preview;
+      const meta = preview.meta || {};
+      const blocos = preview.blocos || [];
+      const comissaoItems = String(meta.comissao || "")
+        .split(/\s*,\s*/)
+        .map((s) => String(s || "").trim())
+        .filter(Boolean);
+      const header = `
+        <div class="report-doc">
+          <section class="report-cover">
+            <div class="report-head">
+              <img class="report-logo" src="./imagens/Icones_logo_19bpm/android-chrome-192x192.png" alt="Logo 19 BPM">
+              <div>
+                <div class="report-head-kicker">Policia Militar de Minas Gerais - 19 BPM</div>
+                <h2>Relatorio Mensal de Qualidade REDS</h2>
+                <p>Modelo institucional para reuniao da comissao de avaliacao.</p>
+              </div>
+            </div>
+            <div class="report-meta-grid">
+              <div class="report-meta-item"><div class="k">Unidade</div><div class="v">${esc(meta.cia_label || meta.cia_pm || "-")}</div></div>
+              <div class="report-meta-item"><div class="k">Periodo avaliado</div><div class="v">${esc(meta.periodo_label || "-")}</div></div>
+              <div class="report-meta-item"><div class="k">Data da reuniao</div><div class="v">${esc(meta.data_reuniao || "-")}</div></div>
+              <div class="report-meta-item"><div class="k">Base no periodo</div><div class="v">${esc(meta.total_registros_periodo || 0)} registro(s)</div></div>
+              <div class="report-meta-item"><div class="k">Amostra alvo (2%)</div><div class="v">${esc(meta.total_alvo_2pct || 0)} registro(s)</div></div>
+              <div class="report-meta-item">
+                <div class="k">Comissao responsavel</div>
+                <div class="v">
+                  ${comissaoItems.length
+                    ? `<ul class="report-comissao-list">${comissaoItems.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`
+                    : "-"}
+                </div>
+              </div>
+            </div>
+          </section>
+          <div class="report-section-title">Detalhamento por Bloco</div>
+          <div class="meta">
+            Estrutura padrao: contexto, criterios verificados, inconformidades e medidas adotadas.
+          </div>
+      `;
+      const body = blocos.map((b) => {
+        const criterios = Array.isArray(b.criterios) ? b.criterios : [];
+        const totalReg = Number(b.total_registros || 0);
+        const totalAv = Number(b.total_avaliados || 0);
+        const taxa = totalReg > 0 ? `${((totalAv * 100) / totalReg).toFixed(2).replace(".", ",")}%` : "0,00%";
+        const criteriosHtml = criterios.length
+          ? criterios.map((c) => `
+              <tr>
+                <td>${esc(c.criterio || "-")}</td>
+                <td>${withNl(c.observacao_inconformidades || "-")}</td>
+                <td>${withNl(c.medidas_adotadas || "-")}</td>
+              </tr>
+            `).join("")
+          : '<tr><td colspan="3">Sem criterios para este bloco.</td></tr>';
+        return `
+          <section class="report-block">
+            <h3>${esc(b.titulo || "-")}</h3>
+            <table class="report-mini">
+              <tr><th>Naturezas</th><td>${esc(b.naturezas || "-")}</td></tr>
+              <tr><th>Total no periodo</th><td>${esc(totalReg)}</td></tr>
+              <tr><th>Total avaliados</th><td>${esc(totalAv)}</td></tr>
+              <tr><th>Taxa de avaliacao</th><td>${esc(taxa)}</td></tr>
+            </table>
+            <div class="report-open">${esc(b.texto_abertura || "-")}</div>
+            <table class="report-criteria">
+              <thead>
+                <tr>
+                  <th>Criterios</th>
+                  <th>Observacao e Inconformidades</th>
+                  <th>Medidas Adotadas</th>
+                </tr>
+              </thead>
+              <tbody>${criteriosHtml}</tbody>
+            </table>
+          </section>
+        `;
+      }).join("");
+      wrap.innerHTML = `${header}${body}</div>`;
+      panel.classList.remove("hidden");
+    }
+
+    function printReportPreview(){
+      if (!state.monthlyPreview) {
+        toast("Gere o relatorio antes de imprimir.", "err");
+        return;
+      }
+      window.print();
+    }
+
+    function renderAssistPanel(){
+      const row = state.rows[state.selectedIdx];
+      const errWrap = $("assistErrors");
+      const medWrap = $("assistMeasures");
+      const info = $("assistInfo");
+      if (!row){
+        errWrap.innerHTML = '<div class="assist-empty">Sem REDS selecionado.</div>';
+        medWrap.innerHTML = '<div class="assist-empty">Sem REDS selecionado.</div>';
+        info.textContent = "Selecione um REDS para marcar erros e medidas.";
+        return;
+      }
+      info.textContent = `Registro ${row.numero_ocorrencia || "-"} selecionado. Marcacoes entram na observacao.`;
+      const rec = state.suggestedByRow[row.numero_ocorrencia || ""] || [];
+      if (!state.catalogErrors.length) {
+        errWrap.innerHTML = '<div class="assist-empty">Catalogo de erros nao encontrado.</div>';
+      } else {
+        const errSel = new Set(Array.isArray(row.catalogErros) ? row.catalogErros : []);
+        const recommended = rec.length ? `<div class="assist-group"><div class="assist-group-title">Sugeridos pelos motores</div><div class="assist-chip-wrap">${rec.map((c)=>`<span class="assist-chip">${esc(c)} - ${esc(state.catalogErrorByCode[c] || "")}</span>`).join("")}</div></div>` : "";
+        errWrap.innerHTML = `${recommended}` + state.catalogErrors.map((g) => `
+          <div class="assist-group">
+            <div class="assist-group-title">${esc(g.campo || "Campo")}</div>
+            ${(Array.isArray(g.erros) ? g.erros : []).map((e) => `
+              <label class="assist-item">
+                <input type="checkbox" class="js-cat-err" data-codigo="${esc(e.codigo)}" ${errSel.has(e.codigo) ? "checked" : ""}>
+                <span><b>${esc(e.codigo)}</b> - ${esc(e.descricao)}</span>
+              </label>
+            `).join("")}
+          </div>
+        `).join("");
+      }
+      if (!state.catalogMeasures.length) {
+        medWrap.innerHTML = '<div class="assist-empty">Catalogo de medidas nao encontrado.</div>';
+      } else {
+        const medSel = new Set(Array.isArray(row.catalogMedidas) ? row.catalogMedidas : []);
+        medWrap.innerHTML = `
+          ${(state.catalogMeasures || []).map((m) => `
+            <label class="assist-item">
+              <input type="checkbox" class="js-cat-med" data-codigo="${esc(m.codigo)}" ${medSel.has(m.codigo) ? "checked" : ""}>
+              <span><b>${esc(m.codigo)}</b> - ${esc(m.descricao)}</span>
+            </label>
+          `).join("")}
+        `;
+      }
+    }
+
+    function renderRecordDetails(){
+      const panel = $("detailPanel");
+      const row = state.rows[state.selectedIdx];
+      if (!row){
+        panel.classList.add("hidden");
+        $("detailLegend").textContent = "Vermelho: ortografia provavel | Azul: concordancia provavel.";
+        $("obsDiff").textContent = "";
+        renderAssistPanel();
+        return;
+      }
+      if (!state.drawerClosed) panel.classList.remove("hidden");
+      $("detailTitle").textContent = `REDS ${row.numero_ocorrencia || "-"}`;
+      $("detailMeta").textContent = `CIA ${row.cia_pm || "-"} | Pelotao ${row.pelotao_pm || "-"} | Estado ${row.descricao_estado || "-"} | Tipo nat. ${row.tipo_natureza || "-"} | Tipo rel. ${row.nome_tipo_relatorio || "-"} | Data ${fmtDate(row.data_fato || row.data_hora_fato)}`;
+      const h = highlightHistorico(String(row.historico_ocorrencia || ""));
+      $("detailHistorico").innerHTML = h.html || "Sem historico.";
+      const leg = [];
+      leg.push(`Vermelho: ortografia provavel (${h.ortho})`);
+      leg.push(`Azul: concordancia provavel (${h.concord})`);
+      if (row.ausencia_pontuacao) leg.push("Sem pontuacao detectada");
+      $("detailLegend").textContent = `${leg.join(" | ")}. Apoio automatico, revisar manualmente.`;
+
+      $("detailMotor1").innerHTML = [
+        pairHtml("Score textual", row.score_textual == null ? "-" : String(row.score_textual), MOTOR_HELP.motor1.score_textual),
+        pairHtml("Texto curto", boolTxt(!!row.alerta_texto_curto), MOTOR_HELP.motor1.texto_curto),
+        pairHtml("Erro ortografico", boolTxt(!!row.erro_ortografico), MOTOR_HELP.motor1.erro_ortografico),
+        pairHtml("Sem pontuacao", boolTxt(!!row.ausencia_pontuacao), MOTOR_HELP.motor1.sem_pontuacao),
+        pairHtml("Historico incompleto", boolTxt(!!row.historico_incompleto), MOTOR_HELP.motor1.historico_incompleto),
+      ].join("");
+
+      $("detailMotor2").innerHTML = [
+        pairHtml("Alerta convergencia", boolTxt(!!row.alerta_convergencia), MOTOR_HELP.motor2.alerta_convergencia),
+        pairHtml("Alerta classificacao", boolTxt(!!row.alerta_classificacao), MOTOR_HELP.motor2.alerta_classificacao),
+        pairHtml("Tempo empenho suspeito", boolTxt(!!row.tempo_empenho_suspeito), MOTOR_HELP.motor2.tempo_empenho_suspeito),
+        pairHtml("Possivel erro violenta", boolTxt(!!row.possivel_erro_natureza_violenta), MOTOR_HELP.motor2.possivel_erro_violenta),
+        pairHtml("Natureza sugerida", row.natureza_sugerida || "-", MOTOR_HELP.motor2.natureza_sugerida),
+      ].join("");
+
+      const tags = [
+        ["Padrao operacional", !!row.alerta_padrao_operacional, MOTOR_HELP.motor3.padrao_operacional],
+        ["C99", !!row.alerta_c99, MOTOR_HELP.motor3.c99],
+        ["W01", !!row.alerta_w01, MOTOR_HELP.motor3.w01],
+        ["W02", !!row.alerta_w02, MOTOR_HELP.motor3.w02],
+        ["W03", !!row.alerta_w03, MOTOR_HELP.motor3.w03],
+        ["W04", !!row.alerta_w04, MOTOR_HELP.motor3.w04],
+        ["Copia historico", !!row.possivel_copia_historico, MOTOR_HELP.motor3.copia_historico],
+        ["Repeticao guarnicao", !!row.repeticao_por_guarnicao, MOTOR_HELP.motor3.repeticao_guarnicao],
+      ];
+      $("detailMotor3").innerHTML = tags.map(([label, on, helpText]) => tagHtml(label, on, helpText)).join("");
+
+      $("detailEval").innerHTML = [
+        pairHtml("Avaliado", boolTxt(!!row.avaliado)),
+        pairHtml("Estado do REDS", row.descricao_estado || "-"),
+        pairHtml("Naturezas secundarias", secondaryNaturezasLabel(row).join(" | ") || "-"),
+        pairHtml("Ajustes", Array.isArray(row.ajustes) && row.ajustes.length ? row.ajustes.join(", ") : "-"),
+        pairHtml("Erros catalogados", Array.isArray(row.catalogErros) && row.catalogErros.length ? row.catalogErros.join(", ") : "-"),
+        pairHtml("Medidas adotadas", Array.isArray(row.catalogMedidas) && row.catalogMedidas.length ? row.catalogMedidas.join(", ") : "-"),
+        pairHtml("Avaliado por", row.avaliado_por || "-"),
+        pairHtml("Avaliado em", fmtDateTime(row.avaliado_em)),
+        pairHtml("Ultima alteracao", fmtDateTime(row.avaliacao_updated_at)),
+      ].join("");
+      const recs = Array.isArray(row.recomendacoes) ? row.recomendacoes : [];
+      const recLines = [];
+      if (recs.length) recLines.push(...recs);
+      const errDesc = (Array.isArray(row.catalogErros) ? row.catalogErros : []).map((c) => `${c} - ${state.catalogErrorByCode[c] || ""}`.trim());
+      const medDesc = (Array.isArray(row.catalogMedidas) ? row.catalogMedidas : []).map((c) => `${c} - ${state.catalogMeasureByCode[c] || ""}`.trim());
+      if (errDesc.length) recLines.push("", "Erros marcados (catalogo):", ...errDesc);
+      if (medDesc.length) recLines.push("", "Medidas marcadas:", ...medDesc);
+      $("detailRecs").textContent = recLines.length ? recLines.join("\n") : "-";
+      $("obsDiff").textContent = buildObsDiff(row._obsOriginal || "", row.observacao || "");
+      renderAssistPanel();
     }
 
     function renderReviewTable(){
       const body = $("reviewBody");
       if (!state.rows.length){
-        body.innerHTML = '<tr><td colspan="8" class="small">Sem REDS para os filtros.</td></tr>';
+        body.innerHTML = '<tr><td colspan="9" class="small">Sem REDS para os filtros.</td></tr>';
         $("reviewInfo").textContent = "Nenhum REDS carregado.";
+        $("reviewCardsMobile").innerHTML = "";
+        state.visibleIdxs = [];
+        state.selectedIdx = -1;
+        renderRecordDetails();
         return;
       }
-      $("reviewInfo").textContent = `${state.rows.length} REDS carregados para avaliacao.`;
-      body.innerHTML = state.rows.map((r, idx) => {
+      if (state.selectedIdx < 0 || state.selectedIdx >= state.rows.length) state.selectedIdx = 0;
+      const visible = [];
+      for (let i = 0; i < state.rows.length; i += 1){
+        if (rowMatchesLocalFilters(state.rows[i])) visible.push(i);
+      }
+      state.visibleIdxs = visible;
+      if (!visible.length){
+        body.innerHTML = '<tr><td colspan="9" class="small">Nenhum REDS para os filtros locais.</td></tr>';
+        $("reviewCardsMobile").innerHTML = '<div class="mcard"><div class="r">Nenhum REDS para os filtros locais.</div></div>';
+        $("reviewInfo").textContent = `0 de ${state.rows.length} REDS exibidos.`;
+        state.selectedIdx = -1;
+        renderRecordDetails();
+        return;
+      }
+      if (!visible.includes(state.selectedIdx)) state.selectedIdx = visible[0];
+      $("reviewInfo").textContent = `${visible.length} de ${state.rows.length} REDS exibidos para avaliacao.`;
+      body.innerHTML = visible.map((idx) => {
+        const r = state.rows[idx];
+        const secNats = secondaryNaturezasLabel(r);
+        const occ = ocorrenciaState(r);
         const flags = buildFlags(r).map(f => `<span class="tag">${f}</span>`).join("") || "-";
         const ajustes = new Set(Array.isArray(r.ajustes) ? r.ajustes : []);
-        const rowClass = state.dirty.has(idx) ? "dirty" : "";
+        const st = rowStatus(idx, r);
+        const rowClass = `${state.dirty.has(idx) ? "dirty" : ""} ${idx === state.selectedIdx ? "selected-row" : ""} ${occ.key === "aberto" ? "row-oco-aberto" : ""}`.trim();
         return `
           <tr data-idx="${idx}" class="${rowClass}">
-            <td>${r.numero_ocorrencia || ""}</td>
-            <td>${(r.data_fato || "").slice(0,10)}</td>
-            <td><b>${r.natureza_codigo || ""}</b><br><span class="small">${r.natureza_descricao_longa || ""}</span></td>
+            <td><button type="button" class="nr-link js-open">${esc(r.numero_ocorrencia || "")}</button></td>
+            <td>${esc((r.data_fato || "").slice(0,10))}</td>
+            <td><span class="oco-pill oco-${occ.key}">${esc(occ.label)}</span></td>
+            <td><b>${esc(r.natureza_codigo || "")}</b><br><span class="small">${esc(r.natureza_descricao_longa || "")}</span><br><span class="small">Grupo: ${esc(r.tipo_natureza || "-")}</span><br><span class="small">${esc(r.nome_tipo_relatorio || "-")}</span>${secNats.length ? `<br><span class="small">Sec: ${esc(secNats.join(" | "))}</span>` : ""}</td>
             <td><div class="flags">${flags}</div></td>
             <td><input type="checkbox" class="js-avaliado" ${r.avaliado ? "checked" : ""}></td>
             <td>
@@ -324,20 +2059,56 @@
               </div>
             </td>
             <td><textarea class="js-obs" rows="2">${(r.observacao || "").replace(/</g, "&lt;")}</textarea></td>
-            <td><div class="cell-actions"><button class="js-save">Salvar</button></div></td>
+            <td><div class="cell-actions"><span class="status-pill status-${st.key}">${esc(st.label)}</span><button class="js-save">Salvar</button></div></td>
           </tr>
         `;
       }).join("");
+      $("reviewCardsMobile").innerHTML = visible.map((idx) => {
+        const r = state.rows[idx];
+        const st = rowStatus(idx, r);
+        const occ = ocorrenciaState(r);
+        return `
+          <div class="mcard" data-idx="${idx}">
+            <div><b>${esc(r.numero_ocorrencia || "-")}</b></div>
+            <div class="r">${esc((r.data_fato || "").slice(0,10))} | ${esc(r.natureza_codigo || "-")} | ${esc(r.tipo_natureza || "-")}</div>
+            <div class="r">${esc(r.nome_tipo_relatorio || "-")}</div>
+            <div class="r"><span class="oco-pill oco-${occ.key}">${esc(occ.label)}</span> <span class="status-pill status-${st.key}">${esc(st.label)}</span></div>
+            <div class="a">
+              <button class="js-open-mobile">Abrir</button>
+              <button class="js-save-mobile">Salvar</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+      updateProductivityKpis();
+      renderCards(state.kpis || {
+        total_registros: state.rows.length,
+        total_avaliados: state.rows.filter((r) => r.avaliado).length,
+        percentual_avaliado: state.rows.length ? Math.round((state.rows.filter((r) => r.avaliado).length*10000)/state.rows.length)/100 : 0,
+        cv_total: state.rows.filter((r)=>r.tipo_natureza==="CV").length,
+        cv_avaliados: state.rows.filter((r)=>r.tipo_natureza==="CV" && r.avaliado).length,
+        arma_total: state.rows.filter((r)=>r.tipo_natureza==="ARMA").length,
+        arma_avaliados: state.rows.filter((r)=>r.tipo_natureza==="ARMA" && r.avaliado).length,
+        w_total: state.rows.filter((r)=>r.tipo_natureza==="GRUPO_W").length,
+        w_avaliados: state.rows.filter((r)=>r.tipo_natureza==="GRUPO_W" && r.avaliado).length,
+        c99_total: state.rows.filter((r)=>r.tipo_natureza==="C99000").length,
+        c99_avaliados: state.rows.filter((r)=>r.tipo_natureza==="C99000" && r.avaliado).length,
+        sinalizados_total: state.rows.filter((r)=>buildFlags(r).length>0).length,
+        sinalizados_avaliados: state.rows.filter((r)=>buildFlags(r).length>0 && r.avaliado).length,
+      });
+      renderRecordDetails();
+      renderStepFlow();
     }
 
     async function runNow(){
-      const nr = selectedNr();
-      const d = await api(`/quality/reds/run-now${qs({user_nr:nr})}`, { method:"POST", body: JSON.stringify({ scripts: [] }) });
-      $("out").textContent = JSON.stringify(d, null, 2);
+      const d = await api(`/quality/reds/run-now${qs(withUserNr())}`, { method:"POST", body: JSON.stringify({ scripts: [] }) });
+      state.lastRunNowAt = new Date().toISOString();
+      $("jobStatusInfo").textContent = `Run Now em ${fmtDateTime(state.lastRunNowAt)}.`;
+      setDebugOut(d);
+      toast("Run Now disparado.", "ok");
     }
 
     async function analyze(){
-      const nr = selectedNr();
       const cia = selectedCia();
       const payload = {
         date_from: $("dateFrom").value || null,
@@ -346,22 +2117,42 @@
         limit: 50000,
         persist: true
       };
-      const d = await api(`/quality/reds/analyze${qs({user_nr:nr})}`, { method:"POST", body: JSON.stringify(payload) });
-      $("out").textContent = JSON.stringify(d, null, 2);
+      const d = await api(`/quality/reds/analyze${qs(withUserNr())}`, { method:"POST", body: JSON.stringify(payload) });
+      state.didAnalyze = true;
+      state.didMonthly = false;
+      setDebugOut(d);
+      toast("Analise executada.", "ok");
+      renderStepFlow();
     }
 
     async function loadReview(){
-      const nr = selectedNr();
       const cia = mustCia();
-      const d = await api(`/quality/reds/review/${encodeURIComponent(cia)}${qs({user_nr:nr, date_from:$("dateFrom").value, date_to:$("dateTo").value, limit:5000})}`);
-      state.rows = (d.rows || []).map(r => ({ ...r, ajustes: Array.isArray(r.ajustes) ? r.ajustes : [] }));
+      const d = await api(`/quality/reds/review/${encodeURIComponent(cia)}${qs(withUserNr({...currentFilterParams(), limit:5000}))}`);
+      state.suggestedByRow = {};
+      state.rows = (d.rows || []).map((r) => {
+        const parsed = parseObsCatalogMarkers(r.observacao || "");
+        const row = {
+          ...r,
+          ajustes: Array.isArray(r.ajustes) ? r.ajustes : [],
+          catalogErros: parsed.erros,
+          catalogMedidas: parsed.medidas,
+          _obsOriginal: String(r.observacao || ""),
+        };
+        suggestCatalogForRow(row);
+        return row;
+      });
+      state.didLoad = true;
+      state.rowsLoadedAt = new Date().toISOString();
+      state.didMonthly = false;
+      state.drawerClosed = false;
+      $("jobStatusInfo").textContent = `Base carregada em ${fmtDateTime(state.rowsLoadedAt)}`;
       clearDirty();
       renderReviewTable();
       await loadMonthlyKpis();
+      toast(`${state.rows.length} REDS carregados.`, "ok");
     }
 
     async function saveRows(rows){
-      const nr = selectedNr();
       const cia = mustCia();
       const payload = { rows: rows.map(r => ({
         numero_ocorrencia: r.numero_ocorrencia,
@@ -369,7 +2160,7 @@
         ajustes: Array.isArray(r.ajustes) ? r.ajustes : [],
         observacao: r.observacao || "",
       }))};
-      return api(`/quality/reds/review/upsert${qs({user_nr:nr, cia_pm:cia})}`, { method:"POST", body: JSON.stringify(payload) });
+      return api(`/quality/reds/review/upsert${qs(withUserNr({cia_pm:cia}))}`, { method:"POST", body: JSON.stringify(payload) });
     }
 
     async function saveOne(idx){
@@ -377,38 +2168,61 @@
       if (!row) return;
       const d = await saveRows([row]);
       state.dirty.delete(idx);
+      row._obsOriginal = String(row.observacao || "");
+      state.lastSaveAt = new Date().toISOString();
+      state.saveCountSession += 1;
       $("dirtyInfo").textContent = `${state.dirty.size} alteracoes pendentes de salvar.`;
-      $("out").textContent = JSON.stringify(d, null, 2);
+      setDebugOut(d);
+      toast(`REDS ${row.numero_ocorrencia || ""} salvo.`, "ok");
+      setSaveAttention(false);
       renderReviewTable();
       await loadMonthlyKpis();
+      renderStepFlow();
     }
 
     async function saveAll(){
       if (!state.dirty.size) return;
       const rows = [...state.dirty].map(i => state.rows[i]).filter(Boolean);
       const d = await saveRows(rows);
+      rows.forEach((r) => { r._obsOriginal = String(r.observacao || ""); });
+      state.lastSaveAt = new Date().toISOString();
+      state.saveCountSession += rows.length;
       clearDirty();
-      $("out").textContent = JSON.stringify(d, null, 2);
+      setDebugOut(d);
+      toast(`${rows.length} REDS salvos.`, "ok");
+      setSaveAttention(false);
       renderReviewTable();
       await loadMonthlyKpis();
+      renderStepFlow();
     }
 
     async function loadMonthlyKpis(){
-      const nr = selectedNr();
       const cia = mustCia();
-      const d = await api(`/quality/reds/monthly-kpis/${encodeURIComponent(cia)}${qs({user_nr:nr, date_from:$("dateFrom").value, date_to:$("dateTo").value})}`);
+      const d = await api(`/quality/reds/monthly-kpis/${encodeURIComponent(cia)}${qs(withUserNr(currentFilterParams()))}`);
       state.kpis = d;
       renderCards(d);
     }
 
     async function loadMonthlyReport(){
-      const nr = selectedNr();
+      if (state.dirty.size) {
+        toast("Existem alteracoes pendentes. Salve as marcacoes antes de gerar o relatorio.", "err", 5200);
+        return;
+      }
+      syncMonthlyDateConstraints();
       const cia = mustCia();
-      const d = await api(`/quality/reds/monthly-report/${encodeURIComponent(cia)}${qs({user_nr:nr, date_from:$("dateFrom").value, date_to:$("dateTo").value})}`);
+      const d = await api(`/quality/reds/monthly-report/${encodeURIComponent(cia)}${qs(withUserNr({...currentFilterParams(), ...currentReportParams()}))}`);
       $("txtModelo1").value = d.texto_modelo_1 || "";
       $("txtModelo2").value = d.texto_modelo_2 || "";
       if (d.kpis) renderCards(d.kpis);
-      $("out").textContent = JSON.stringify(d.kpis || {}, null, 2);
+      renderReportPreview(d.preview || null);
+      state.didMonthly = true;
+      setDebugOut(d);
+      const totalAv = Number((((d || {}).preview || {}).meta || {}).total_avaliados_periodo || 0);
+      if (totalAv === 0) {
+        toast("Relatorio sem registros avaliados para os filtros do periodo/CIA selecionados.", "err", 5200);
+      }
+      toast("Relatorio mensal gerado.", "ok");
+      renderStepFlow();
     }
 
     $("reviewBody").addEventListener("change", (ev) => {
@@ -439,28 +2253,287 @@
       if (!row) return;
       if (ev.target.classList.contains("js-obs")) {
         row.observacao = String(ev.target.value || "");
+        const parsed = parseObsCatalogMarkers(row.observacao || "");
+        row.catalogErros = parsed.erros;
+        row.catalogMedidas = parsed.medidas;
         markDirty(idx);
+        if (idx === state.selectedIdx) renderRecordDetails();
+      }
+    });
+
+    $("assistPanel").addEventListener("change", (ev) => {
+      const row = state.rows[state.selectedIdx];
+      if (!row) return;
+      if (ev.target.classList.contains("js-cat-err")) {
+        const code = String(ev.target.dataset.codigo || "").trim();
+        const set = new Set(Array.isArray(row.catalogErros) ? row.catalogErros : []);
+        if (ev.target.checked) set.add(code); else set.delete(code);
+        row.catalogErros = normalizeCodes([...set]);
+        syncObsCatalogMarkers(row);
+        markDirty(state.selectedIdx);
+        renderReviewTable();
+        return;
+      }
+      if (ev.target.classList.contains("js-cat-med")) {
+        const code = String(ev.target.dataset.codigo || "").trim();
+        const set = new Set(Array.isArray(row.catalogMedidas) ? row.catalogMedidas : []);
+        if (ev.target.checked) set.add(code); else set.delete(code);
+        row.catalogMedidas = normalizeCodes([...set]);
+        syncObsCatalogMarkers(row);
+        markDirty(state.selectedIdx);
+        renderReviewTable();
       }
     });
 
     $("reviewBody").addEventListener("click", async (ev) => {
-      if (!ev.target.classList.contains("js-save")) return;
       const tr = ev.target.closest("tr[data-idx]");
       if (!tr) return;
       const idx = Number(tr.dataset.idx);
-      try { await saveOne(idx); } catch(e) { $("out").textContent = String(e.message || e); }
+      if (ev.target.classList.contains("js-open")) {
+        state.selectedIdx = idx;
+        state.drawerClosed = false;
+        renderReviewTable();
+        return;
+      }
+      if (!ev.target.classList.contains("js-save")) return;
+      try { await saveOne(idx); } catch(e) { setDebugOut(String(e.message || e)); toast(String(e.message || e), "err"); }
     });
 
-    $("bAccess").onclick = () => validateAccess();
-    $("bRunNow").onclick = async () => { try { await runNow(); } catch(e){ $("out").textContent = String(e.message||e); } };
-    $("bAnalyze").onclick = async () => { try { await analyze(); } catch(e){ $("out").textContent = String(e.message||e); } };
-    $("bLoadReview").onclick = async () => { try { await loadReview(); } catch(e){ $("out").textContent = String(e.message||e); } };
-    $("bSaveAll").onclick = async () => { try { await saveAll(); } catch(e){ $("out").textContent = String(e.message||e); } };
-    $("bMonthly").onclick = async () => { try { await loadMonthlyReport(); } catch(e){ $("out").textContent = String(e.message||e); } };
+    $("reviewCardsMobile").addEventListener("click", async (ev) => {
+      const card = ev.target.closest(".mcard[data-idx]");
+      if (!card) return;
+      const idx = Number(card.dataset.idx);
+      if (Number.isNaN(idx)) return;
+      if (ev.target.classList.contains("js-open-mobile")) {
+        state.selectedIdx = idx;
+        state.drawerClosed = false;
+        renderReviewTable();
+        return;
+      }
+      if (ev.target.classList.contains("js-save-mobile")) {
+        try { await saveOne(idx); } catch (e) { setDebugOut(String(e.message || e)); toast(String(e.message || e), "err"); }
+      }
+    });
 
-    detectNumeroPolicia();
-    if ($("nr").value.trim()) validateAccess();
-    else togglePanels();
+    $("bCloseDrawer").onclick = () => {
+      state.drawerClosed = true;
+      $("detailPanel").classList.add("hidden");
+    };
+
+    bindClick("bAccess", () => validateAccess());
+    bindClick("bRunNow", async () => { try { await runNow(); } catch(e){ setDebugOut(String(e.message||e)); toast(String(e.message||e), "err"); } });
+    bindClick("bAnalyze", async () => { try { await analyze(); } catch(e){ setDebugOut(String(e.message||e)); toast(String(e.message||e), "err"); } });
+    bindClick("bLoadReview", () => {
+      guardUnsavedBefore(async () => {
+        try { await loadReview(); } catch(e){ setDebugOut(String(e.message||e)); toast(String(e.message||e), "err"); }
+      });
+    });
+    bindClick("bSaveAll", async () => { try { await saveAll(); } catch(e){ setDebugOut(String(e.message||e)); toast(String(e.message||e), "err"); } });
+    bindClick("bMonthly", async () => { try { await loadMonthlyReport(); } catch(e){ setDebugOut(String(e.message||e)); toast(String(e.message||e), "err"); } });
+    bindClick("bPrintReport", () => printReportPreview());
+    bindClick("bPrintReportTop", () => printReportPreview());
+    bindClick("bComissaoManage", async () => {
+      try {
+        await openComissaoModal();
+      } catch (e) {
+        setDebugOut(String(e.message || e));
+        toast(String(e.message || e), "err");
+      }
+    });
+    bindClick("bComissaoClose", () => closeComissaoModal());
+    bindClick("bComissaoCancel", () => closeComissaoModal());
+    bindClick("bComissaoAdd", () => {
+      const members = comissaoDraftCurrentMembers();
+      members.push(normalizeComissaoMember({}));
+      renderComissaoDraftMembers();
+    });
+    bindClick("bComissaoSave", async () => {
+      try {
+        await saveComissaoModal();
+      } catch (e) {
+        setDebugOut(String(e.message || e));
+        toast(String(e.message || e), "err");
+      }
+    });
+    bindClick("bReload", () => {
+      guardUnsavedBefore(async () => {
+        try {
+          await loadReview();
+          toast("Dados recarregados.", "ok");
+        } catch (e) {
+          setDebugOut(String(e.message||e));
+          toast(String(e.message||e), "err");
+        }
+      });
+    });
+    bindClick("bMeeting", () => {
+      state.meetingMode = !state.meetingMode;
+      document.body.classList.toggle("meeting", state.meetingMode);
+      $("onlyPendingLocal").checked = state.meetingMode ? true : $("onlyPendingLocal").checked;
+      $("bMeeting").textContent = state.meetingMode ? "Sair modo reuniao" : "Modo reuniao";
+      renderReviewTable();
+      toast(state.meetingMode ? "Modo reuniao ativado." : "Modo reuniao desativado.", "ok");
+    });
+    const comissaoModal = $("comissaoModal");
+    if (comissaoModal) comissaoModal.addEventListener("click", (ev) => {
+      if (ev.target && ev.target.id === "comissaoModal") closeComissaoModal();
+      if (ev.target && ev.target.closest && ev.target.closest("[data-close-comissao='1']")) closeComissaoModal();
+    });
+    const comissaoEditBlock = $("comissaoEditBlock");
+    if (comissaoEditBlock) comissaoEditBlock.addEventListener("change", (ev) => {
+      state.comissaoEditBlock = String(ev.target.value || "comissao");
+      renderComissaoDraftMembers();
+    });
+    const comissaoMembers = $("comissaoMembers");
+    if (comissaoMembers) comissaoMembers.addEventListener("input", (ev) => {
+      updateComissaoMemberField(ev.target);
+    });
+    if (comissaoMembers) comissaoMembers.addEventListener("change", (ev) => {
+      const changed = updateComissaoMemberField(ev.target);
+      if (!changed && !(ev.target.classList && ev.target.classList.contains("js-cm-field"))) return;
+      renderComissaoDraftMembers();
+    });
+    if (comissaoMembers) comissaoMembers.addEventListener("click", (ev) => {
+      const card = ev.target.closest(".cm-card[data-idx]");
+      if (!card) return;
+      const idx = Number(card.dataset.idx);
+      if (Number.isNaN(idx)) return;
+      const members = comissaoDraftCurrentMembers();
+      if (ev.target.classList.contains("js-cm-up")) {
+        if (idx <= 0) return;
+        const tmp = members[idx - 1];
+        members[idx - 1] = members[idx];
+        members[idx] = tmp;
+        renderComissaoDraftMembers();
+        return;
+      }
+      if (ev.target.classList.contains("js-cm-down")) {
+        if (idx >= members.length - 1) return;
+        const tmp = members[idx + 1];
+        members[idx + 1] = members[idx];
+        members[idx] = tmp;
+        renderComissaoDraftMembers();
+        return;
+      }
+      if (!ev.target.classList.contains("js-cm-remove")) return;
+      members.splice(idx, 1);
+      renderComissaoDraftMembers();
+    });
+    bindClick("bUnsavedStay", () => {
+      closeUnsavedExitModal();
+      nudgeSaveAction();
+      toast("Edicao mantida. Salve as alteracoes pendentes.", "err", 4200);
+    });
+    bindClick("bUnsavedLeave", () => runPendingLeaveAction());
+    const unsavedExitModal = $("unsavedExitModal");
+    if (unsavedExitModal) unsavedExitModal.addEventListener("click", (ev) => {
+      if (ev.target && ev.target.id === "unsavedExitModal") {
+        closeUnsavedExitModal();
+        nudgeSaveAction();
+      }
+    });
+    document.addEventListener("click", (ev) => {
+      const link = ev.target && ev.target.closest ? ev.target.closest("a[href]") : null;
+      if (!link || !state.dirty.size) return;
+      const hrefAttr = String(link.getAttribute("href") || "").trim();
+      if (!hrefAttr || hrefAttr.startsWith("#")) return;
+      if (hrefAttr.toLowerCase().startsWith("javascript:")) return;
+      if (link.hasAttribute("download")) return;
+      const target = String(link.getAttribute("target") || "").toLowerCase();
+      if (target === "_blank") return;
+      const dest = String(link.href || hrefAttr).trim();
+      if (!dest) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      openUnsavedExitModal(() => { window.location.href = dest; });
+    }, true);
+
+    ["quickSearchNr","quickSearchText","onlyPendingLocal"].forEach((id) => {
+      $(id).addEventListener("input", () => renderReviewTable());
+      $(id).addEventListener("change", () => renderReviewTable());
+    });
+    $("cia").addEventListener("change", () => syncComissaoByCia(true));
+    $("comissaoBloco").addEventListener("change", () => renderComissaoInfo());
+    $("dateFrom").addEventListener("change", () => {
+      syncMonthlyDateConstraints();
+    });
+    $("dateTo").addEventListener("change", () => {
+      syncMonthlyDateConstraints();
+    });
+
+    window.addEventListener("beforeunload", (ev) => {
+      if (state.skipBeforeUnload || !state.dirty.size) return;
+      ev.preventDefault();
+      ev.returnValue = "";
+    });
+
+    document.addEventListener("keydown", async (ev) => {
+      if (ev.key === "Escape" && $("unsavedExitModal") && !$("unsavedExitModal").classList.contains("hidden")) {
+        closeUnsavedExitModal();
+        nudgeSaveAction();
+        return;
+      }
+      const isReloadShortcut = ev.key === "F5" || ((ev.ctrlKey || ev.metaKey) && String(ev.key || "").toLowerCase() === "r");
+      if (isReloadShortcut && state.dirty.size) {
+        ev.preventDefault();
+        openUnsavedExitModal(() => window.location.reload());
+        return;
+      }
+      if (ev.key === "Escape" && $("comissaoModal") && !$("comissaoModal").classList.contains("hidden")) {
+        closeComissaoModal();
+        return;
+      }
+      if ($("unsavedExitModal") && !$("unsavedExitModal").classList.contains("hidden")) return;
+      const tag = String((ev.target && ev.target.tagName) || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+      if (!state.allowed) return;
+      if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+        if (!state.visibleIdxs.length) return;
+        ev.preventDefault();
+        const curPos = Math.max(0, state.visibleIdxs.indexOf(state.selectedIdx));
+        const nxtPos = ev.key === "ArrowDown"
+          ? Math.min(state.visibleIdxs.length - 1, curPos + 1)
+          : Math.max(0, curPos - 1);
+        state.selectedIdx = state.visibleIdxs[nxtPos];
+        state.drawerClosed = false;
+        renderReviewTable();
+      }
+      if (ev.key.toLowerCase() === "s") {
+        if (state.selectedIdx < 0) return;
+        ev.preventDefault();
+        try { await saveOne(state.selectedIdx); } catch (e) { setDebugOut(String(e.message || e)); toast(String(e.message || e), "err"); }
+      }
+      if (ev.key.toLowerCase() === "a") {
+        if (state.selectedIdx < 0) return;
+        ev.preventDefault();
+        const row = state.rows[state.selectedIdx];
+        if (!row) return;
+        row.avaliado = !row.avaliado;
+        markDirty(state.selectedIdx);
+        renderReviewTable();
+      }
+      if (ev.key.toLowerCase() === "l") {
+        ev.preventDefault();
+        guardUnsavedBefore(async () => {
+          try { await loadReview(); } catch (e) { setDebugOut(String(e.message || e)); toast(String(e.message || e), "err"); }
+        });
+      }
+    });
+
+    (async () => {
+      renderStepFlow();
+      applyDefaultPreviousMonthRange();
+      applyDefaultReportHeader();
+      await loadComissaoBlocks();
+      await loadQualityCatalogs();
+      await initSessionNumeroPolicia();
+      state.canManageComissao = digitsOnly(state.sessionNr || $("nr").value || "") === "1438704";
+      if (!$("nr").value.trim()) detectNumeroPolicia();
+      if ($("nr").value.trim()) validateAccess();
+      else togglePanels();
+      renderAssistPanel();
+      $("jobStatusInfo").textContent = "Sem carga nesta sessao.";
+    })();
   </script>
 </body>
 </html>

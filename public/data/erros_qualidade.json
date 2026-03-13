@@ -1,0 +1,126 @@
+{
+  "categorias_erro": [
+    {
+      "id": 1,
+      "campo": "Tipo de Registro",
+      "erros": [
+        { "codigo": "1.01", "descricao": "Tipo de registro incorreto" }
+      ]
+    },
+    {
+      "id": 2,
+      "campo": "Destinatário",
+      "erros": [
+        { "codigo": "2.01", "descricao": "Destinatário incorreto" }
+      ]
+    },
+    {
+      "id": 3,
+      "campo": "Unidade Responsável pelo Registro",
+      "erros": [
+        { "codigo": "3.01", "descricao": "Unidade responsável pelo registro incorreto" }
+      ]
+    },
+    {
+      "id": 4,
+      "campo": "Endereço da Ocorrência",
+      "erros": [
+        { "codigo": "4.01", "descricao": "Endereço do fato incorreto ou não preenchido corretamente" }
+      ]
+    },
+    {
+      "id": 5,
+      "campo": "Natureza",
+      "erros": [
+        { "codigo": "5.01", "descricao": "Natureza principal incompatível com o histórico" },
+        { "codigo": "5.02", "descricao": "Natureza secundária ou terciária incompatível com o histórico" },
+        { "codigo": "5.03", "descricao": "Natureza secundária e/ou terciária omitida(s)" }
+      ]
+    },
+    {
+      "id": 6,
+      "campo": "Alvo do Evento",
+      "erros": [
+        { "codigo": "6.01", "descricao": "Alvo do evento incompatível com o histórico" },
+        { "codigo": "6.02", "descricao": "Utilização de 'Outros' no complemento da natureza, existindo o item adequado para seleção" },
+        { "codigo": "6.03", "descricao": "Utilização de 'Ignorado' no complemento da natureza, existindo o item adequado para seleção" }
+      ]
+    },
+    {
+      "id": 7,
+      "campo": "Descrição do Lugar",
+      "erros": [
+        { "codigo": "7.01", "descricao": "Descrição do lugar e/ou complemento de local mediato incorreto(s)" },
+        { "codigo": "7.02", "descricao": "Descrição do lugar e/ou complemento de local mediato invertidos" },
+        { "codigo": "7.03", "descricao": "Utilização de 'Outros' na descrição do lugar e/ou complemento de local mediato, existindo o item adequado para seleção" },
+        { "codigo": "7.04", "descricao": "Utilização de 'Ignorado' na descrição do lugar e/ou local mediato, existindo o item adequado para seleção" }
+      ]
+    },
+    {
+      "id": 8,
+      "campo": "Meio Utilizado",
+      "erros": [
+        { "codigo": "8.01", "descricao": "Meio utilizado incompatível com o histórico" }
+      ]
+    },
+    {
+      "id": 9,
+      "campo": "Materiais",
+      "erros": [
+        { "codigo": "9.01", "descricao": "Material furtado/perdido/extraviado não descrito no campo próprio" },
+        { "codigo": "9.02", "descricao": "Material apreendido/recolhido não descrito no campo próprio" },
+        { "codigo": "9.03", "descricao": "Preenchimento incorreto do campo destinado a materiais e armas brancas" }
+      ]
+    },
+    {
+      "id": 10,
+      "campo": "Causa Presumida",
+      "erros": [
+        { "codigo": "10.01", "descricao": "Causa presumida incompatível com o histórico" }
+      ]
+    },
+    {
+      "id": 11,
+      "campo": "Modos da Ação Criminosa",
+      "erros": [
+        { "codigo": "11.01", "descricao": "Modos da ação criminosa não descreve corretamente o modus operandi" },
+        { "codigo": "11.02", "descricao": "Modos da ação criminosa omitido (crimes contra a pessoa, patrimônio e crimes sexuais)" }
+      ]
+    },
+    {
+      "id": 12,
+      "campo": "Histórico",
+      "erros": [
+        { "codigo": "12.01", "descricao": "Erro de correções ortográficas, gramaticais, morfológicas e de semântica" }
+      ]
+    },
+    {
+      "id": 13,
+      "campo": "Qualidade do Texto",
+      "erros": [
+        { "codigo": "13.01", "descricao": "Qualidade do texto produzido sobre os fatos não adequada" }
+      ]
+    },
+    {
+      "id": 14,
+      "campo": "Envolvidos",
+      "erros": [
+        { "codigo": "14.01", "descricao": "Incoerências na qualificação dos envolvidos e preenchimento incompleto" }
+      ]
+    },
+    {
+      "id": 15,
+      "campo": "Data Hora Atendimento",
+      "erros": [
+        { "codigo": "15.01", "descricao": "Incoerências no tempo de empenho da guarnição ou não preenchimento" }
+      ]
+    },
+    {
+      "id": 99,
+      "campo": "Outros Erros",
+      "erros": [
+        { "codigo": "99.00", "descricao": "Outros erros não listados (descrever no campo 'Outras Informações Úteis')" }
+      ]
+    }
+  ]
+}
