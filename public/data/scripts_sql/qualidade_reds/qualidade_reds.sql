@@ -17,21 +17,21 @@
 	      CASE
             WHEN OCO.unidade_responsavel_registro_nome LIKE '%74 CIA TM/19%' THEN 'PEL/74 CIA TM/19 BPM/15 RPM'
             WHEN OCO.nome_municipio = 'TEOFILO OTONI' 
-                AND OCO.nome_bairro IN ('CENTRO', 'CIDADE ALTA', 'MARAJOARA', 'DR LAERTE LAENDER', 'OLGA PRATES CORREA', 'FILADÉLFIA', 'SÃO DIOGO', 'SAO DIOGO', 'FILADELFIA', 'DOUTOR LAERTE LAENDER') THEN '1 PEL/47 CIA PM/19 BPM'
+                AND OCO.nome_bairro IN ('CENTRO', 'CIDADE ALTA', 'MARAJOARA', 'DR LAERTE LAENDER', 'OLGA PRATES CORREA', 'FILADÃ‰LFIA', 'SÃƒO DIOGO', 'SAO DIOGO', 'FILADELFIA', 'DOUTOR LAERTE LAENDER') THEN '1 PEL/47 CIA PM/19 BPM'
             WHEN OCO.nome_municipio = 'TEOFILO OTONI' 
-                AND OCO.nome_bairro IN ('IPIRANGA', 'ALTINO BARBOSA', 'SÃO FRANCISCO', 'SAO FRANCISCO', 'TABAJARAS', 'GRÃO PARÁ', 'GRAO PARA', 'FÁTIMA', 'FATIMA', 'JARDIM IRACEMA', 'SANTA CLARA', 'VILA SÃO JOÃO', 'VILA SAO JOAO', 'TURMA 37', 'BELVEDERE', 'CASTRO PIRES', 'RESIDENCIAL GRAN VIVER', 'GRAN VIVER', 'FRIMUSA') THEN '2 PEL/47 CIA PM/19 BPM'
+                AND OCO.nome_bairro IN ('IPIRANGA', 'ALTINO BARBOSA', 'SÃƒO FRANCISCO', 'SAO FRANCISCO', 'TABAJARAS', 'GRÃƒO PARÃ', 'GRAO PARA', 'FÃTIMA', 'FATIMA', 'JARDIM IRACEMA', 'SANTA CLARA', 'VILA SÃƒO JOÃƒO', 'VILA SAO JOAO', 'TURMA 37', 'BELVEDERE', 'CASTRO PIRES', 'RESIDENCIAL GRAN VIVER', 'GRAN VIVER', 'FRIMUSA') THEN '2 PEL/47 CIA PM/19 BPM'
             WHEN OCO.nome_municipio = 'TEOFILO OTONI' 
-                AND OCO.nome_bairro IN ('MANOEL PIMENTA', 'FREI JÚLIO', 'FREI JULIO', 'TEÓFILO ROCHA', 'TEOFILO ROCHA', 'FUNCIONÁRIOS', 'FUNCIONARIOS', 'MUCURI', 'LOURIVAL SOARES DA COSTA', 'ESPERANÇA', 'ESPERANCA', 'SOLIDARIEDADE', 'AEROPORTO', 'VILA BARREIROS', 'SÃO BENEDITO', 'SAO BENEDITO', 'SANTO ANTÔNIO', 'SANTO ANTONIO', 'JARDIM SÃO PAULO', 'JARDIM SAO PAULO', 'CIDADE NOVA') THEN '3 PEL/47 CIA PM/19 BPM'
+                AND OCO.nome_bairro IN ('MANOEL PIMENTA', 'FREI JÃšLIO', 'FREI JULIO', 'TEÃ“FILO ROCHA', 'TEOFILO ROCHA', 'FUNCIONÃRIOS', 'FUNCIONARIOS', 'MUCURI', 'LOURIVAL SOARES DA COSTA', 'ESPERANÃ‡A', 'ESPERANCA', 'SOLIDARIEDADE', 'AEROPORTO', 'VILA BARREIROS', 'SÃƒO BENEDITO', 'SAO BENEDITO', 'SANTO ANTÃ”NIO', 'SANTO ANTONIO', 'JARDIM SÃƒO PAULO', 'JARDIM SAO PAULO', 'CIDADE NOVA') THEN '3 PEL/47 CIA PM/19 BPM'
             WHEN OCO.nome_municipio = 'TEOFILO OTONI' 
-                AND OCO.nome_bairro IN ('SÃO CRISTÓVÃO', 'SAO CRISTOVAO', 'VIRIATO', 'JOAQUIM PEDROSA', 'GANGORRINHA', 'CONCÓRDIA', 'CONCORDIA', 'MINAS NOVA', 'FREI DIMAS', 'PALMEIRAS', 'SÃO DIOGO', 'SAO DIOGO', 'INDAIA', 'INDAIÁ', 'JARDIM DAS ACÁCIAS', 'JARDIM DAS ACACIAS') THEN '1 PEL/42 CIA PM/19 BPM'
+                AND OCO.nome_bairro IN ('SÃƒO CRISTÃ“VÃƒO', 'SAO CRISTOVAO', 'VIRIATO', 'JOAQUIM PEDROSA', 'GANGORRINHA', 'CONCÃ“RDIA', 'CONCORDIA', 'MINAS NOVA', 'FREI DIMAS', 'PALMEIRAS', 'SÃƒO DIOGO', 'SAO DIOGO', 'INDAIA', 'INDAIÃ', 'JARDIM DAS ACÃCIAS', 'JARDIM DAS ACACIAS') THEN '1 PEL/42 CIA PM/19 BPM'
             WHEN OCO.nome_municipio = 'TEOFILO OTONI' 
-                AND OCO.nome_bairro IN ('ITAGUAÇU', 'ITAGUACU', 'BELA VISTA', 'VILA BETEL', 'FELICIDADE', 'JARDIM FLORESTA', 'JARDIM SERRA VERDE', 'MATINHA', 'MONTE CARLO', 'NOVO HORIZONTE', 'PAMPULHINHA', 'RESIDENCIAL', 'LARANJEIRAS', 'JARDIM FLORESTA', 'SÃO JACINTO', 'SAO JACINTO') THEN '2 PEL/42 CIA PM/19 BPM'
+                AND OCO.nome_bairro IN ('ITAGUAÃ‡U', 'ITAGUACU', 'BELA VISTA', 'VILA BETEL', 'FELICIDADE', 'JARDIM FLORESTA', 'JARDIM SERRA VERDE', 'MATINHA', 'MONTE CARLO', 'NOVO HORIZONTE', 'PAMPULHINHA', 'RESIDENCIAL', 'LARANJEIRAS', 'JARDIM FLORESTA', 'SÃƒO JACINTO', 'SAO JACINTO') THEN '2 PEL/42 CIA PM/19 BPM'
             WHEN OCO.nome_municipio = 'NOVO CRUZEIRO' THEN '1 PEL/232 CIA PM/19 BPM'
-            WHEN OCO.nome_municipio IN ('CARAI', 'CARAÍ', 'CATUJI', 'ITAIPE', 'ITAIPÉ') THEN '2 PEL/232 CIA PM/19 BPM'
-            WHEN OCO.nome_municipio IN ('FRANCISCOPOLIS', 'FRANCISCÓPOLIS', 'LADAINHA', 'MALACACHETA', 'POTE', 'POTÉ', 'SETUBINHA') THEN '3 PEL/232 CIA PM/19 BPM'
-            WHEN OCO.nome_municipio IN ('CAMPANARIO', 'CAMPANÁRIO', 'FREI GASPAR', 'ITAMBACURI', 'JAMPRUCA', 'NOVA MODICA', 'NOVA MÓDICA', 'PESCADOR', 'SAO JOSE DO DIVINO', 'SÃO JOSÉ DO DIVINO') THEN '1 PEL/155 CIA PM/19 BPM'
-            WHEN OCO.nome_municipio IN ('ATALEIA', 'ATALÉIA', 'OURO VERDE DE MINAS') THEN '2 PEL/155 CIA PM/19 BPM'
-            WHEN OCO.nome_municipio IN ('NOVO ORIENTE DE MINAS', 'PAVAO', 'PAVÃO') THEN '3 PEL/42 CIA PM/19 BPM'
+            WHEN OCO.nome_municipio IN ('CARAI', 'CARAÃ', 'CATUJI', 'ITAIPE', 'ITAIPÃ‰') THEN '2 PEL/232 CIA PM/19 BPM'
+            WHEN OCO.nome_municipio IN ('FRANCISCOPOLIS', 'FRANCISCÃ“POLIS', 'LADAINHA', 'MALACACHETA', 'POTE', 'POTÃ‰', 'SETUBINHA') THEN '3 PEL/232 CIA PM/19 BPM'
+            WHEN OCO.nome_municipio IN ('CAMPANARIO', 'CAMPANÃRIO', 'FREI GASPAR', 'ITAMBACURI', 'JAMPRUCA', 'NOVA MODICA', 'NOVA MÃ“DICA', 'PESCADOR', 'SAO JOSE DO DIVINO', 'SÃƒO JOSÃ‰ DO DIVINO') THEN '1 PEL/155 CIA PM/19 BPM'
+            WHEN OCO.nome_municipio IN ('ATALEIA', 'ATALÃ‰IA', 'OURO VERDE DE MINAS') THEN '2 PEL/155 CIA PM/19 BPM'
+            WHEN OCO.nome_municipio IN ('NOVO ORIENTE DE MINAS', 'PAVAO', 'PAVÃƒO') THEN '3 PEL/42 CIA PM/19 BPM'
             ELSE '3 PEL/42 CIA PM/19 BPM'
         END AS PELOTAO_PM,
         OCO.data_hora_fato AS data_hora_fato,
@@ -42,16 +42,16 @@
         MONTH(OCO.data_hora_fato) AS mes,
         OCO.data_hora_fechamento ,
         OCO.ind_estado,  -- Status tecnico da ocorrencia (A/F/R/N)
-        OCO.descricao_estado,  -- Estado da ocorrência (ex: Fechado, Aberto)
-        OCO.nome_tipo_relatorio,  -- Tipo de relatório (ex: Policial, REFAP, Trânsito)
-        OCO.natureza_codigo,  -- Código da natureza principal da ocorrência
-        OCO.natureza_descricao,  -- Descrição da natureza principal
-        OCO.natureza_secundaria1_codigo,  -- Código da primeira natureza secundária
-        OCO.natureza_secundaria1_descricao,  -- Descrição da primeira natureza secundária
-        OCO.natureza_secundaria2_codigo,  -- Código da segunda natureza secundária
-        OCO.natureza_secundaria2_descricao,  -- Descrição da segunda natureza secundária
-        OCO.natureza_secundaria3_codigo,  -- Código da terceira natureza secundária
-        OCO.natureza_secundaria3_descricao,  -- Descrição da terceira natureza secundária      
+        OCO.descricao_estado,  -- Estado da ocorrÃªncia (ex: Fechado, Aberto)
+        OCO.nome_tipo_relatorio,  -- Tipo de relatÃ³rio (ex: Policial, REFAP, TrÃ¢nsito)
+        OCO.natureza_codigo,  -- CÃ³digo da natureza principal da ocorrÃªncia
+        OCO.natureza_descricao,  -- DescriÃ§Ã£o da natureza principal
+        OCO.natureza_secundaria1_codigo,  -- CÃ³digo da primeira natureza secundÃ¡ria
+        OCO.natureza_secundaria1_descricao,  -- DescriÃ§Ã£o da primeira natureza secundÃ¡ria
+        OCO.natureza_secundaria2_codigo,  -- CÃ³digo da segunda natureza secundÃ¡ria
+        OCO.natureza_secundaria2_descricao,  -- DescriÃ§Ã£o da segunda natureza secundÃ¡ria
+        OCO.natureza_secundaria3_codigo,  -- CÃ³digo da terceira natureza secundÃ¡ria
+        OCO.natureza_secundaria3_descricao,  -- DescriÃ§Ã£o da terceira natureza secundÃ¡ria      
         OCO.data_hora_alteracao ,
         OCO.data_hora_primeiro_fim_preenchimento ,
         OCO.digitador_cargo_efetivo ,
@@ -64,8 +64,9 @@
 	WHERE 1=1
 		AND (OCO.nome_tipo_relatorio IN ('POLICIAL', 'AMBIENTAL', 'TRANSITO') OR OCO.natureza_codigo IN ('W01000', 'W02000', 'W03000', 'W04000'))
 		AND OCO.unidade_responsavel_registro_nome LIKE '%19 BPM%'
-		-- Filtro dinamico injetado pelo orquestrador (incremental_12d ou full_2026).
-		AND {{QUALITY_DATE_FILTER}}
+		-- Filtro fixo: incremental dos ultimos 12 dias.
+		AND COALESCE(OCO.data_hora_primeiro_fim_preenchimento, OCO.data_hora_alteracao, OCO.data_hora_fechamento, OCO.data_hora_inclusao, OCO.data_hora_fato) >= CAST(date_sub(current_date(), 12) AS TIMESTAMP)
 		AND OCO.digitador_sigla_orgao = 'PM';
 	
+
 

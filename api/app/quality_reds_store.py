@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Any
 import json
+from io import BytesIO
+from xml.sax.saxutils import escape as _xml_escape
 
 from sqlalchemy import inspect, text
 
@@ -910,10 +912,170 @@ def _extract_codes_from_marker(text_value: Any, marker: str) -> list[str]:
     return out
 
 
+def _clean_comissao_member_name(value: Any) -> str:
+    txt = str(value or "").strip()
+    if not txt:
+        return ""
+    txt = re.sub(r"^(?:Presidente|Auxiliar|[1-4][º°o]?\s*Membro|Membro)\s*-\s*", "", txt, flags=re.IGNORECASE)
+    txt = re.sub(r"^(?:MAJ|CAP|[12]\s*TEN|SUB\s*TEN|[12]\s*SGT)\s*PM\s+", "", txt, flags=re.IGNORECASE)
+    txt = re.sub(r"\s*\(NR\s*\d+\)\s*$", "", txt, flags=re.IGNORECASE)
+    txt = re.sub(r"\s+", " ", txt).strip(" -")
+    return txt
+
+
+def _parse_comissao_member_names(raw_value: Any) -> list[str]:
+    txt = str(raw_value or "")
+    if not txt.strip():
+        return []
+    chunks = re.split(r"[\r\n;,]+", txt)
+    out: list[str] = []
+    seen: set[str] = set()
+    for part in chunks:
+        name = _clean_comissao_member_name(part)
+        if not name:
+            continue
+        key = name.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(name)
+    return out
+
+
+def _normalize_comissao_funcao(value: Any) -> str:
+    raw = str(value or "").strip()
+    norm = (
+        raw
+        .lower()
+        .replace("º", "o")
+        .replace("°", "o")
+        .replace("ª", "a")
+        .replace("âº", "o")
+        .replace("â°", "o")
+    )
+    if norm.startswith("pres"):
+        return "Presidente"
+    if norm.startswith("aux"):
+        return "Auxiliar"
+    if norm.startswith("1"):
+        return "1º Membro"
+    if norm.startswith("2"):
+        return "2º Membro"
+    if norm.startswith("3"):
+        return "3º Membro"
+    if norm.startswith("4"):
+        return "4º Membro"
+    if "membro" in norm:
+        return "Membro"
+    if raw in {"Presidente", "1º Membro", "2º Membro", "3º Membro", "4º Membro", "Membro", "Auxiliar"}:
+        return raw
+    return "Membro"
+
+
+def _comissao_funcao_rank(value: Any) -> int:
+    funcao = _normalize_comissao_funcao(value)
+    order = {
+        "Presidente": 0,
+        "1º Membro": 1,
+        "2º Membro": 2,
+        "3º Membro": 3,
+        "4º Membro": 4,
+        "Membro": 5,
+        "Auxiliar": 90,
+    }
+    return order.get(funcao, 99)
+
+
+def _comissao_signature_rank(value: Any) -> int:
+    funcao = _normalize_comissao_funcao(value)
+    order = {
+        "4º Membro": 1,
+        "3º Membro": 2,
+        "2º Membro": 3,
+        "1º Membro": 4,
+        "Membro": 5,
+        "Presidente": 99,
+    }
+    return order.get(funcao, 90)
+
+
+def _normalize_member_id(value: Any) -> str:
+    return "".join(ch for ch in str(value or "") if ch.isdigit())
+
+
+def _normalize_comissao_member_dict(row: dict[str, Any], idx: int = 0) -> dict[str, Any]:
+    nome = str(row.get("nome_completo") or row.get("nome") or "").strip()
+    member_id = _normalize_member_id(row.get("id") or row.get("numero_policia") or row.get("nr") or row.get("matricula"))
+    posto = str(row.get("posto_graduacao") or row.get("posto") or "").strip().upper()
+    funcao = _normalize_comissao_funcao(row.get("funcao"))
+    ordem_raw = row.get("ordem")
+    try:
+        ordem = int(ordem_raw) if ordem_raw is not None and str(ordem_raw).strip() != "" else idx + 1
+    except Exception:
+        ordem = idx + 1
+    if ordem < 1:
+        ordem = idx + 1
+    return {
+        "id": member_id,
+        "nome_completo": nome,
+        "posto_graduacao": posto,
+        "funcao": funcao,
+        "ordem": ordem,
+    }
+
+
+def _format_comissao_display_line(member: dict[str, Any]) -> str:
+    posto = str(member.get("posto_graduacao") or "").strip()
+    nome = str(member.get("nome_completo") or "").strip() or "Sem nome"
+    member_id = str(member.get("id") or "").strip()
+    base = f"{posto} {nome}".strip() if posto else nome
+    if member_id:
+        base = f"{base} - NR PM {member_id}"
+    return f"{_normalize_comissao_funcao(member.get('funcao'))} - {base}"
+
+
+def _format_comissao_signature_line(member: dict[str, Any]) -> str:
+    posto = str(member.get("posto_graduacao") or "").strip()
+    nome = str(member.get("nome_completo") or "").strip() or "Sem nome"
+    member_id = str(member.get("id") or "").strip()
+    base = f"{posto} {nome}".strip() if posto else nome
+    return f"{base} - NR PM {member_id}" if member_id else base
+
+
+def _parse_comissao_members(comissao_json: Any, comissao_text: Any) -> list[dict[str, Any]]:
+    members: list[dict[str, Any]] = []
+    if str(comissao_json or "").strip():
+        try:
+            parsed = json.loads(str(comissao_json))
+            if isinstance(parsed, list):
+                members = [
+                    _normalize_comissao_member_dict(item if isinstance(item, dict) else {}, idx=i)
+                    for i, item in enumerate(parsed)
+                ]
+        except Exception:
+            members = []
+    if members:
+        return members
+
+    # Fallback legacy: comma/newline separated text.
+    names = _parse_comissao_member_names(comissao_text)
+    return [
+        {
+            "id": "",
+            "nome_completo": name,
+            "posto_graduacao": "",
+            "funcao": "Membro",
+            "ordem": idx + 1,
+        }
+        for idx, name in enumerate(names)
+    ]
+
+
 def _strip_markers_from_obs(text_value: Any) -> str:
     txt = str(text_value or "")
     txt = re.sub(r"\n?\[ERROS_COD\][^\r\n]*", "", txt, flags=re.IGNORECASE)
     txt = re.sub(r"\n?\[MEDIDAS_COD\][^\r\n]*", "", txt, flags=re.IGNORECASE)
+    txt = re.sub(r"\n?\[AJUSTES_OBS_JSON\][^\r\n]*", "", txt, flags=re.IGNORECASE)
     return txt.strip()
 
 
@@ -1271,6 +1433,12 @@ def get_qr_monthly_kpis(
     w_av = sum(1 for r in rows if is_tipo(r, "GRUPO_W") and r.get("avaliado"))
     c99_total = sum(1 for r in rows if is_tipo(r, "C99000"))
     c99_av = sum(1 for r in rows if is_tipo(r, "C99000") and r.get("avaliado"))
+    obrigatorios_total = cv_total + arma_total + w_total + c99_total
+    outros_total = max(0, total - obrigatorios_total)
+    outros_av = sum(1 for r in rows if is_tipo(r, "OUTROS") and r.get("avaliado"))
+    outros_meta_2pct = int(ceil(outros_total * 0.02)) if outros_total else 0
+    outros_pend_meta = max(0, outros_meta_2pct - outros_av)
+    outros_pct_av = round((outros_av * 100.0 / outros_total), 2) if outros_total else 0.0
 
     sinalizados_total = 0
     sinalizados_av = 0
@@ -1304,6 +1472,14 @@ def get_qr_monthly_kpis(
         "w_avaliados": w_av,
         "c99_total": c99_total,
         "c99_avaliados": c99_av,
+        "obrigatorios_total": obrigatorios_total,
+        "outros_total": outros_total,
+        "outros_avaliados": outros_av,
+        "outros_meta_2pct": outros_meta_2pct,
+        "outros_pendentes_meta_2pct": outros_pend_meta,
+        "outros_percentual_avaliado_2pct_base": outros_pct_av,
+        # Compat: "outros_pendentes" agora representa o pendente para bater a meta de 2%.
+        "outros_pendentes": outros_pend_meta,
         "sinalizados_total": sinalizados_total,
         "sinalizados_avaliados": sinalizados_av,
     }
@@ -1317,6 +1493,7 @@ def build_qr_monthly_report(
     nome_tipo_relatorio: str | None = None,
     data_reuniao: str | None = None,
     comissao: str | None = None,
+    comissao_json: str | None = None,
     periodo_label: str | None = None,
 ) -> dict[str, Any]:
     k = get_qr_monthly_kpis(
@@ -1345,9 +1522,42 @@ def build_qr_monthly_report(
     alvo_2pct = int(ceil(total_base * 0.02)) if total_base else 0
     amostra_ref = min(alvo_2pct, len(nao_cv_base_rows)) if nao_cv_base_rows else 0
     pct_amostra = round((amostra_ref * 100.0 / total_base), 2) if total_base else 0.0
+    avaliados_nao_cv = len(nao_cv_rows)
+    pct_avaliados_nao_cv = round((avaliados_nao_cv * 100.0 / total_base), 2) if total_base else 0.0
+    pct_avaliados_nao_cv_txt = f"{pct_avaliados_nao_cv:.2f}"
     arma_qtd = sum(1 for r in nao_cv_base_rows if str(r.get("tipo_natureza") or "") == "ARMA")
     w_qtd = sum(1 for r in nao_cv_base_rows if str(r.get("tipo_natureza") or "") == "GRUPO_W")
     c99_qtd = sum(1 for r in nao_cv_base_rows if str(r.get("tipo_natureza") or "") == "C99000")
+    comissao_raw_members = _parse_comissao_members(comissao_json, comissao)
+    comissao_validos = [
+        m for m in comissao_raw_members
+        if _normalize_comissao_funcao(m.get("funcao")) != "Auxiliar" and str(m.get("nome_completo") or "").strip()
+    ]
+    comissao_ordenada = sorted(
+        comissao_validos,
+        key=lambda m: (
+            _comissao_funcao_rank(m.get("funcao")),
+            int(m.get("ordem") or 9999),
+            str(m.get("nome_completo") or "").casefold(),
+        ),
+    )
+    comissao_assinaturas = sorted(
+        comissao_validos,
+        key=lambda m: (
+            _comissao_signature_rank(m.get("funcao")),
+            -int(m.get("ordem") or 0),
+            str(m.get("nome_completo") or "").casefold(),
+        ),
+    )
+    comissao_membros = [_format_comissao_display_line(m) for m in comissao_ordenada]
+    comissao_assinaturas_meta = [
+        {
+            "linha": _format_comissao_signature_line(m),
+            "funcao": _normalize_comissao_funcao(m.get("funcao")),
+        }
+        for m in comissao_assinaturas
+    ]
+    comissao_texto = "\n".join(comissao_membros) if comissao_membros else "Nao informada"
 
     cia_label = _cia_label(str(cia_pm or ""))
     periodo = f"{date_from or 'inicio'} a {date_to or 'fim'}"
@@ -1358,8 +1568,8 @@ def build_qr_monthly_report(
         f"no período avaliado ({periodo}). A seguir serão descritas as inconformidades detectadas."
     )
     t2 = (
-        f"A Comissão de avaliação de REDS da {cia_label} procedeu a análise de {amostra_ref} "
-        f"ocorrências referente a {pct_amostra}% de todos os registros confeccionados na área da Cia no período avaliado; "
+        f"A Comissão de avaliação de REDS da {cia_label} procedeu a análise de {avaliados_nao_cv} "
+        f"ocorrências referente a {pct_avaliados_nao_cv_txt}% de todos os registros confeccionados na área da Cia no período avaliado; "
         f"de {arma_qtd} REDS de natureza E03012, E03014 e E03016; "
         f"de {w_qtd} BOS de natureza W01.000, W02.000, W03.000, W04.000 e; "
         f"de {c99_qtd} REDS de natureza C99.000. A seguir serão descritas inconformidades detectadas, "
@@ -1374,7 +1584,9 @@ def build_qr_monthly_report(
             "periodo_intervalo": periodo,
             "periodo_label": periodo_nome,
             "data_reuniao": _format_date_br(data_reuniao or date_to or date_from),
-            "comissao": str(comissao or "").strip() or "Nao informada",
+            "comissao": comissao_texto,
+            "comissao_membros": comissao_membros,
+            "comissao_assinaturas": comissao_assinaturas_meta,
             "total_registros_periodo": total_base,
             "total_alvo_2pct": alvo_2pct,
             "total_avaliados_periodo": len(avaliados_rows),
@@ -1407,3 +1619,258 @@ def build_qr_monthly_report(
         ],
     }
     return {"kpis": k, "texto_modelo_1": t1, "texto_modelo_2": t2, "preview": preview}
+
+
+def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    except Exception as exc:  # pragma: no cover
+        raise RuntimeError("Dependencia reportlab nao instalada no ambiente.") from exc
+
+    preview = dict((report or {}).get("preview") or {})
+    meta = dict(preview.get("meta") or {})
+    blocos = list(preview.get("blocos") or [])
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=A4,
+        leftMargin=15 * mm,
+        rightMargin=15 * mm,
+        topMargin=15 * mm,
+        bottomMargin=15 * mm,
+        title="Relatorio Mensal de Qualidade REDS",
+    )
+
+    styles = getSampleStyleSheet()
+    st_h2 = ParagraphStyle(
+        "qr_h2",
+        parent=styles["Heading2"],
+        fontName="Helvetica-Bold",
+        fontSize=12,
+        leading=15,
+        spaceBefore=8,
+        spaceAfter=6,
+    )
+    st_small = ParagraphStyle(
+        "qr_small",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=8.5,
+        leading=11,
+    )
+    st_head_1 = ParagraphStyle(
+        "qr_head_1",
+        parent=styles["BodyText"],
+        fontName="Helvetica-Bold",
+        fontSize=12,
+        leading=13.5,
+        spaceAfter=1,
+    )
+    st_head_2 = ParagraphStyle(
+        "qr_head_2",
+        parent=styles["BodyText"],
+        fontName="Helvetica-Bold",
+        fontSize=10.5,
+        leading=12,
+        spaceAfter=2,
+    )
+    st_head_3 = ParagraphStyle(
+        "qr_head_3",
+        parent=styles["BodyText"],
+        fontName="Helvetica-Bold",
+        fontSize=15,
+        leading=16,
+    )
+
+    story: list[Any] = []
+    logo_path = Path(__file__).resolve().parents[2] / "public" / "imagens" / "Icones_logo_19bpm" / "android-chrome-192x192.png"
+    logo_cell: Any = Spacer(20 * mm, 20 * mm)
+    if logo_path.exists():
+        try:
+            logo_cell = Image(str(logo_path), width=20 * mm, height=20 * mm)
+        except Exception:
+            logo_cell = Spacer(20 * mm, 20 * mm)
+
+    header_text = [
+        Paragraph("D\u00c9CIMO NONO BATALH\u00c3O DE POL\u00cdCIA MILITAR", st_head_1),
+        Paragraph("SE\u00c7\u00c3O DE PLANEJAMENTO OPERACIONAL - P3", st_head_2),
+        Paragraph("RELAT\u00d3RIO MENSAL DE QUALIDADE REDS", st_head_3),
+    ]
+    head_table = Table([[logo_cell, header_text]], colWidths=[20 * mm, 160 * mm], repeatRows=0)
+    head_table.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ("LEFTPADDING", (1, 0), (1, 0), 10 * mm),
+            ]
+        )
+    )
+    story.append(head_table)
+    story.append(Spacer(1, 4))
+
+    comissao_items_raw = meta.get("comissao_membros")
+    if isinstance(comissao_items_raw, list):
+        comissao_items = [str(x or "").strip() for x in comissao_items_raw if str(x or "").strip()]
+    else:
+        comissao_items = _parse_comissao_member_names(meta.get("comissao"))
+    assinatura_items_raw = meta.get("comissao_assinaturas")
+    if isinstance(assinatura_items_raw, list):
+        assinatura_items = [
+            {
+                "linha": str((item or {}).get("linha") or "").strip(),
+                "funcao": _normalize_comissao_funcao((item or {}).get("funcao")),
+            }
+            for item in assinatura_items_raw
+            if str((item or {}).get("linha") or "").strip()
+        ]
+    else:
+        assinatura_items = []
+    if comissao_items:
+        comissao_cell: Any = Paragraph("<br/>".join(_xml_escape(item) for item in comissao_items), st_small)
+    else:
+        comissao_cell = "Nao informada"
+
+    meta_rows = [
+        ["Unidade", str(meta.get("cia_label") or meta.get("cia_pm") or "-")],
+        ["Periodo", str(meta.get("periodo_label") or meta.get("periodo_intervalo") or "-")],
+        ["Data da reuniao", str(meta.get("data_reuniao") or "-")],
+        ["Total no periodo", str(meta.get("total_registros_periodo") or 0)],
+        ["Amostra alvo (2%)", str(meta.get("total_alvo_2pct") or 0)],
+        ["Total avaliados", str(meta.get("total_avaliados_periodo") or 0)],
+        ["Comissao", comissao_cell],
+    ]
+    meta_table = Table(meta_rows, colWidths=[42 * mm, 138 * mm], repeatRows=0)
+    meta_table.setStyle(
+        TableStyle(
+            [
+                ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cdbf9e")),
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f5efdf")),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
+    story.append(meta_table)
+    story.append(Spacer(1, 8))
+
+    for idx, bloco in enumerate(blocos, start=1):
+        story.append(Paragraph(str(bloco.get("titulo") or f"Bloco {idx}"), st_h2))
+        resumo = [
+            ["Naturezas", str(bloco.get("naturezas") or "-")],
+            ["Total no periodo", str(bloco.get("total_registros") or 0)],
+            ["Total avaliados", str(bloco.get("total_avaliados") or 0)],
+        ]
+        resumo_table = Table(resumo, colWidths=[42 * mm, 138 * mm], repeatRows=0)
+        resumo_table.setStyle(
+            TableStyle(
+                [
+                    ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d8cfbc")),
+                    ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f9f3e5")),
+                    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            )
+        )
+        story.append(resumo_table)
+        story.append(Spacer(1, 4))
+        story.append(Paragraph(str(bloco.get("texto_abertura") or "-"), st_small))
+        story.append(Spacer(1, 5))
+
+        criterios = list(bloco.get("criterios") or [])
+        if not criterios:
+            story.append(Paragraph("Sem criterios para este bloco.", st_small))
+            story.append(Spacer(1, 8))
+            continue
+
+        header = [
+            Paragraph("Criterios", st_small),
+            Paragraph("Observacao e Inconformidades", st_small),
+            Paragraph("Medidas Adotadas", st_small),
+        ]
+        rows = [header]
+        for c in criterios:
+            rows.append(
+                [
+                    Paragraph(str(c.get("criterio") or "-"), st_small),
+                    Paragraph(str(c.get("observacao_inconformidades") or "-").replace("\n", "<br/>"), st_small),
+                    Paragraph(str(c.get("medidas_adotadas") or "-").replace("\n", "<br/>"), st_small),
+                ]
+            )
+
+        crit_table = Table(
+            rows,
+            colWidths=[48 * mm, 72 * mm, 60 * mm],
+            repeatRows=1,
+        )
+        crit_table.setStyle(
+            TableStyle(
+                [
+                    ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d8cfbc")),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eee4cf")),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 8.5),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
+        story.append(crit_table)
+        story.append(Spacer(1, 10))
+
+    if assinatura_items:
+        story.append(Paragraph("Assinaturas dos Responsaveis", st_h2))
+        assinatura_cells: list[Any] = []
+        for item in assinatura_items:
+            linha = _xml_escape(str(item.get("linha") or "").strip())
+            funcao = _xml_escape(str(item.get("funcao") or "").strip())
+            assinatura_cells.append(
+                Paragraph(
+                    f"_______________________________<br/>{linha}<br/><font size='8'>{funcao}</font>",
+                    st_small,
+                )
+            )
+        assinatura_rows: list[list[Any]] = []
+        for i in range(0, len(assinatura_cells), 2):
+            left = assinatura_cells[i]
+            right = assinatura_cells[i + 1] if (i + 1) < len(assinatura_cells) else Paragraph("", st_small)
+            assinatura_rows.append([left, right])
+        assinatura_table = Table(assinatura_rows, colWidths=[90 * mm, 90 * mm], repeatRows=0)
+        assinatura_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                    ("TOPPADDING", (0, 0), (-1, -1), 12),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ]
+            )
+        )
+        story.append(assinatura_table)
+
+    def _draw_page_number(canvas_obj: Any, doc_obj: Any) -> None:
+        canvas_obj.setFont("Helvetica", 8)
+        canvas_obj.setFillColor(colors.HexColor("#5a4f39"))
+        canvas_obj.drawRightString(195 * mm, 8 * mm, f"Pagina {canvas_obj.getPageNumber()}")
+
+    doc.build(story, onFirstPage=_draw_page_number, onLaterPages=_draw_page_number)
+    return buf.getvalue()

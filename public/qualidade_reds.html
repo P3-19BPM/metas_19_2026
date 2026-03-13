@@ -60,6 +60,15 @@
     .head p{margin:8px 0 0;color:#d0c6ae;font-size:15px}
     .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
     .sticky-controls{position:sticky;top:10px;z-index:12}
+    .controls-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .controls-head .small{margin:0}
+    .btn-toggle{
+      width:auto;height:34px;min-width:210px;padding:0 12px;
+      border:1px solid #cdbf9e;border-radius:9px;background:#f6f0e2;color:#3f3625;font-size:12px;font-weight:800;
+    }
+    #controlsPanel.collapsed #stepFlow{display:none}
+    #controlsPanel.collapsed .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+    #controlsPanel.collapsed .grid > :not(.control-core){display:none}
     .steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:10px}
     .step{border:1px solid var(--line);border-radius:10px;background:#f6f0e2;padding:9px 10px}
     .step .n{font-size:10px;font-weight:700;color:#6f644c;text-transform:uppercase;letter-spacing:.3px}
@@ -109,6 +118,8 @@
     .card .k{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:.25px}
     .card .v{font-size:24px;font-weight:900;line-height:1.05;margin-top:2px}
     .card .s{font-size:12px;color:#5d523d;margin-top:4px}
+    .card .v-ok,.card .s-ok{color:#0c7a43}
+    .card .v-warn,.card .s-warn{color:#8f1d22}
     .row-info{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:9px 0}
     .mono{font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap}
     .table-wrap{overflow:auto;max-height:62vh;border:1px solid var(--line);border-radius:10px}
@@ -122,6 +133,10 @@
     .chkline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .chkline label{display:flex;align-items:center;gap:4px;font-size:11px;color:#423b2b;font-weight:700}
     .chkline input{width:auto;height:auto}
+    .aj-obs-grid{display:grid;grid-template-columns:1fr;gap:5px;margin-top:8px}
+    .aj-obs-item{display:grid;grid-template-columns:120px minmax(0,1fr);align-items:center;gap:6px}
+    .aj-obs-item span{font-size:11px;color:#5c513a;font-weight:700}
+    .aj-obs-item input{height:31px;font-size:12px}
     .cell-actions{display:flex;gap:6px}
     .cell-actions button{height:31px;padding:0 10px;font-size:12px}
     .selected-row{outline:2px solid rgba(160,143,99,.45);outline-offset:-2px}
@@ -182,10 +197,12 @@
     .status-salvo{background:#edf8f2;color:#0c7a43;border-color:#a4d3b9}
     .oco-pill{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;text-transform:uppercase}
     .oco-aberto{background:linear-gradient(135deg,#ffd8db,#ffb4be);color:#6b0f18;border-color:#de8b96}
-    .oco-fechado{background:linear-gradient(135deg,#e9f7ef,#cdebd8);color:#0b6738;border-color:#9dcdb1}
+    .oco-novo_pendente{background:linear-gradient(135deg,#ffd5d8,#ffaeb7);color:#6b0f18;border-color:#de8b96}
+    .oco-fechado{background:linear-gradient(135deg,#eef5f4,#dfe9e6);color:#35534b;border-color:#bbd0c9}
+    .oco-pendente_recibo{background:linear-gradient(135deg,#f8f2e6,#ede1cd);color:#5d4d31;border-color:#d3bf97}
     .oco-indefinido{background:#f1ebde;color:#5a4f3b;border-color:#d8cfbc}
-    #reviewBody tr.row-oco-aberto td{background-image:linear-gradient(90deg,rgba(255,116,130,.16),rgba(255,116,130,0));}
-    #reviewBody tr.row-oco-aberto.selected-row td{background-image:linear-gradient(90deg,rgba(255,116,130,.22),rgba(255,116,130,.06));}
+    #reviewBody tr.row-oco-alerta td{background-image:linear-gradient(90deg,rgba(255,116,130,.16),rgba(255,116,130,0));}
+    #reviewBody tr.row-oco-alerta.selected-row td{background-image:linear-gradient(90deg,rgba(255,116,130,.22),rgba(255,116,130,.06));}
     .drawer{position:fixed;right:0;top:0;height:100vh;width:min(580px,100vw);background:#fffdf8;border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(0,0,0,.12);padding:14px;overflow:auto;z-index:40}
     .drawer.hidden{display:none}
     .drawer-head{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;background:#fffdf8;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--line)}
@@ -235,11 +252,13 @@
     .report-preview{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px}
     .report-doc{font-family:var(--report-body-font);color:#1b160d}
     .report-cover{border:1px solid #d8cfbc;border-radius:10px;background:#fffdf8;padding:14px 16px;margin-bottom:14px}
-    .report-head{display:flex;align-items:center;gap:14px;margin-bottom:10px;border-bottom:2px solid #d8cfbc;padding-bottom:10px}
-    .report-logo{width:68px;height:68px;object-fit:contain}
-    .report-head-kicker{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:#5a4f39;font-weight:700}
-    .report-head h2{margin:0;font-family:var(--report-title-font);font-size:34px;line-height:1;font-weight:600;letter-spacing:.4px;color:#1f1a10}
-    .report-head p{margin:4px 0 0 0;font-size:13px;color:#514632}
+    .report-head{display:flex;align-items:flex-start;gap:1cm;margin-bottom:10px;border-bottom:2px solid #d8cfbc;padding-bottom:10px}
+    .report-logo{width:86px;height:86px;object-fit:contain;flex:0 0 auto}
+    .report-head-text{display:flex;flex-direction:column;justify-content:center;min-height:86px}
+    .report-head-line{margin:0;text-align:left;text-transform:uppercase;color:#1f1a10}
+    .report-head-line-1{font-size:18px;line-height:1.15;font-family:var(--report-title-font);font-weight:600;letter-spacing:.35px}
+    .report-head-line-2{font-size:15px;line-height:1.2;font-weight:700;letter-spacing:.2px;margin-top:2px}
+    .report-head-line-3{font-size:26px;line-height:1.05;font-family:var(--report-title-font);font-weight:600;letter-spacing:.45px;margin-top:3px}
     .report-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
     .report-meta-item{border:1px solid #d8cfbc;border-radius:8px;background:#fff;padding:8px 10px}
     .report-meta-item .k{font-size:11px;text-transform:uppercase;letter-spacing:.35px;color:#6e6249;font-weight:700}
@@ -268,12 +287,30 @@
     .report-criteria tbody tr:nth-child(even){background:#fbf7ed}
     .report-comissao-list{margin:0;padding-left:18px}
     .report-comissao-list li{margin:2px 0;font-size:12px}
+    .report-signatures{margin-top:18px;padding-top:10px;border-top:1px solid #c9bc9d}
+    .report-signatures-title{font-size:12px;text-transform:uppercase;letter-spacing:.3px;color:#5a4f39;font-weight:700;margin-bottom:10px}
+    .report-signatures-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 26px}
+    .report-sign-card{padding-top:24px;break-inside:avoid-page;page-break-inside:avoid}
+    .report-sign-line{border-top:1px solid #1f1a10;margin-bottom:4px}
+    .report-sign-name{font-size:12px;font-weight:700;color:#1f1a10}
+    .report-sign-role{font-size:11px;color:#5a4f39}
     .report-empty{font-size:13px;color:#6f644c}
     .report-controls{display:flex;justify-content:flex-end;gap:8px}
     body.meeting .sticky-controls, body.meeting #assistPanel, body.meeting #debugPanel{display:none}
     body.meeting .wrap{max-width:1600px}
-    @media (max-width:1100px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:700px){.grid,.cards,.detail-grid,.assist-grid,.steps,.cm-grid,.modal-controls{grid-template-columns:1fr}.table-wrap{display:none}.mobile-cards{display:flex}}
+    @media (max-width:1100px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}#controlsPanel.collapsed .grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:700px){
+      .grid,.cards,.detail-grid,.assist-grid,.steps,.cm-grid,.modal-controls{grid-template-columns:1fr}
+      .table-wrap{display:none}
+      .mobile-cards{display:flex}
+      .report-head{gap:12px}
+      .report-logo{width:64px;height:64px}
+      .report-head-text{min-height:64px}
+      .report-head-line-1{font-size:15px}
+      .report-head-line-2{font-size:12px}
+      .report-head-line-3{font-size:20px}
+      .report-signatures-grid{grid-template-columns:1fr}
+    }
     @media print{
       @page{
         size:A4 portrait;
@@ -298,16 +335,20 @@
       <p>Marcacao de ajustes por REDS, progresso de avaliacao e relatorio mensal da comissao.</p>
     </div>
 
-    <div class="panel sticky-controls" id="controlsPanel">
+    <div class="panel sticky-controls collapsed" id="controlsPanel">
+      <div class="controls-head">
+        <p class="small"><b>Filtros de avaliacao</b> (use "Expandir" para acessar todas as acoes).</p>
+        <button id="bToggleControls" type="button" class="btn-toggle" aria-expanded="false">Expandir filtros e acoes</button>
+      </div>
       <div id="stepFlow" class="steps"></div>
       <div class="grid">
         <label>Numero de Policia
           <input id="nr" placeholder="Ex: 1438704" inputmode="numeric" autocomplete="off">
         </label>
-        <label>Data inicial
+        <label class="control-core">Data inicial
           <input id="dateFrom" type="date">
         </label>
-        <label>Data final
+        <label class="control-core">Data final
           <input id="dateTo" type="date">
         </label>
         <label>Data reuniao
@@ -316,7 +357,7 @@
         <label>Periodo relatorio
           <input id="periodoLabel" placeholder="Ex: JANEIRO" autocomplete="off" readonly>
         </label>
-        <label>Bloco da comissao
+        <label class="control-core">Bloco da comissao
           <select id="comissaoBloco">
             <option value="">Selecione...</option>
           </select>
@@ -331,7 +372,7 @@
             <option value="74">74 CIA TM</option>
           </select>
         </label>
-        <label>Grupo natureza
+        <label class="control-core">Grupo natureza
           <select id="naturezaGroup">
             <option value="">Todas</option>
             <option value="CV">CV (lista oficial)</option>
@@ -362,9 +403,10 @@
         <div><button id="bAccess" class="btn-main">Validar acesso</button></div>
         <div><button id="bRunNow" class="btn-sub">Run Now</button></div>
         <div><button id="bAnalyze" class="btn-sub">Analisar base</button></div>
-        <div><button id="bLoadReview">Carregar avaliacao</button></div>
+        <div class="control-core"><button id="bLoadReview">Carregar avaliacao</button></div>
         <div><button id="bSaveAll">Salvar marcacoes</button></div>
         <div><button id="bMonthly">Gerar relatorio mensal</button></div>
+        <div><button id="bDownloadPdf" class="btn-sub">Baixar PDF</button></div>
         <div><button id="bPrintReport">Imprimir preview</button></div>
         <div class="toolbar">
           <button id="bReload" type="button">Recarregar dados</button>
@@ -419,6 +461,7 @@
         <div class="row-info no-print">
           <div><b>Preview do relatorio mensal</b></div>
           <div class="report-controls">
+            <button id="bDownloadPdfTop" class="btn-sub" type="button">Baixar PDF</button>
             <button id="bPrintReportTop" class="btn-sub" type="button">Imprimir / Salvar PDF</button>
           </div>
         </div>
@@ -592,7 +635,9 @@
       pendingLeaveAction:null,
       skipBeforeUnload:false,
       saveAttentionTimer:0,
+      controlsCollapsed:true,
     };
+    const CONTROLS_COLLAPSED_KEY = "qreds_controls_collapsed";
 
     const MOTOR_HELP = {
       motor1: {
@@ -625,6 +670,30 @@
       const el = $(id);
       if (!el) return;
       el.addEventListener("click", handler);
+    }
+
+    function setControlsCollapsed(collapsed, persist=true){
+      state.controlsCollapsed = !!collapsed;
+      const panel = $("controlsPanel");
+      const btn = $("bToggleControls");
+      if (panel) panel.classList.toggle("collapsed", state.controlsCollapsed);
+      if (btn) {
+        btn.textContent = state.controlsCollapsed ? "Expandir filtros e acoes" : "Recolher filtros e acoes";
+        btn.setAttribute("aria-expanded", state.controlsCollapsed ? "false" : "true");
+      }
+      if (persist) {
+        try { window.localStorage.setItem(CONTROLS_COLLAPSED_KEY, state.controlsCollapsed ? "1" : "0"); } catch (_) {}
+      }
+    }
+
+    function loadControlsCollapsePreference(){
+      let collapsed = true;
+      try {
+        const raw = window.localStorage.getItem(CONTROLS_COLLAPSED_KEY);
+        if (raw === "0") collapsed = false;
+        if (raw === "1") collapsed = true;
+      } catch (_) {}
+      setControlsCollapsed(collapsed, false);
     }
 
     function detectNumeroPolicia(){
@@ -899,6 +968,45 @@
       return order[String(postoNorm || "").toUpperCase()] || 999;
     }
 
+    const COMISSAO_FUNCOES = ["Presidente", "1º Membro", "2º Membro", "3º Membro", "4º Membro", "Membro", "Auxiliar"];
+
+    function normalizeComissaoFuncao(value){
+      const raw = String(value || "").trim();
+      const norm = raw
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+      if (!norm) return "Membro";
+      if (norm.startsWith("pres")) return "Presidente";
+      if (norm.startsWith("aux")) return "Auxiliar";
+      if (norm.startsWith("1")) return "1º Membro";
+      if (norm.startsWith("2")) return "2º Membro";
+      if (norm.startsWith("3")) return "3º Membro";
+      if (norm.startsWith("4")) return "4º Membro";
+      if (norm.includes("membro")) return "Membro";
+      return COMISSAO_FUNCOES.includes(raw) ? raw : "Membro";
+    }
+
+    function comissaoFuncaoRank(value){
+      const funcao = normalizeComissaoFuncao(value);
+      const order = {
+        "Presidente": 0,
+        "1º Membro": 1,
+        "2º Membro": 2,
+        "3º Membro": 3,
+        "4º Membro": 4,
+        "Membro": 5,
+        "Auxiliar": 90,
+      };
+      return order[funcao] ?? 99;
+    }
+
+    function isAuxiliarComissao(row){
+      return normalizeComissaoFuncao((row || {}).funcao) === "Auxiliar";
+    }
+
     function digitsOnly(value){
       return String(value || "").replace(/\D/g, "");
     }
@@ -910,8 +1018,7 @@
         const nomeGuerra = String(row.nome_guerra || "").trim();
         const postoRaw = String(row.posto_graduacao || row.posto || row.graduacao || "").trim();
         const posto = normalizePostoGraduacao(postoRaw || "");
-        const funcaoRaw = String(row.funcao || "").trim().toLowerCase();
-        const funcao = funcaoRaw.startsWith("pres") ? "Presidente" : "Membro";
+        const funcao = normalizeComissaoFuncao(row.funcao || "");
         const ordemNum = Number(row.ordem);
         const ordem = Number.isFinite(ordemNum) && ordemNum > 0 ? Math.floor(ordemNum) : null;
         const nome = nomeCompleto || (id ? `NR PM ${id}` : "Militar");
@@ -958,31 +1065,114 @@
       });
     }
 
-    function sortComissaoMembers(rows){
-      return reorderComissaoMembers(rows);
+    function sortComissaoMembers(rows, opts={}){
+      const options = (opts && typeof opts === "object") ? opts : {};
+      const list = reorderComissaoMembers(rows).filter((m) => !options.excludeAuxiliares || !isAuxiliarComissao(m));
+      list.sort((a, b) => {
+        const ra = comissaoFuncaoRank(a.funcao);
+        const rb = comissaoFuncaoRank(b.funcao);
+        if (options.signatureOrder) {
+          const ka = ra === 0 ? 999 : ra;
+          const kb = rb === 0 ? 999 : rb;
+          if (ka !== kb) return kb - ka;
+        } else if (ra !== rb) {
+          return ra - rb;
+        }
+        const ao = Number.isFinite(Number(a.ordem)) && Number(a.ordem) > 0 ? Number(a.ordem) : 9999;
+        const bo = Number.isFinite(Number(b.ordem)) && Number(b.ordem) > 0 ? Number(b.ordem) : 9999;
+        if (ao !== bo) return ao - bo;
+        const pa = hierarchyWeight(a.posto || a.posto_graduacao || "");
+        const pb = hierarchyWeight(b.posto || b.posto_graduacao || "");
+        if (pa !== pb) return pa - pb;
+        return String(a.nome_completo || a.nome || "").localeCompare(String(b.nome_completo || b.nome || ""), "pt-BR");
+      });
+      return list;
     }
 
-    function formatComissaoMemberLine(row){
+    function formatComissaoMemberLine(row, opts={}){
       const m = normalizeComissaoMember(row);
-      const posto = m.posto !== "MILITAR" ? `${m.posto} ` : "";
+      const options = (opts && typeof opts === "object") ? opts : {};
+      const showFuncao = options.showFuncao !== false;
+      const postoBase = normalizePostoGraduacao(m.posto || m.posto_graduacao || "");
+      const posto = postoBase && postoBase !== "MILITAR" ? `${postoBase} ` : "";
       const nome = String(m.nome_completo || m.nome || "").trim();
-      const funcao = String(m.funcao || "Membro").trim();
-      const line = `${funcao} - ${posto}${nome || "Sem nome"}`.trim();
-      return m.id ? `${line} (NR ${m.id})` : line;
+      const funcao = normalizeComissaoFuncao(m.funcao || "Membro");
+      const base = `${posto}${nome || "Sem nome"}`.trim();
+      const withNr = m.id ? `${base} - NR PM ${m.id}` : base;
+      return showFuncao ? `${funcao} - ${withNr}` : withNr;
     }
 
-    function formatComissaoMembers(rows){
-      return sortComissaoMembers(rows)
-        .map((m) => formatComissaoMemberLine(m))
+    function formatComissaoMembers(rows, opts={}){
+      const options = (opts && typeof opts === "object") ? opts : {};
+      return sortComissaoMembers(rows, options)
+        .map((m) => formatComissaoMemberLine(m, { showFuncao: options.showFuncao }))
         .join(", ");
     }
 
-    function selectedComissaoText(){
+    function comissaoMemberName(row){
+      const m = normalizeComissaoMember(row);
+      const nome = String(m.nome_completo || m.nome || "").trim();
+      if (nome) return nome;
+      return m.id ? `NR PM ${m.id}` : "Sem nome";
+    }
+
+    function selectedComissaoNames(){
       const sel = $("comissaoBloco");
-      if (!sel) return "";
+      if (!sel) return [];
       const idx = Number(sel.value || -1);
       const block = Number.isInteger(idx) ? state.comissaoBlocks[idx] : null;
-      return block ? formatComissaoMembers(block.members) : "";
+      if (!block || !Array.isArray(block.members)) return [];
+      return sortComissaoMembers(block.members, { excludeAuxiliares: true })
+        .map((m) => formatComissaoMemberLine(m, { showFuncao: true }))
+        .filter(Boolean);
+    }
+
+    function selectedComissaoMembersForReport(signatureOrder=false){
+      const sel = $("comissaoBloco");
+      if (!sel) return [];
+      const idx = Number(sel.value || -1);
+      const block = Number.isInteger(idx) ? state.comissaoBlocks[idx] : null;
+      if (!block || !Array.isArray(block.members)) return [];
+      return sortComissaoMembers(block.members, { excludeAuxiliares: true, signatureOrder })
+        .map((m) => {
+          const item = normalizeComissaoMember(m);
+          return {
+            id: item.id || "",
+            nome_completo: String(item.nome_completo || item.nome || "").trim(),
+            posto_graduacao: normalizePostoGraduacao(item.posto || item.posto_graduacao || ""),
+            funcao: normalizeComissaoFuncao(item.funcao || "Membro"),
+            ordem: Number.isFinite(Number(item.ordem)) ? Number(item.ordem) : null,
+          };
+        })
+        .filter((m) => !!m.nome_completo || !!m.id);
+    }
+
+    function selectedComissaoText(){
+      return selectedComissaoNames().join("\n");
+    }
+
+    function selectedComissaoBlock(){
+      const sel = $("comissaoBloco");
+      if (!sel) return null;
+      const idx = Number(sel.value || -1);
+      if (!Number.isInteger(idx) || idx < 0) return null;
+      return state.comissaoBlocks[idx] || null;
+    }
+
+    function syncQuickSearchNrAccess(){
+      const nrInput = $("quickSearchNr");
+      if (!nrInput) return;
+      const block = selectedComissaoBlock();
+      const canSearchAll = !!(block && block.kind === "comissao");
+      const prevDisabled = !!nrInput.disabled;
+      const hadValue = !!String(nrInput.value || "").trim();
+      nrInput.disabled = !canSearchAll;
+      nrInput.placeholder = canSearchAll ? "Numero ocorrencia..." : "Disponivel apenas para Comissao Geral";
+      nrInput.title = canSearchAll ? "" : "Busca por numero liberada apenas para Comissao Geral.";
+      if (!canSearchAll && nrInput.value) nrInput.value = "";
+      if (state.didLoad && (prevDisabled !== nrInput.disabled || (hadValue && !canSearchAll))) {
+        renderReviewTable();
+      }
     }
 
     function currentFilterParams(){
@@ -1000,7 +1190,9 @@
     }
 
     function quickSearchNr(){
-      return String($("quickSearchNr").value || "").trim().toLowerCase();
+      const input = $("quickSearchNr");
+      if (!input || input.disabled) return "";
+      return String(input.value || "").trim().toLowerCase();
     }
 
     function quickSearchText(){
@@ -1082,12 +1274,13 @@
       const indRaw = String((row || {}).ind_estado || "").trim();
       const ind = normalizeStateText(indRaw);
       const descRaw = String((row || {}).descricao_estado || "").trim();
-      const desc = descRaw || "SEM DESCRICAO";
-      // Regra oficial: aberto somente quando ind_estado = 'A'.
-      if (ind === "A") return { key: "aberto", label: `A - ${desc}` };
-      if (ind === "F") return { key: "fechado", label: `F - ${desc}` };
-      if (ind) return { key: "indefinido", label: `${ind} - ${desc}` };
-      return { key: "indefinido", label: descRaw || "NAO INFORMADO" };
+      const desc = descRaw || ({ A: "ABERTO", F: "FECHADO", R: "PENDENTE DE RECIBO", N: "NOVO PENDENTE DE ELABORACAO" }[ind] || "NAO INFORMADO");
+      const descNorm = normalizeStateText(desc);
+      if (ind === "A" || descNorm === "ABERTO") return { key: "aberto", label: desc };
+      if (ind === "N" || descNorm === "NOVO PENDENTE DE ELABORACAO") return { key: "novo_pendente", label: desc };
+      if (ind === "F" || descNorm === "FECHADO") return { key: "fechado", label: desc };
+      if (ind === "R" || descNorm === "PENDENTE DE RECIBO") return { key: "pendente_recibo", label: desc };
+      return { key: "indefinido", label: desc };
     }
 
     function secondaryNaturezasLabel(row){
@@ -1117,8 +1310,8 @@
     }
 
     function buildObsDiff(beforeText, afterText){
-      const b = String(beforeText || "");
-      const a = String(afterText || "");
+      const b = stripAllObsMarkers(beforeText || "");
+      const a = stripAllObsMarkers(afterText || "");
       if (b === a) return "Sem alteracoes na observacao.";
       return `--- Antes ---\n${b || "(vazio)"}\n\n+++ Depois +++\n${a || "(vazio)"}`;
     }
@@ -1236,6 +1429,8 @@
       return normalizeCodes(String(text || "").split(/[,\n;]+/g).map((x) => x.trim()));
     }
 
+    const AJUSTES_OBS_MARKER = "AJUSTES_OBS_JSON";
+
     function parseObsCatalogMarkers(obs){
       const txt = String(obs || "");
       const mErr = txt.match(/\[ERROS_COD\]\s*([^\r\n]+)/i);
@@ -1246,6 +1441,26 @@
       };
     }
 
+    function parseAjustesObsMarker(obs){
+      const txt = String(obs || "");
+      const m = txt.match(/\[AJUSTES_OBS_JSON\]\s*([^\r\n]+)/i);
+      if (!m) return {};
+      try {
+        const parsed = JSON.parse(m[1]);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+        const out = {};
+        Object.entries(parsed).forEach(([k, v]) => {
+          const key = String(k || "").trim();
+          const val = String(v == null ? "" : v).trim();
+          if (!key || !val) return;
+          out[key] = val;
+        });
+        return out;
+      } catch (_) {
+        return {};
+      }
+    }
+
     function stripObsCatalogMarkers(obs){
       return String(obs || "")
         .replace(/\n?\[ERROS_COD\][^\r\n]*/gi, "")
@@ -1253,10 +1468,42 @@
         .trim();
     }
 
+    function stripAjustesObsMarker(obs){
+      return String(obs || "")
+        .replace(/\n?\[AJUSTES_OBS_JSON\][^\r\n]*/gi, "")
+        .trim();
+    }
+
+    function stripAllObsMarkers(obs){
+      return stripAjustesObsMarker(stripObsCatalogMarkers(obs)).trim();
+    }
+
+    function normalizeAjustesObsMap(values, ajustesAtivos=[]){
+      const source = (values && typeof values === "object" && !Array.isArray(values)) ? values : {};
+      const hasAllowed = Array.isArray(ajustesAtivos);
+      const allowed = hasAllowed
+        ? new Set((ajustesAtivos || []).map((v) => String(v || "").trim()).filter(Boolean))
+        : null;
+      const out = {};
+      Object.entries(source).forEach(([k, v]) => {
+        const key = String(k || "").trim();
+        const val = String(v == null ? "" : v).trim();
+        if (!key || !val) return;
+        if (allowed && !allowed.has(key)) return;
+        out[key] = val;
+      });
+      return out;
+    }
+
     function syncObsCatalogMarkers(row){
-      const clean = stripObsCatalogMarkers(row.observacao || "");
+      const clean = stripAllObsMarkers(row.observacao || "");
+      const ajustesAtivos = Array.isArray(row.ajustes) ? row.ajustes : [];
+      row.ajustesObs = normalizeAjustesObsMap(row.ajustesObs || {}, ajustesAtivos);
       const lines = [];
       if (clean) lines.push(clean);
+      if (Object.keys(row.ajustesObs || {}).length) {
+        lines.push(`[${AJUSTES_OBS_MARKER}] ${JSON.stringify(row.ajustesObs)}`);
+      }
       if (Array.isArray(row.catalogErros) && row.catalogErros.length) lines.push(`[ERROS_COD] ${row.catalogErros.join(", ")}`);
       if (Array.isArray(row.catalogMedidas) && row.catalogMedidas.length) lines.push(`[MEDIDAS_COD] ${row.catalogMedidas.join(", ")}`);
       row.observacao = lines.join("\n");
@@ -1337,13 +1584,15 @@
       const nomeCompleto = String(m.nome_completo || m.nome || "").trim();
       if (!id || !nomeCompleto) return null;
       const ordemNum = Number(m.ordem);
+      const postoNorm = normalizePostoGraduacao(m.posto || m.posto_graduacao || "");
+      const funcaoNorm = normalizeComissaoFuncao(m.funcao || "Membro");
       const out = {
         id,
         nome: nomeCompleto,
         nome_completo: nomeCompleto,
         nome_guerra: String(m.nome_guerra || "").trim(),
-        posto_graduacao: String(m.posto_graduacao || m.posto || "").trim(),
-        funcao: String(m.funcao || "Membro").trim().toLowerCase().startsWith("pres") ? "Presidente" : "Membro",
+        posto_graduacao: postoNorm && postoNorm !== "MILITAR" ? postoNorm : String(m.posto_graduacao || m.posto || "").trim(),
+        funcao: funcaoNorm,
         ordem: Number.isFinite(ordemNum) && ordemNum > 0 ? Math.floor(ordemNum) : 1,
       };
       const ciaNorm = digitsOnly(cia);
@@ -1413,6 +1662,23 @@
       btn.disabled = !show;
     }
 
+    function syncCiaAccessByComissaoBlock(){
+      const ciaInput = $("cia");
+      if (!ciaInput) return;
+      const block = selectedComissaoBlock();
+      const lockByProfile = state.perfil === "subcomissao" && (state.cias || []).length === 1;
+      if (block && block.kind === "subcomissao") {
+        const cia = digitsOnly(block.cia || "");
+        if (cia) ciaInput.value = cia;
+        ciaInput.disabled = true;
+        return;
+      }
+      if (lockByProfile && (state.cias || []).length === 1) {
+        ciaInput.value = String(state.cias[0]);
+      }
+      ciaInput.disabled = !!lockByProfile;
+    }
+
     function renderComissaoInfo(){
       const el = $("comissaoInfo");
       if (!el) return;
@@ -1421,11 +1687,16 @@
       const block = Number.isInteger(idx) ? state.comissaoBlocks[idx] : null;
       if (!block) {
         el.textContent = "Comissao do relatorio: nao selecionada.";
+        syncCiaAccessByComissaoBlock();
+        syncQuickSearchNrAccess();
         return;
       }
       const label = block.label || "Bloco";
-      const members = formatComissaoMembers(block.members || []);
-      el.textContent = `Comissao do relatorio: ${label} (${(block.members || []).length} militar(es))${members ? ` - ${members}` : ""}`;
+      const effectiveMembers = sortComissaoMembers(block.members || [], { excludeAuxiliares: true });
+      const members = formatComissaoMembers(effectiveMembers, { showFuncao: true });
+      el.textContent = `Comissao do relatorio: ${label} (${effectiveMembers.length} militar(es))${members ? ` - ${members}` : ""}`;
+      syncCiaAccessByComissaoBlock();
+      syncQuickSearchNrAccess();
     }
 
     function renderComissaoBlocks(){
@@ -1441,12 +1712,18 @@
       const options = ['<option value="">Selecione...</option>'];
       if (comissao.length) {
         options.push('<optgroup label="Comissao Geral">');
-        options.push(...comissao.map((b) => `<option value="${b.idx}">${esc(b.label)} (${(b.members || []).length})</option>`));
+        options.push(...comissao.map((b) => {
+          const qtd = sortComissaoMembers(b.members || [], { excludeAuxiliares: true }).length;
+          return `<option value="${b.idx}">${esc(b.label)} (${qtd})</option>`;
+        }));
         options.push("</optgroup>");
       }
       if (subs.length) {
         options.push('<optgroup label="Subcomissoes por CIA">');
-        options.push(...subs.map((b) => `<option value="${b.idx}">${esc(b.label)} (${(b.members || []).length})</option>`));
+        options.push(...subs.map((b) => {
+          const qtd = sortComissaoMembers(b.members || [], { excludeAuxiliares: true }).length;
+          return `<option value="${b.idx}">${esc(b.label)} (${qtd})</option>`;
+        }));
         options.push("</optgroup>");
       }
       sel.innerHTML = options.join("");
@@ -1538,7 +1815,7 @@
       if (!members[idx]) return false;
       let val = String(target.value || "");
       if (field === "id") val = digitsOnly(val);
-      if (field === "funcao") val = val.trim().toLowerCase().startsWith("pres") ? "Presidente" : "Membro";
+      if (field === "funcao") val = normalizeComissaoFuncao(val);
       const next = {
         ...normalizeComissaoMember(members[idx]),
         [field]: val,
@@ -1574,6 +1851,7 @@
       wrap.innerHTML = members.map((raw, idx) => {
         const m = normalizeComissaoMember(raw);
         const resumo = formatComissaoMemberLine(m);
+        const funcaoAtual = normalizeComissaoFuncao(m.funcao || "Membro");
         return `
           <div class="cm-card" data-idx="${idx}">
             <div class="cm-top">
@@ -1587,8 +1865,7 @@
             <div class="cm-grid">
               <label>Funcao
                 <select class="js-cm-field" data-field="funcao" data-idx="${idx}">
-                  <option value="Presidente" ${String(m.funcao || "") === "Presidente" ? "selected" : ""}>Presidente</option>
-                  <option value="Membro" ${String(m.funcao || "") !== "Presidente" ? "selected" : ""}>Membro</option>
+                  ${COMISSAO_FUNCOES.map((f) => `<option value="${esc(f)}" ${funcaoAtual === f ? "selected" : ""}>${esc(f)}</option>`).join("")}
                 </select>
               </label>
               <label>Nome completo
@@ -1673,7 +1950,7 @@
     function togglePanels(){
       $("blockedPanel").classList.toggle("hidden", !state.checked || state.allowed);
       $("dataPanel").classList.toggle("hidden", !state.allowed);
-      ["bRunNow","bAnalyze","bLoadReview","bSaveAll","bMonthly","bReload","bPrintReport","bPrintReportTop"].forEach((id)=>{
+      ["bRunNow","bAnalyze","bLoadReview","bSaveAll","bMonthly","bDownloadPdf","bDownloadPdfTop","bReload","bPrintReport","bPrintReportTop"].forEach((id)=>{
         const el = $(id);
         if (el) el.disabled = !state.allowed;
       });
@@ -1772,26 +2049,43 @@
       const wrap = $("kpiCards");
       if (!k) { wrap.innerHTML = ""; return; }
       updateProductivityKpis();
+      const outrosBase = Number(k.outros_total ?? 0);
+      const outrosMeta2 = Number(k.outros_meta_2pct ?? Math.ceil(outrosBase * 0.02));
+      const outrosAv = Number(k.outros_avaliados ?? 0);
+      const outrosPend = Number(k.outros_pendentes_meta_2pct ?? k.outros_pendentes ?? Math.max(0, outrosMeta2 - outrosAv));
+      const outrosPctRaw = Number(k.outros_percentual_avaliado_2pct_base ?? (outrosBase > 0 ? (outrosAv * 100.0 / outrosBase) : 0));
+      const outrosPct = Number.isFinite(outrosPctRaw) ? outrosPctRaw : 0;
+      const outrosPctTxt = `${outrosPct.toFixed(2).replace(".", ",")}%`;
+      const outrosOk = outrosPct >= 2;
       const cards = [
-        ["Total REDS no periodo", k.total_registros, `${k.total_avaliados} avaliados`],
-        ["Percentual avaliado", `${k.percentual_avaliado}%`, "progresso da comissao"],
-        ["Naturezas CV", k.cv_total, `${k.cv_avaliados} avaliados`],
-        ["Naturezas ARMA", k.arma_total ?? 0, `${k.arma_avaliados ?? 0} avaliados`],
-        ["BOS Grupo W", k.w_total, `${k.w_avaliados} avaliados`],
-        ["REDS C99", k.c99_total, `${k.c99_avaliados} avaliados`],
-        ["Sinalizados por analise", k.sinalizados_total, `${k.sinalizados_avaliados} avaliados`],
-        ["Avaliados hoje", state.kpiProd.avaliadosHoje, "produtividade diaria"],
-        ["Pendentes da comissao", state.kpiProd.pendentes, "fila de revisao"],
-        ["Tempo medio (sessao)", state.kpiProd.tempoMedioSessao, "por registro salvo"],
+        { k: "Total REDS no periodo", v: k.total_registros, s: `${k.total_avaliados} avaliados` },
+        { k: "Percentual avaliado", v: `${k.percentual_avaliado}%`, s: "progresso da comissao" },
+        { k: "Naturezas CV", v: k.cv_total, s: `${k.cv_avaliados} avaliados` },
+        { k: "Naturezas ARMA", v: k.arma_total ?? 0, s: `${k.arma_avaliados ?? 0} avaliados` },
+        { k: "BOS Grupo W", v: k.w_total, s: `${k.w_avaliados} avaliados` },
+        { k: "REDS C99", v: k.c99_total, s: `${k.c99_avaliados} avaliados` },
+        {
+          k: "Outros (meta 2%)",
+          v: outrosMeta2,
+          s: `${outrosPctTxt} avaliados | pendente ${outrosPend}`,
+          vClass: outrosOk ? "v-ok" : "v-warn",
+          sClass: outrosOk ? "s-ok" : "s-warn",
+        },
+        { k: "Sinalizados por analise", v: k.sinalizados_total, s: `${k.sinalizados_avaliados} avaliados` },
+        { k: "Avaliados hoje", v: state.kpiProd.avaliadosHoje, s: "produtividade diaria" },
+        { k: "Pendentes da comissao", v: state.kpiProd.pendentes, s: "fila de revisao" },
+        { k: "Tempo medio (sessao)", v: state.kpiProd.tempoMedioSessao, s: "por registro salvo" },
       ];
-      wrap.innerHTML = cards.map(c => `<div class="card"><div class="k">${c[0]}</div><div class="v">${c[1]}</div><div class="s">${c[2]}</div></div>`).join("");
+      wrap.innerHTML = cards.map((c) => `<div class="card"><div class="k">${c.k}</div><div class="v ${c.vClass || ""}">${c.v}</div><div class="s ${c.sClass || ""}">${c.s}</div></div>`).join("");
     }
 
     function currentReportParams(){
+      const members = selectedComissaoMembersForReport(false);
       return {
         data_reuniao: $("dataReuniao").value || "",
         periodo_label: $("periodoLabel").value || "",
         comissao: selectedComissaoText(),
+        comissao_json: members.length ? JSON.stringify(members) : "",
       };
     }
 
@@ -1811,19 +2105,29 @@
       state.monthlyPreview = preview;
       const meta = preview.meta || {};
       const blocos = preview.blocos || [];
-      const comissaoItems = String(meta.comissao || "")
-        .split(/\s*,\s*/)
-        .map((s) => String(s || "").trim())
-        .filter(Boolean);
+      const comissaoItems = Array.isArray(meta.comissao_membros)
+        ? meta.comissao_membros.map((s) => String(s || "").trim()).filter(Boolean)
+        : String(meta.comissao || "")
+            .split(/\r?\n+|\s*,\s*/)
+            .map((s) => String(s || "").trim())
+            .filter(Boolean);
+      const assinaturaItems = Array.isArray(meta.comissao_assinaturas)
+        ? meta.comissao_assinaturas
+            .map((item) => ({
+              linha: String((item || {}).linha || "").trim(),
+              funcao: String((item || {}).funcao || "").trim(),
+            }))
+            .filter((item) => item.linha)
+        : [];
       const header = `
         <div class="report-doc">
           <section class="report-cover">
             <div class="report-head">
               <img class="report-logo" src="./imagens/Icones_logo_19bpm/android-chrome-192x192.png" alt="Logo 19 BPM">
-              <div>
-                <div class="report-head-kicker">Policia Militar de Minas Gerais - 19 BPM</div>
-                <h2>Relatorio Mensal de Qualidade REDS</h2>
-                <p>Modelo institucional para reuniao da comissao de avaliacao.</p>
+              <div class="report-head-text">
+                <p class="report-head-line report-head-line-1">D&Eacute;CIMO NONO BATALH&Atilde;O DE POL&Iacute;CIA MILITAR</p>
+                <p class="report-head-line report-head-line-2">SE&Ccedil;&Atilde;O DE PLANEJAMENTO OPERACIONAL - P3</p>
+                <p class="report-head-line report-head-line-3">RELAT&Oacute;RIO MENSAL DE QUALIDADE REDS</p>
               </div>
             </div>
             <div class="report-meta-grid">
@@ -1884,7 +2188,23 @@
           </section>
         `;
       }).join("");
-      wrap.innerHTML = `${header}${body}</div>`;
+      const signatures = assinaturaItems.length
+        ? `
+          <section class="report-signatures">
+            <div class="report-signatures-title">Assinaturas dos Responsaveis</div>
+            <div class="report-signatures-grid">
+              ${assinaturaItems.map((item) => `
+                <div class="report-sign-card">
+                  <div class="report-sign-line"></div>
+                  <div class="report-sign-name">${esc(item.linha)}</div>
+                  <div class="report-sign-role">${esc(item.funcao || "")}</div>
+                </div>
+              `).join("")}
+            </div>
+          </section>
+        `
+        : "";
+      wrap.innerHTML = `${header}${body}${signatures}</div>`;
       panel.classList.remove("hidden");
     }
 
@@ -1894,6 +2214,41 @@
         return;
       }
       window.print();
+    }
+
+    async function downloadMonthlyPdf(){
+      if (state.dirty.size) {
+        toast("Existem alteracoes pendentes. Salve as marcacoes antes de baixar o PDF.", "err", 5200);
+        return;
+      }
+      syncMonthlyDateConstraints();
+      const cia = mustCia();
+      const url = `/quality/reds/monthly-report-pdf/${encodeURIComponent(cia)}${qs(withUserNr({...currentFilterParams(), ...currentReportParams()}))}`;
+      const resp = await fetch(url, { method: "GET", credentials: "include" });
+      if (!resp.ok) {
+        const txt = await resp.text();
+        let detail = `Erro HTTP ${resp.status}`;
+        try {
+          const parsed = txt ? JSON.parse(txt) : {};
+          detail = parsed.detail || parsed.message || detail;
+        } catch (_) {
+          if (txt) detail = txt;
+        }
+        throw new Error(detail);
+      }
+      const blob = await resp.blob();
+      const dispo = String(resp.headers.get("content-disposition") || "");
+      const m = dispo.match(/filename=\"?([^\";]+)\"?/i);
+      const name = (m && m[1]) ? m[1] : `relatorio_qreds_cia${cia}.pdf`;
+      const link = document.createElement("a");
+      const objUrl = window.URL.createObjectURL(blob);
+      link.href = objUrl;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objUrl);
+      toast("PDF gerado e baixado.", "ok");
     }
 
     function renderAssistPanel(){
@@ -2047,8 +2402,9 @@
         const occ = ocorrenciaState(r);
         const flags = buildFlags(r).map(f => `<span class="tag">${f}</span>`).join("") || "-";
         const ajustes = new Set(Array.isArray(r.ajustes) ? r.ajustes : []);
+        const ajustesObs = normalizeAjustesObsMap(r.ajustesObs || {}, [...ajustes]);
         const st = rowStatus(idx, r);
-        const rowClass = `${state.dirty.has(idx) ? "dirty" : ""} ${idx === state.selectedIdx ? "selected-row" : ""} ${occ.key === "aberto" ? "row-oco-aberto" : ""}`.trim();
+        const rowClass = `${state.dirty.has(idx) ? "dirty" : ""} ${idx === state.selectedIdx ? "selected-row" : ""} ${(occ.key === "aberto" || occ.key === "novo_pendente") ? "row-oco-alerta" : ""}`.trim();
         return `
           <tr data-idx="${idx}" class="${rowClass}">
             <td><button type="button" class="nr-link js-open">${esc(r.numero_ocorrencia || "")}</button></td>
@@ -2064,8 +2420,26 @@
                 <label><input type="checkbox" class="js-aj" data-aj="Ajuste classificacao" ${ajustes.has("Ajuste classificacao") ? "checked" : ""}>Classificacao</label>
                 <label><input type="checkbox" class="js-aj" data-aj="Ajuste procedimento" ${ajustes.has("Ajuste procedimento") ? "checked" : ""}>Procedimento</label>
               </div>
+              <div class="aj-obs-grid">
+                <label class="aj-obs-item">
+                  <span>Obs textual</span>
+                  <input type="text" class="js-aj-obs" data-aj="Ajuste textual" value="${esc(ajustesObs["Ajuste textual"] || "")}" placeholder="Observacao do ajuste textual" ${ajustes.has("Ajuste textual") ? "" : "disabled"}>
+                </label>
+                <label class="aj-obs-item">
+                  <span>Obs natureza</span>
+                  <input type="text" class="js-aj-obs" data-aj="Ajuste natureza" value="${esc(ajustesObs["Ajuste natureza"] || "")}" placeholder="Observacao do ajuste de natureza" ${ajustes.has("Ajuste natureza") ? "" : "disabled"}>
+                </label>
+                <label class="aj-obs-item">
+                  <span>Obs classific.</span>
+                  <input type="text" class="js-aj-obs" data-aj="Ajuste classificacao" value="${esc(ajustesObs["Ajuste classificacao"] || "")}" placeholder="Observacao do ajuste de classificacao" ${ajustes.has("Ajuste classificacao") ? "" : "disabled"}>
+                </label>
+                <label class="aj-obs-item">
+                  <span>Obs proced.</span>
+                  <input type="text" class="js-aj-obs" data-aj="Ajuste procedimento" value="${esc(ajustesObs["Ajuste procedimento"] || "")}" placeholder="Observacao do ajuste de procedimento" ${ajustes.has("Ajuste procedimento") ? "" : "disabled"}>
+                </label>
+              </div>
             </td>
-            <td><textarea class="js-obs" rows="2">${(r.observacao || "").replace(/</g, "&lt;")}</textarea></td>
+            <td><textarea class="js-obs" rows="2">${esc(stripAllObsMarkers(r.observacao || ""))}</textarea></td>
             <td><div class="cell-actions"><span class="status-pill status-${st.key}">${esc(st.label)}</span><button class="js-save">Salvar</button></div></td>
           </tr>
         `;
@@ -2088,18 +2462,41 @@
         `;
       }).join("");
       updateProductivityKpis();
+      const fallbackTotal = state.rows.length;
+      const fallbackAvaliados = state.rows.filter((r) => r.avaliado).length;
+      const fallbackCvTotal = state.rows.filter((r)=>r.tipo_natureza==="CV").length;
+      const fallbackCvAv = state.rows.filter((r)=>r.tipo_natureza==="CV" && r.avaliado).length;
+      const fallbackArmaTotal = state.rows.filter((r)=>r.tipo_natureza==="ARMA").length;
+      const fallbackArmaAv = state.rows.filter((r)=>r.tipo_natureza==="ARMA" && r.avaliado).length;
+      const fallbackWTotal = state.rows.filter((r)=>r.tipo_natureza==="GRUPO_W").length;
+      const fallbackWAv = state.rows.filter((r)=>r.tipo_natureza==="GRUPO_W" && r.avaliado).length;
+      const fallbackC99Total = state.rows.filter((r)=>r.tipo_natureza==="C99000").length;
+      const fallbackC99Av = state.rows.filter((r)=>r.tipo_natureza==="C99000" && r.avaliado).length;
+      const fallbackObrigTotal = fallbackCvTotal + fallbackArmaTotal + fallbackWTotal + fallbackC99Total;
+      const fallbackOutrosTotal = Math.max(0, fallbackTotal - fallbackObrigTotal);
+      const fallbackOutrosAv = state.rows.filter((r)=>r.tipo_natureza==="OUTROS" && r.avaliado).length;
+      const fallbackOutrosMeta = Math.ceil(fallbackOutrosTotal * 0.02);
+      const fallbackOutrosPend = Math.max(0, fallbackOutrosMeta - fallbackOutrosAv);
+      const fallbackOutrosPct = fallbackOutrosTotal ? Math.round((fallbackOutrosAv * 10000) / fallbackOutrosTotal) / 100 : 0;
       renderCards(state.kpis || {
-        total_registros: state.rows.length,
-        total_avaliados: state.rows.filter((r) => r.avaliado).length,
-        percentual_avaliado: state.rows.length ? Math.round((state.rows.filter((r) => r.avaliado).length*10000)/state.rows.length)/100 : 0,
-        cv_total: state.rows.filter((r)=>r.tipo_natureza==="CV").length,
-        cv_avaliados: state.rows.filter((r)=>r.tipo_natureza==="CV" && r.avaliado).length,
-        arma_total: state.rows.filter((r)=>r.tipo_natureza==="ARMA").length,
-        arma_avaliados: state.rows.filter((r)=>r.tipo_natureza==="ARMA" && r.avaliado).length,
-        w_total: state.rows.filter((r)=>r.tipo_natureza==="GRUPO_W").length,
-        w_avaliados: state.rows.filter((r)=>r.tipo_natureza==="GRUPO_W" && r.avaliado).length,
-        c99_total: state.rows.filter((r)=>r.tipo_natureza==="C99000").length,
-        c99_avaliados: state.rows.filter((r)=>r.tipo_natureza==="C99000" && r.avaliado).length,
+        total_registros: fallbackTotal,
+        total_avaliados: fallbackAvaliados,
+        percentual_avaliado: fallbackTotal ? Math.round((fallbackAvaliados * 10000) / fallbackTotal) / 100 : 0,
+        cv_total: fallbackCvTotal,
+        cv_avaliados: fallbackCvAv,
+        arma_total: fallbackArmaTotal,
+        arma_avaliados: fallbackArmaAv,
+        w_total: fallbackWTotal,
+        w_avaliados: fallbackWAv,
+        c99_total: fallbackC99Total,
+        c99_avaliados: fallbackC99Av,
+        obrigatorios_total: fallbackObrigTotal,
+        outros_total: fallbackOutrosTotal,
+        outros_avaliados: fallbackOutrosAv,
+        outros_meta_2pct: fallbackOutrosMeta,
+        outros_pendentes_meta_2pct: fallbackOutrosPend,
+        outros_percentual_avaliado_2pct_base: fallbackOutrosPct,
+        outros_pendentes: fallbackOutrosPend,
         sinalizados_total: state.rows.filter((r)=>buildFlags(r).length>0).length,
         sinalizados_avaliados: state.rows.filter((r)=>buildFlags(r).length>0 && r.avaliado).length,
       });
@@ -2109,12 +2506,15 @@
 
     async function runNow(){
       const extractMode = String(($("extractMode") || {}).value || "incremental_12d");
+      const qualityScript = extractMode === "full_2026"
+        ? "qualidade_reds/qualidade_reds_2026.sql"
+        : "qualidade_reds/qualidade_reds.sql";
       const d = await api(
         `/quality/reds/run-now${qs(withUserNr())}`,
-        { method:"POST", body: JSON.stringify({ scripts: [], extract_mode: extractMode }) }
+        { method:"POST", body: JSON.stringify({ scripts: [qualityScript], extract_mode: extractMode }) }
       );
       state.lastRunNowAt = new Date().toISOString();
-      $("jobStatusInfo").textContent = `Run Now (${extractMode}) em ${fmtDateTime(state.lastRunNowAt)}.`;
+      $("jobStatusInfo").textContent = `Run Now (${extractMode}) com ${qualityScript.split('/').pop()} em ${fmtDateTime(state.lastRunNowAt)}.`;
       setDebugOut(d);
       toast("Run Now disparado.", "ok");
     }
@@ -2142,9 +2542,12 @@
       state.suggestedByRow = {};
       state.rows = (d.rows || []).map((r) => {
         const parsed = parseObsCatalogMarkers(r.observacao || "");
+        const ajustes = Array.isArray(r.ajustes) ? r.ajustes : [];
+        const ajustesObs = normalizeAjustesObsMap(parseAjustesObsMarker(r.observacao || ""), ajustes);
         const row = {
           ...r,
-          ajustes: Array.isArray(r.ajustes) ? r.ajustes : [],
+          ajustes,
+          ajustesObs,
           catalogErros: parsed.erros,
           catalogMedidas: parsed.medidas,
           _obsOriginal: String(r.observacao || ""),
@@ -2251,6 +2654,11 @@
         const cur = new Set(Array.isArray(row.ajustes) ? row.ajustes : []);
         if (ev.target.checked) cur.add(aj); else cur.delete(aj);
         row.ajustes = [...cur];
+        if (!row.ajustesObs || typeof row.ajustesObs !== "object" || Array.isArray(row.ajustesObs)) {
+          row.ajustesObs = {};
+        }
+        if (!ev.target.checked && row.ajustesObs[aj]) delete row.ajustesObs[aj];
+        syncObsCatalogMarkers(row);
         markDirty(idx);
       }
       renderReviewTable();
@@ -2264,9 +2672,21 @@
       if (!row) return;
       if (ev.target.classList.contains("js-obs")) {
         row.observacao = String(ev.target.value || "");
-        const parsed = parseObsCatalogMarkers(row.observacao || "");
-        row.catalogErros = parsed.erros;
-        row.catalogMedidas = parsed.medidas;
+        syncObsCatalogMarkers(row);
+        markDirty(idx);
+        if (idx === state.selectedIdx) renderRecordDetails();
+        return;
+      }
+      if (ev.target.classList.contains("js-aj-obs")) {
+        const aj = String(ev.target.dataset.aj || "").trim();
+        if (!aj) return;
+        if (!row.ajustesObs || typeof row.ajustesObs !== "object" || Array.isArray(row.ajustesObs)) {
+          row.ajustesObs = {};
+        }
+        const value = String(ev.target.value || "");
+        if (value.trim()) row.ajustesObs[aj] = value;
+        else delete row.ajustesObs[aj];
+        syncObsCatalogMarkers(row);
         markDirty(idx);
         if (idx === state.selectedIdx) renderRecordDetails();
       }
@@ -2341,8 +2761,11 @@
     });
     bindClick("bSaveAll", async () => { try { await saveAll(); } catch(e){ setDebugOut(String(e.message||e)); toast(String(e.message||e), "err"); } });
     bindClick("bMonthly", async () => { try { await loadMonthlyReport(); } catch(e){ setDebugOut(String(e.message||e)); toast(String(e.message||e), "err"); } });
+    bindClick("bDownloadPdf", async () => { try { await downloadMonthlyPdf(); } catch(e){ setDebugOut(String(e.message||e)); toast(String(e.message||e), "err"); } });
+    bindClick("bDownloadPdfTop", async () => { try { await downloadMonthlyPdf(); } catch(e){ setDebugOut(String(e.message||e)); toast(String(e.message||e), "err"); } });
     bindClick("bPrintReport", () => printReportPreview());
     bindClick("bPrintReportTop", () => printReportPreview());
+    bindClick("bToggleControls", () => setControlsCollapsed(!state.controlsCollapsed));
     bindClick("bComissaoManage", async () => {
       try {
         await openComissaoModal();
@@ -2532,6 +2955,7 @@
     });
 
     (async () => {
+      loadControlsCollapsePreference();
       renderStepFlow();
       applyDefaultPreviousMonthRange();
       applyDefaultReportHeader();

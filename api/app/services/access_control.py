@@ -4,6 +4,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from ..db import get_quality_comissao_config
+
 
 def _permissions_file() -> Path:
     return Path(__file__).resolve().parents[3] / "public" / "data" / "comissao_qualidade_reds.json"
@@ -44,13 +46,15 @@ def normalize_cia(value: Any) -> str:
 
 @lru_cache(maxsize=1)
 def load_permissions() -> dict[str, Any]:
-    p = _permissions_file()
-    if not p.exists():
-        return {"dev": [], "comissao": [], "subcomissoes": {}}
-    try:
-        data = json.loads(p.read_text(encoding="utf-8"))
-    except Exception:
-        return {"dev": [], "comissao": [], "subcomissoes": {}}
+    data = get_quality_comissao_config()
+    if not isinstance(data, dict):
+        p = _permissions_file()
+        if not p.exists():
+            return {"dev": [], "comissao": [], "subcomissoes": {}}
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            return {"dev": [], "comissao": [], "subcomissoes": {}}
 
     dev = _member_nr_list(data.get("dev") or [])
     comissao = _member_nr_list(data.get("comissao") or [])

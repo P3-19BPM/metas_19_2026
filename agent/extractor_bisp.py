@@ -124,6 +124,31 @@ def _read_sql(sql_path: Path) -> str:
     return sql_path.read_text(encoding="utf-8", errors="replace")
 
 
+def _quality_date_filter_sql(extract_mode: str) -> str:
+    mode = str(extract_mode or "").strip().lower()
+    if mode == "full_2026":
+        return (
+            "OCO.data_hora_fato >= CAST('2026-01-01' AS TIMESTAMP) "
+            "AND OCO.data_hora_fato < CAST(date_add(current_date(), 1) AS TIMESTAMP)"
+        )
+    return (
+        "COALESCE("
+        "OCO.data_hora_primeiro_fim_preenchimento, "
+        "OCO.data_hora_alteracao, "
+        "OCO.data_hora_fechamento, "
+        "OCO.data_hora_inclusao, "
+        "OCO.data_hora_fato"
+        ") >= CAST(date_sub(current_date(), 12) AS TIMESTAMP)"
+    )
+
+
+def _inject_runtime_sql_markers(sql_query: str, *, extract_mode: str = "incremental_12d") -> str:
+    query = str(sql_query or "")
+    if "{{QUALITY_DATE_FILTER}}" in query:
+        query = query.replace("{{QUALITY_DATE_FILTER}}", _quality_date_filter_sql(extract_mode))
+    return query
+
+
 def _ensure_route(hostname: str, next_hop: str) -> None:
     if not ensure_host_route:
         _log("rota BISP: helper indisponivel; seguindo sem ajuste")
@@ -602,7 +627,7 @@ def run_extraction(run_mode: str = "all", scripts: list[str] | None = None) -> d
 
     for rel_key, sql_path in selected.items():
         _log(f"script: iniciando {rel_key}")
-        sql_query = _read_sql(sql_path)
+        sql_query = _inject_runtime_sql_markers(_read_sql(sql_path), extract_mode="incremental_12d")
         dr = _guess_date_range(sql_query)
         raw_df = fetch_data_from_impala(
             sql_query=sql_query,

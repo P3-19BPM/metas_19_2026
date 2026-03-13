@@ -61,6 +61,8 @@ from .db import (
     upsert_mapa_scope_metadata,
     update_mapa_assignment_status,
     upsert_mapa_commander,
+    get_quality_comissao_config,
+    upsert_quality_comissao_config,
 )
 from .scheduler import maybe_create_daily_job
 from .schemas import (
@@ -91,6 +93,7 @@ from .quality_reds_schemas import (
 )
 from .quality_reds_service import analyze_quality_rows
 from .quality_reds_store import (
+    build_qr_monthly_report_pdf,
     build_qr_monthly_report,
     ensure_quality_tables,
     get_qr_company_report,
@@ -393,14 +396,57 @@ def _quality_comissao_member_nr(row: dict | str | None) -> str:
     return normalize_user_nr(row or "")
 
 
+def _quality_comissao_normalize_funcao(value: str | None) -> str:
+    raw = str(value or "").strip()
+    norm = (
+        raw
+        .lower()
+        .replace("º", "o")
+        .replace("°", "o")
+        .replace("ª", "a")
+        .replace("âº", "o")
+        .replace("â°", "o")
+    )
+    if norm.startswith("pres"):
+        return "Presidente"
+    if norm.startswith("aux"):
+        return "Auxiliar"
+    if norm.startswith("1"):
+        return "1º Membro"
+    if norm.startswith("2"):
+        return "2º Membro"
+    if norm.startswith("3"):
+        return "3º Membro"
+    if norm.startswith("4"):
+        return "4º Membro"
+    if "membro" in norm:
+        return "Membro"
+    if raw in {"Presidente", "1º Membro", "2º Membro", "3º Membro", "4º Membro", "Membro", "Auxiliar"}:
+        return raw
+    return "Membro"
+
+
+def _quality_comissao_funcao_rank(value: str | None) -> int:
+    funcao = _quality_comissao_normalize_funcao(value)
+    order = {
+        "Presidente": 0,
+        "1º Membro": 1,
+        "2º Membro": 2,
+        "3º Membro": 3,
+        "4º Membro": 4,
+        "Membro": 5,
+        "Auxiliar": 90,
+    }
+    return order.get(funcao, 99)
+
+
 def _quality_comissao_normalize_member(row: dict | str | None, cia: str = "") -> dict:
     src = row if isinstance(row, dict) else {"id": row}
     nr = _quality_comissao_member_nr(src)
     nome_completo = str(src.get("nome_completo") or src.get("nome") or "").strip()
     nome_guerra = str(src.get("nome_guerra") or "").strip()
     posto = str(src.get("posto_graduacao") or src.get("posto") or src.get("graduacao") or "").strip()
-    funcao_raw = str(src.get("funcao") or "").strip().lower()
-    funcao = "Presidente" if funcao_raw.startswith("pres") else "Membro"
+    funcao = _quality_comissao_normalize_funcao(str(src.get("funcao") or ""))
     ordem_val = src.get("ordem")
     try:
         ordem = int(ordem_val) if ordem_val is not None and str(ordem_val).strip() != "" else None
@@ -425,7 +471,7 @@ def _quality_comissao_normalize_member(row: dict | str | None, cia: str = "") ->
 
 
 def _quality_comissao_sort_and_reindex_members(members: list[dict]) -> list[dict]:
-    staged: list[tuple[int, int, dict]] = []
+    staged: list[tuple[int, int, int, dict]] = []
     for idx, raw in enumerate(members or []):
         item = _quality_comissao_normalize_member(raw)
         if not item.get("id"):
@@ -435,10 +481,11 @@ def _quality_comissao_sort_and_reindex_members(members: list[dict]) -> list[dict
             ordem_norm = int(ordem_raw) if ordem_raw is not None else 9999
         except Exception:
             ordem_norm = 9999
-        staged.append((ordem_norm, idx, item))
-    staged.sort(key=lambda x: (x[0], x[1]))
+        funcao_rank = _quality_comissao_funcao_rank(item.get("funcao"))
+        staged.append((ordem_norm, funcao_rank, idx, item))
+    staged.sort(key=lambda x: (x[0], x[1], x[2]))
     out: list[dict] = []
-    for pos, (_, __, item) in enumerate(staged, start=1):
+    for pos, (_, __, ___, item) in enumerate(staged, start=1):
         item["ordem"] = pos
         out.append(item)
     return out
@@ -476,18 +523,33 @@ def _quality_comissao_normalize_config(cfg: dict | None) -> dict:
 
 
 def _quality_comissao_load() -> dict:
+    raw_db = get_quality_comissao_config()
+    if isinstance(raw_db, dict):
+        return _quality_comissao_normalize_config(raw_db)
+
+    # Fallback/migration path for legacy file-based installations.
     p = _quality_comissao_file()
     if not p.exists():
         return {"dev": [], "comissao": [], "subcomissoes": {}}
     try:
-        raw = json.loads(p.read_text(encoding="utf-8"))
+        raw_file = json.loads(p.read_text(encoding="utf-8"))
     except Exception:
         return {"dev": [], "comissao": [], "subcomissoes": {}}
-    return _quality_comissao_normalize_config(raw if isinstance(raw, dict) else {})
+
+    normalized = _quality_comissao_normalize_config(raw_file if isinstance(raw_file, dict) else {})
+    try:
+        upsert_quality_comissao_config(normalized, updated_by="legacy_file_migration")
+    except Exception:
+        # Keep legacy behavior if DB is temporarily unavailable.
+        pass
+    return normalized
 
 
-def _quality_comissao_save(cfg: dict) -> dict:
+def _quality_comissao_save(cfg: dict, updated_by: str = "") -> dict:
     normalized = _quality_comissao_normalize_config(cfg if isinstance(cfg, dict) else {})
+    upsert_quality_comissao_config(normalized, updated_by=updated_by)
+
+    # Keep a local mirror for backward compatibility with legacy readers.
     p = _quality_comissao_file()
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(normalized, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -1627,7 +1689,7 @@ def quality_reds_comissao_config_upsert(
     actor_nr = _quality_user_nr_from_request(request, user_nr=user_nr)
     if not _quality_comissao_can_manage(request, actor_nr):
         raise HTTPException(status_code=403, detail="apenas o gestor autorizado pode editar a comissao")
-    cfg = _quality_comissao_save(payload.model_dump())
+    cfg = _quality_comissao_save(payload.model_dump(), updated_by=actor_nr)
     return {"ok": True, "config": cfg}
 
 
@@ -1755,6 +1817,7 @@ def quality_reds_monthly_report(
     nome_tipo_relatorio: str | None = Query(default=None),
     data_reuniao: str | None = Query(default=None),
     comissao: str | None = Query(default=None),
+    comissao_json: str | None = Query(default=None),
     periodo_label: str | None = Query(default=None),
     user_nr: str | None = Query(default=None),
     _: None = Depends(_check_admin_or_ui),
@@ -1770,8 +1833,50 @@ def quality_reds_monthly_report(
         nome_tipo_relatorio=nome_tipo_relatorio,
         data_reuniao=data_reuniao,
         comissao=comissao,
+        comissao_json=comissao_json,
         periodo_label=periodo_label,
     )
+
+
+@app.get("/quality/reds/monthly-report-pdf/{cia_pm}")
+def quality_reds_monthly_report_pdf(
+    request: Request,
+    cia_pm: str,
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    natureza_grupo: str | None = Query(default=None),
+    nome_tipo_relatorio: str | None = Query(default=None),
+    data_reuniao: str | None = Query(default=None),
+    comissao: str | None = Query(default=None),
+    comissao_json: str | None = Query(default=None),
+    periodo_label: str | None = Query(default=None),
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> StreamingResponse:
+    nr, _ = _quality_require_profile(request, user_nr=user_nr)
+    if not can_access_cia(nr, cia_pm):
+        raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    report = build_qr_monthly_report(
+        cia_pm=cia_pm,
+        date_from=date_from,
+        date_to=date_to,
+        natureza_grupo=natureza_grupo,
+        nome_tipo_relatorio=nome_tipo_relatorio,
+        data_reuniao=data_reuniao,
+        comissao=comissao,
+        comissao_json=comissao_json,
+        periodo_label=periodo_label,
+    )
+    try:
+        pdf_bytes = build_qr_monthly_report_pdf(report)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    date_ini = str(date_from or "inicio").replace("/", "-")
+    date_end = str(date_to or "fim").replace("/", "-")
+    cia_txt = "".join(ch for ch in str(cia_pm or "") if ch.isdigit()) or str(cia_pm or "cia")
+    filename = f"relatorio_qreds_cia{cia_txt}_{date_ini}_{date_end}.pdf"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
 
 
 @app.get("/intranet_mapa_comando.html", response_class=HTMLResponse)

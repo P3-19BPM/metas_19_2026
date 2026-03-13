@@ -497,6 +497,22 @@ def _apply_runtime_migrations() -> None:
         conn.execute(text(mapa_meta_sql))
         conn.execute(text('CREATE INDEX IF NOT EXISTS idx_mapa_meta_scope ON mapa_scope_metadata(scope_type, scope_code)'))
 
+    sql_quality_comissao = """
+    CREATE TABLE IF NOT EXISTS quality_comissao_config (
+      id {id_type} PRIMARY KEY,
+      payload_json TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      updated_by TEXT
+    )
+    """
+    create_quality_comissao_sql = (
+        sql_quality_comissao.format(id_type='BIGINT')
+        if _is_postgres()
+        else sql_quality_comissao.format(id_type='INTEGER')
+    )
+    with get_engine().begin() as conn:
+        conn.execute(text(create_quality_comissao_sql))
+
 
 def purge_fact_rows(indicador: str, date_from: str, date_to: str) -> int:
     table = _fact_table_for_indicador(indicador)
@@ -1910,3 +1926,55 @@ def upsert_mapa_scope_metadata(
             {'scope_type': payload['scope_type'], 'scope_code': payload['scope_code']},
         ).first()
     return _norm_mapa_scope_metadata(_row_to_dict(row)) or {}
+
+
+def get_quality_comissao_config() -> Optional[dict[str, Any]]:
+    try:
+        with get_engine().begin() as conn:
+            row = conn.execute(
+                text(
+                    """
+                    SELECT payload_json
+                    FROM quality_comissao_config
+                    WHERE id = 1
+                    LIMIT 1
+                    """
+                )
+            ).first()
+    except Exception:
+        return None
+
+    if not row:
+        return None
+
+    payload_raw = row._mapping.get('payload_json')
+    try:
+        payload = json.loads(payload_raw or '{}')
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def upsert_quality_comissao_config(payload: dict[str, Any], updated_by: str = '') -> dict[str, Any]:
+    normalized = payload if isinstance(payload, dict) else {}
+    params = {
+        'id': 1,
+        'payload_json': json.dumps(normalized, ensure_ascii=False),
+        'updated_at': utc_now_iso(),
+        'updated_by': str(updated_by or '').strip() or None,
+    }
+    with get_engine().begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO quality_comissao_config(id, payload_json, updated_at, updated_by)
+                VALUES(:id, :payload_json, :updated_at, :updated_by)
+                ON CONFLICT(id) DO UPDATE SET
+                  payload_json=excluded.payload_json,
+                  updated_at=excluded.updated_at,
+                  updated_by=excluded.updated_by
+                """
+            ),
+            params,
+        )
+    return normalized
