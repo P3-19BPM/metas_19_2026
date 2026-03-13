@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 import json
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from .db import get_engine
 
@@ -193,26 +193,27 @@ def ensure_quality_tables() -> None:
     with engine.begin() as conn:
         conn.execute(text(sql_raw))
         # Backward-compatible migrations for existing environments.
-        for ddl in (
-            "ALTER TABLE qr_raw_reds ADD COLUMN data_hora_inclusao TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN data_hora_final TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN descricao_estado TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN change_signature TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN alteracoes_count INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE qr_raw_reds ADD COLUMN versao_atual INTEGER NOT NULL DEFAULT 1",
-            "ALTER TABLE qr_raw_reds ADD COLUMN primeira_captura_em TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN ultima_alteracao_detectada_em TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria1_codigo TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria1_descricao TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria2_codigo TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria2_descricao TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria3_codigo TEXT",
-            "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria3_descricao TEXT",
+        raw_cols = {str(c.get("name") or "").strip().lower() for c in inspect(conn).get_columns("qr_raw_reds")}
+        for col_name, ddl in (
+            ("data_hora_inclusao", "ALTER TABLE qr_raw_reds ADD COLUMN data_hora_inclusao TEXT"),
+            ("data_hora_final", "ALTER TABLE qr_raw_reds ADD COLUMN data_hora_final TEXT"),
+            ("descricao_estado", "ALTER TABLE qr_raw_reds ADD COLUMN descricao_estado TEXT"),
+            ("change_signature", "ALTER TABLE qr_raw_reds ADD COLUMN change_signature TEXT"),
+            ("alteracoes_count", "ALTER TABLE qr_raw_reds ADD COLUMN alteracoes_count INTEGER NOT NULL DEFAULT 0"),
+            ("versao_atual", "ALTER TABLE qr_raw_reds ADD COLUMN versao_atual INTEGER NOT NULL DEFAULT 1"),
+            ("primeira_captura_em", "ALTER TABLE qr_raw_reds ADD COLUMN primeira_captura_em TEXT"),
+            ("ultima_alteracao_detectada_em", "ALTER TABLE qr_raw_reds ADD COLUMN ultima_alteracao_detectada_em TEXT"),
+            ("natureza_secundaria1_codigo", "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria1_codigo TEXT"),
+            ("natureza_secundaria1_descricao", "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria1_descricao TEXT"),
+            ("natureza_secundaria2_codigo", "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria2_codigo TEXT"),
+            ("natureza_secundaria2_descricao", "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria2_descricao TEXT"),
+            ("natureza_secundaria3_codigo", "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria3_codigo TEXT"),
+            ("natureza_secundaria3_descricao", "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria3_descricao TEXT"),
         ):
-            try:
-                conn.execute(text(ddl))
-            except Exception:
-                pass
+            if col_name in raw_cols:
+                continue
+            conn.execute(text(ddl))
+            raw_cols.add(col_name)
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_qr_raw_data ON qr_raw_reds(data_fato)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_qr_raw_cia ON qr_raw_reds(cia_pm)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_qr_raw_pelotao ON qr_raw_reds(pelotao_pm)"))
