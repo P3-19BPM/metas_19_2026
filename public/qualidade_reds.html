@@ -1017,6 +1017,7 @@
           row.natureza_secundaria2_descricao,
           row.natureza_secundaria3_codigo,
           row.natureza_secundaria3_descricao,
+          row.ind_estado,
           row.descricao_estado,
           row.nome_tipo_relatorio,
           row.observacao,
@@ -1072,16 +1073,15 @@
     }
 
     function ocorrenciaState(row){
-      const raw = String((row || {}).descricao_estado || "").trim();
-      const norm = normalizeStateText(raw);
-      if (!norm) {
-        const hasFech = String((row || {}).data_hora_fechamento || "").trim();
-        return hasFech ? { key: "fechado", label: "Fechado (inferido)" } : { key: "aberto", label: "Aberto (inferido)" };
-      }
-      if (norm.includes("ABERTO")) return { key: "aberto", label: raw };
-      if (norm.includes("FECH")) return { key: "fechado", label: raw };
-      if (norm.includes("ENCERR")) return { key: "fechado", label: raw };
-      return { key: "indefinido", label: raw };
+      const indRaw = String((row || {}).ind_estado || "").trim();
+      const ind = normalizeStateText(indRaw);
+      const descRaw = String((row || {}).descricao_estado || "").trim();
+      const desc = descRaw || "SEM DESCRICAO";
+      // Regra oficial: aberto somente quando ind_estado = 'A'.
+      if (ind === "A") return { key: "aberto", label: `A - ${desc}` };
+      if (ind === "F") return { key: "fechado", label: `F - ${desc}` };
+      if (ind) return { key: "indefinido", label: `${ind} - ${desc}` };
+      return { key: "indefinido", label: descRaw || "NAO INFORMADO" };
     }
 
     function secondaryNaturezasLabel(row){
@@ -1947,7 +1947,7 @@
       }
       if (!state.drawerClosed) panel.classList.remove("hidden");
       $("detailTitle").textContent = `REDS ${row.numero_ocorrencia || "-"}`;
-      $("detailMeta").textContent = `CIA ${row.cia_pm || "-"} | Pelotao ${row.pelotao_pm || "-"} | Estado ${row.descricao_estado || "-"} | Tipo nat. ${row.tipo_natureza || "-"} | Tipo rel. ${row.nome_tipo_relatorio || "-"} | Data ${fmtDate(row.data_fato || row.data_hora_fato)}`;
+      $("detailMeta").textContent = `CIA ${row.cia_pm || "-"} | Pelotao ${row.pelotao_pm || "-"} | Estado ${row.ind_estado || "-"} - ${row.descricao_estado || "-"} | Tipo nat. ${row.tipo_natureza || "-"} | Tipo rel. ${row.nome_tipo_relatorio || "-"} | Data ${fmtDate(row.data_fato || row.data_hora_fato)}`;
       const h = highlightHistorico(String(row.historico_ocorrencia || ""));
       $("detailHistorico").innerHTML = h.html || "Sem historico.";
       const leg = [];
@@ -1986,7 +1986,8 @@
 
       $("detailEval").innerHTML = [
         pairHtml("Avaliado", boolTxt(!!row.avaliado)),
-        pairHtml("Estado do REDS", row.descricao_estado || "-"),
+        pairHtml("IND Estado", row.ind_estado || "-"),
+        pairHtml("Descricao Estado", row.descricao_estado || "-"),
         pairHtml("Naturezas secundarias", secondaryNaturezasLabel(row).join(" | ") || "-"),
         pairHtml("Ajustes", Array.isArray(row.ajustes) && row.ajustes.length ? row.ajustes.join(", ") : "-"),
         pairHtml("Erros catalogados", Array.isArray(row.catalogErros) && row.catalogErros.length ? row.catalogErros.join(", ") : "-"),

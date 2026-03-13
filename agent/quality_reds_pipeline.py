@@ -36,6 +36,7 @@ def _normalize_quality_df(df: pd.DataFrame) -> pd.DataFrame:
     out["data_hora_fechamento"] = pd.to_datetime(
         df.get(_pick_col(df, ["data_hora_fechamento"])), errors="coerce"
     )
+    out["ind_estado"] = df.get(_pick_col(df, ["ind_estado"]), None)
     out["descricao_estado"] = df.get(_pick_col(df, ["descricao_estado"]), None)
     out["data_hora_alteracao"] = pd.to_datetime(
         df.get(_pick_col(df, ["data_hora_alteracao"])), errors="coerce"
@@ -71,6 +72,7 @@ def _normalize_quality_df(df: pd.DataFrame) -> pd.DataFrame:
         "numero_ocorrencia",
         "cia_pm",
         "pelotao_pm",
+        "ind_estado",
         "descricao_estado",
         "natureza_codigo",
         "natureza_secundaria1_codigo",

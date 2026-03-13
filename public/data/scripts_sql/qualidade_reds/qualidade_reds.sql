@@ -41,6 +41,7 @@
         YEAR(OCO.data_hora_fato) AS ano,
         MONTH(OCO.data_hora_fato) AS mes,
         OCO.data_hora_fechamento ,
+        OCO.ind_estado,  -- Status tecnico da ocorrencia (A/F/R/N)
         OCO.descricao_estado,  -- Estado da ocorrência (ex: Fechado, Aberto)
         OCO.nome_tipo_relatorio,  -- Tipo de relatório (ex: Policial, REFAP, Trânsito)
         OCO.natureza_codigo,  -- Código da natureza principal da ocorrência

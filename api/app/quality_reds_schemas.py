@@ -14,6 +14,7 @@ class QualityRedsRawRowIn(BaseModel):
     mes: Optional[int] = Field(default=None, ge=1, le=12)
     ano: Optional[int] = Field(default=None, ge=2000, le=2100)
     data_hora_fechamento: Optional[str] = Field(default=None, max_length=40)
+    ind_estado: Optional[str] = Field(default="", max_length=10)
     descricao_estado: Optional[str] = Field(default="", max_length=80)
     data_hora_alteracao: Optional[str] = Field(default=None, max_length=40)
     data_hora_primeiro_fim_preenchimento: Optional[str] = Field(default=None, max_length=40)

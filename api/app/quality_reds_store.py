@@ -34,6 +34,7 @@ _QR_RAW_TRACKED_FIELDS = (
     "mes",
     "ano",
     "data_hora_fechamento",
+    "ind_estado",
     "descricao_estado",
     "data_hora_alteracao",
     "data_hora_primeiro_fim_preenchimento",
@@ -98,6 +99,7 @@ def ensure_quality_tables() -> None:
       mes INTEGER,
       ano INTEGER,
       data_hora_fechamento TEXT,
+      ind_estado TEXT,
       descricao_estado TEXT,
       data_hora_alteracao TEXT,
       data_hora_primeiro_fim_preenchimento TEXT,
@@ -197,6 +199,7 @@ def ensure_quality_tables() -> None:
         for col_name, ddl in (
             ("data_hora_inclusao", "ALTER TABLE qr_raw_reds ADD COLUMN data_hora_inclusao TEXT"),
             ("data_hora_final", "ALTER TABLE qr_raw_reds ADD COLUMN data_hora_final TEXT"),
+            ("ind_estado", "ALTER TABLE qr_raw_reds ADD COLUMN ind_estado TEXT"),
             ("descricao_estado", "ALTER TABLE qr_raw_reds ADD COLUMN descricao_estado TEXT"),
             ("change_signature", "ALTER TABLE qr_raw_reds ADD COLUMN change_signature TEXT"),
             ("alteracoes_count", "ALTER TABLE qr_raw_reds ADD COLUMN alteracoes_count INTEGER NOT NULL DEFAULT 0"),
@@ -298,6 +301,7 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
             "mes": row.get("mes"),
             "ano": row.get("ano"),
             "data_hora_fechamento": row.get("data_hora_fechamento"),
+            "ind_estado": row.get("ind_estado"),
             "descricao_estado": row.get("descricao_estado"),
             "data_hora_alteracao": row.get("data_hora_alteracao"),
             "data_hora_primeiro_fim_preenchimento": row.get("data_hora_primeiro_fim_preenchimento"),
@@ -391,7 +395,7 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                 """
                 INSERT INTO qr_raw_reds(
                   numero_ocorrencia, cia_pm, pelotao_pm, data_hora_fato, data_hora_inclusao, data_hora_final, data_fato, mes, ano,
-                  data_hora_fechamento, descricao_estado, data_hora_alteracao, data_hora_primeiro_fim_preenchimento,
+                  data_hora_fechamento, ind_estado, descricao_estado, data_hora_alteracao, data_hora_primeiro_fim_preenchimento,
                   nome_tipo_relatorio, digitador_cargo_efetivo, digitador_matricula, digitador_nome, digitador_nome_unidade,
                   natureza_codigo, natureza_descricao_longa,
                   natureza_secundaria1_codigo, natureza_secundaria1_descricao,
@@ -403,7 +407,7 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                 )
                 VALUES(
                   :numero_ocorrencia, :cia_pm, :pelotao_pm, :data_hora_fato, :data_hora_inclusao, :data_hora_final, :data_fato, :mes, :ano,
-                  :data_hora_fechamento, :descricao_estado, :data_hora_alteracao, :data_hora_primeiro_fim_preenchimento,
+                  :data_hora_fechamento, :ind_estado, :descricao_estado, :data_hora_alteracao, :data_hora_primeiro_fim_preenchimento,
                   :nome_tipo_relatorio, :digitador_cargo_efetivo, :digitador_matricula, :digitador_nome, :digitador_nome_unidade,
                   :natureza_codigo, :natureza_descricao_longa,
                   :natureza_secundaria1_codigo, :natureza_secundaria1_descricao,
@@ -424,6 +428,7 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   mes=excluded.mes,
                   ano=excluded.ano,
                   data_hora_fechamento=excluded.data_hora_fechamento,
+                  ind_estado=excluded.ind_estado,
                   descricao_estado=excluded.descricao_estado,
                   data_hora_alteracao=excluded.data_hora_alteracao,
                   data_hora_primeiro_fim_preenchimento=excluded.data_hora_primeiro_fim_preenchimento,
@@ -512,7 +517,7 @@ def list_qr_raw_rows(
                 f"""
                 SELECT
                   numero_ocorrencia, cia_pm, pelotao_pm, data_hora_fato, data_hora_inclusao, data_hora_final, data_fato, mes, ano,
-                  data_hora_fechamento, descricao_estado, data_hora_alteracao, data_hora_primeiro_fim_preenchimento,
+                  data_hora_fechamento, ind_estado, descricao_estado, data_hora_alteracao, data_hora_primeiro_fim_preenchimento,
                   nome_tipo_relatorio, digitador_cargo_efetivo, digitador_matricula, digitador_nome, digitador_nome_unidade,
                   natureza_codigo, natureza_descricao_longa,
                   natureza_secundaria1_codigo, natureza_secundaria1_descricao,
@@ -1134,6 +1139,7 @@ def list_qr_review_rows(
                   r.data_hora_inclusao,
                   r.data_hora_final,
                   r.data_fato,
+                  r.ind_estado,
                   r.descricao_estado,
                   r.nome_tipo_relatorio,
                   r.natureza_codigo,
