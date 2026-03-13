@@ -353,6 +353,12 @@
         <label class="toggle">Pendentes apenas
           <input id="onlyPendingLocal" type="checkbox">
         </label>
+        <label>Extracao REDS
+          <select id="extractMode">
+            <option value="incremental_12d">Incremental (ultimos 12 dias)</option>
+            <option value="full_2026">Full 2026 (01/01 ate hoje)</option>
+          </select>
+        </label>
         <div><button id="bAccess" class="btn-main">Validar acesso</button></div>
         <div><button id="bRunNow" class="btn-sub">Run Now</button></div>
         <div><button id="bAnalyze" class="btn-sub">Analisar base</button></div>
@@ -2102,9 +2108,13 @@
     }
 
     async function runNow(){
-      const d = await api(`/quality/reds/run-now${qs(withUserNr())}`, { method:"POST", body: JSON.stringify({ scripts: [] }) });
+      const extractMode = String(($("extractMode") || {}).value || "incremental_12d");
+      const d = await api(
+        `/quality/reds/run-now${qs(withUserNr())}`,
+        { method:"POST", body: JSON.stringify({ scripts: [], extract_mode: extractMode }) }
+      );
       state.lastRunNowAt = new Date().toISOString();
-      $("jobStatusInfo").textContent = `Run Now em ${fmtDateTime(state.lastRunNowAt)}.`;
+      $("jobStatusInfo").textContent = `Run Now (${extractMode}) em ${fmtDateTime(state.lastRunNowAt)}.`;
       setDebugOut(d);
       toast("Run Now disparado.", "ok");
     }

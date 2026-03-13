@@ -1291,10 +1291,18 @@ def job_result(job_id: int, payload: JobResultIn, _: None = Depends(_check_agent
 
 @app.post("/jobs/manual")
 def manual_job(payload: ManualJobIn, _: None = Depends(_check_admin_or_ui)) -> dict:
+    extract_mode = str(payload.extract_mode or "incremental_12d").strip().lower()
+    if extract_mode not in {"incremental_12d", "full_2026"}:
+        extract_mode = "incremental_12d"
     job_id = create_job(
         job_type="manual_update",
         requested_by="ui",
-        payload={"run_mode": payload.run_mode, "scripts": payload.scripts, "source": "bisp"},
+        payload={
+            "run_mode": payload.run_mode,
+            "scripts": payload.scripts,
+            "extract_mode": extract_mode,
+            "source": "bisp",
+        },
     )
     return {"ok": True, "job_id": job_id}
 
@@ -1523,15 +1531,24 @@ def quality_reds_run_now(
     _: None = Depends(_check_admin_or_ui),
 ) -> dict:
     nr, profile = _quality_require_profile(request, user_nr=user_nr)
+    extract_mode = str(payload.extract_mode or "incremental_12d").strip().lower()
+    if extract_mode not in {"incremental_12d", "full_2026"}:
+        extract_mode = "incremental_12d"
     job_id = create_job(
         job_type="quality_reds_manual",
         requested_by=f"ui_quality:{nr}",
-        payload={"run_mode": "quality_reds", "scripts": payload.scripts, "source": "quality_reds_api"},
+        payload={
+            "run_mode": "quality_reds",
+            "scripts": payload.scripts,
+            "extract_mode": extract_mode,
+            "source": "quality_reds_api",
+        },
     )
     return {
         "ok": True,
         "job_id": job_id,
         "perfil": profile.get("perfil"),
+        "extract_mode": extract_mode,
         "message": "Job quality_reds enfileirado. Acompanhe pelo status/jobs e depois execute /quality/reds/analyze.",
     }
 

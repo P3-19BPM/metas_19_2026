@@ -11,6 +11,7 @@ class HeartbeatIn(BaseModel):
 class ManualJobIn(BaseModel):
     run_mode: str = Field(default="all")
     scripts: list[str] = Field(default_factory=list)
+    extract_mode: str = Field(default="incremental_12d")
 
 
 class JobResultIn(BaseModel):

@@ -50,6 +50,7 @@ class QualityRedsAnalyzeIn(BaseModel):
 
 class QualityRedsRunNowIn(BaseModel):
     scripts: list[str] = Field(default_factory=list)
+    extract_mode: Optional[str] = Field(default="incremental_12d", max_length=40)
 
 
 class QualityRedsEvaluationRowIn(BaseModel):

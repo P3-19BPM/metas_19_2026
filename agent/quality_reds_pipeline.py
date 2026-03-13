@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+import re
 
 import pandas as pd
 
@@ -136,7 +137,53 @@ def _pick_quality_sql(sql_root: Path, scripts: list[str] | None) -> Path:
     raise RuntimeError(f"SQL de qualidade REDS nao encontrado. Caminho esperado: {default}")
 
 
-def run_quality_reds_pipeline(scripts: list[str] | None = None) -> dict[str, Any]:
+def _quality_date_filter_sql(extract_mode: str) -> str:
+    mode = str(extract_mode or "").strip().lower()
+    # Full de normalizacao: inicio do ano corrente operacional (2026) ate hoje.
+    if mode == "full_2026":
+        return (
+            "OCO.data_hora_fato >= CAST('2026-01-01' AS TIMESTAMP) "
+            "AND OCO.data_hora_fato < CAST(date_add(current_date(), 1) AS TIMESTAMP)"
+        )
+    # Padrao: incremental dos ultimos 12 dias por referencia de atualizacao.
+    return (
+        "COALESCE("
+        "OCO.data_hora_primeiro_fim_preenchimento, "
+        "OCO.data_hora_alteracao, "
+        "OCO.data_hora_fechamento, "
+        "OCO.data_hora_inclusao, "
+        "OCO.data_hora_fato"
+        ") >= CAST(date_sub(current_date(), 12) AS TIMESTAMP)"
+    )
+
+
+def _inject_quality_date_filter(query: str, extract_mode: str) -> str:
+    marker = "{{QUALITY_DATE_FILTER}}"
+    filter_sql = _quality_date_filter_sql(extract_mode=extract_mode)
+    if marker in query:
+        return query.replace(marker, filter_sql)
+
+    # Backward-compatible fallback for legacy SQL without marker.
+    legacy = re.compile(
+        r"AND\s+COALESCE\(\s*OCO\.data_hora_primeiro_fim_preenchimento[\s\S]*?\)\s*>=\s*CAST\(date_sub\(current_date\(\),\s*12\)\s+AS\s+TIMESTAMP\)",
+        re.IGNORECASE,
+    )
+    if legacy.search(query):
+        return legacy.sub(f"AND {filter_sql}", query)
+
+    q = re.sub(
+        r"(AND\s+OCO\.digitador_sigla_orgao\s*=\s*'PM'\s*;)",
+        f"AND {filter_sql}\n\t\t\\1",
+        query,
+        flags=re.IGNORECASE,
+    )
+    return q
+
+
+def run_quality_reds_pipeline(
+    scripts: list[str] | None = None,
+    extract_mode: str = "incremental_12d",
+) -> dict[str, Any]:
     _load_agent_env()
     db_user = _env("DB_USERNAME")
     db_pass = _env("DB_PASSWORD")
@@ -155,7 +202,8 @@ def run_quality_reds_pipeline(scripts: list[str] | None = None) -> dict[str, Any
 
     sql_path = _pick_quality_sql(sql_root=sql_root, scripts=scripts)
     _log(f"quality reds: sql={sql_path}")
-    query = _read_sql(sql_path)
+    query = _inject_quality_date_filter(_read_sql(sql_path), extract_mode=extract_mode)
+    _log(f"quality reds: extract_mode={extract_mode}")
 
     raw_df = fetch_data_from_impala(
         sql_query=query,
@@ -182,6 +230,7 @@ def run_quality_reds_pipeline(scripts: list[str] | None = None) -> dict[str, Any
     return {
         "started_at": ts,
         "run_mode": "quality_reds",
+        "extract_mode": extract_mode,
         "sql_file": str(sql_path),
         "rows_total": len(rows),
         "raw_csv": str(raw_csv),

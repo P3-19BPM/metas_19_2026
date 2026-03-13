@@ -78,10 +78,13 @@ def _is_quality_reds_script(path: str) -> bool:
     return p.endswith("/qualidade_reds.sql") or p == "qualidade_reds.sql" or "qualidade_reds/" in p
 
 
-def _run_quality_reds_job(scripts: list[str]) -> dict[str, Any]:
+def _run_quality_reds_job(
+    scripts: list[str],
+    extract_mode: str = "incremental_12d",
+) -> dict[str, Any]:
     from quality_reds_pipeline import run_quality_reds_pipeline
 
-    result = run_quality_reds_pipeline(scripts=scripts)
+    result = run_quality_reds_pipeline(scripts=scripts, extract_mode=extract_mode)
     quality_rows = result.pop('quality_rows', [])
     if quality_rows:
         _log(f"enviando quality reds: {len(quality_rows)} linhas")
@@ -101,6 +104,7 @@ def execute_job(job: dict[str, Any]) -> dict[str, Any]:
     payload = job.get('payload', {}) if isinstance(job, dict) else {}
     run_mode = payload.get('run_mode', 'all')
     scripts = payload.get('scripts', [])
+    quality_extract_mode = str(payload.get('extract_mode') or "incremental_12d").strip() or "incremental_12d"
     run_mode_norm = str(run_mode).strip().lower()
     run_quality_after: list[str] = []
     if run_mode_norm == 'selected' and scripts:
@@ -114,10 +118,10 @@ def execute_job(job: dict[str, Any]) -> dict[str, Any]:
         _log("run_mode selected detectou apenas script de qualidade REDS; redirecionando para run_mode=quality_reds")
         run_mode = 'quality_reds'
         run_mode_norm = 'quality_reds'
-    _log(f"job iniciado: run_mode={run_mode} scripts={scripts}")
+    _log(f"job iniciado: run_mode={run_mode} scripts={scripts} quality_extract_mode={quality_extract_mode}")
 
     if run_mode_norm == 'quality_reds':
-        return _run_quality_reds_job(scripts=scripts)
+        return _run_quality_reds_job(scripts=scripts, extract_mode=quality_extract_mode)
 
     result = run_extraction(run_mode=run_mode, scripts=scripts)
     _log(
@@ -216,7 +220,7 @@ def execute_job(job: dict[str, Any]) -> dict[str, Any]:
             result['fact_errors'] = fact_errors
 
     if run_quality_after:
-        q = _run_quality_reds_job(scripts=run_quality_after)
+        q = _run_quality_reds_job(scripts=run_quality_after, extract_mode=quality_extract_mode)
         result['quality_reds'] = q
         _log(
             "quality reds integrado ao job misto: "
