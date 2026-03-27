@@ -276,6 +276,22 @@ def analyze_quality_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         conv = _convergence_alert(row, natureza_sugerida)
         pat = pattern_map.get(numero, {})
         alerta_classificacao = bool(natureza_sugerida) and conv.get("possivel_erro_natureza", False)
+        alerta_envolvido_sem_cpf = bool(int(row.get("flag_envolvido_sem_cpf") or 0))
+        alerta_envolvido_sem_rg = bool(int(row.get("flag_envolvido_sem_rg") or 0))
+        alerta_envolvido_sem_email = bool(int(row.get("flag_envolvido_sem_email") or 0))
+        alerta_envolvido_sem_telefone = bool(int(row.get("flag_envolvido_sem_telefone") or 0))
+        alerta_campos_envolvido_incompletos = any(
+            [
+                alerta_envolvido_sem_cpf,
+                alerta_envolvido_sem_rg,
+                alerta_envolvido_sem_email,
+                alerta_envolvido_sem_telefone,
+            ]
+        )
+        nome_tipo_relatorio = str(row.get("nome_tipo_relatorio") or "").strip().upper()
+        alerta_procedimento_relatorio_policial = bool(
+            alerta_campos_envolvido_incompletos and "POLICIAL" in nome_tipo_relatorio
+        )
 
         has_nonconformity = any(
             [
@@ -286,6 +302,8 @@ def analyze_quality_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 conv["alerta_convergencia"],
                 bool(pat.get("alerta_padrao_operacional")),
                 alerta_classificacao,
+                alerta_campos_envolvido_incompletos,
+                alerta_procedimento_relatorio_policial,
             ]
         )
         if has_nonconformity:
@@ -298,6 +316,10 @@ def analyze_quality_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             recomendacoes.append("Revisar natureza da ocorrencia.")
         if pat.get("possivel_copia_historico"):
             recomendacoes.append("Verificar uso de texto padrao/copia.")
+        if alerta_campos_envolvido_incompletos:
+            recomendacoes.append("Revisar qualificacao de envolvidos (CPF, RG, email e telefone).")
+        if alerta_procedimento_relatorio_policial:
+            recomendacoes.append("Erro de procedimento: relatorio POLICIAL com envolvidos sem campos obrigatorios.")
 
         out_rows.append(
             {
@@ -326,6 +348,12 @@ def analyze_quality_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 "repeticao_por_guarnicao": bool(pat.get("repeticao_por_guarnicao", False)),
                 "tempo_empenho_suspeito": bool(conv["tempo_empenho_suspeito"]),
                 "possivel_erro_natureza_violenta": bool(conv["possivel_erro_natureza_violenta"]),
+                "alerta_envolvido_sem_cpf": bool(alerta_envolvido_sem_cpf),
+                "alerta_envolvido_sem_rg": bool(alerta_envolvido_sem_rg),
+                "alerta_envolvido_sem_email": bool(alerta_envolvido_sem_email),
+                "alerta_envolvido_sem_telefone": bool(alerta_envolvido_sem_telefone),
+                "alerta_campos_envolvido_incompletos": bool(alerta_campos_envolvido_incompletos),
+                "alerta_procedimento_relatorio_policial": bool(alerta_procedimento_relatorio_policial),
                 "natureza_sugerida": natureza_sugerida,
                 "recomendacoes_json": json.dumps(recomendacoes, ensure_ascii=False),
             }

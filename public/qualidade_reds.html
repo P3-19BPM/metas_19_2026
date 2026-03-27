@@ -4,6 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Qualidade REDS - 19 BPM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./css/identidade_visual.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pmmg: { gold: '#B3A369', goldLight: '#D4C9A0', red: '#AB2328', black: '#000000', gray: '#373435', bg: '#F3F4F6' }
+          },
+          fontFamily: { sans: ['Rawline', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
   <style>
     @font-face{
       font-family:"Rawline";
@@ -83,6 +97,26 @@
     .grid .full{grid-column:1/-1}
     label{font-size:11px;color:var(--muted);font-weight:800;display:grid;gap:5px;text-transform:uppercase;letter-spacing:.35px}
     input,button,select,textarea{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 11px;background:#fff;color:var(--ink);font-size:14px}
+    #controlsPanel .grid{gap:7px 8px}
+    #controlsPanel label{gap:4px;font-size:10.5px;letter-spacing:.28px}
+    #controlsPanel input,
+    #controlsPanel select,
+    #controlsPanel button{
+      height:36px;
+      border-radius:9px;
+      padding:0 10px;
+      font-size:13px;
+    }
+    #controlsPanel input,
+    #controlsPanel select{
+      line-height:1.2;
+    }
+    #controlsPanel input::placeholder{color:#8d7f62}
+    #controlsPanel input[type="date"]{padding-right:32px}
+    #controlsPanel .toolbar{align-items:center}
+    #controlsPanel .toolbar button{height:34px}
+    #controlsPanel .btn-toggle{height:34px}
+    #controlsPanel .toggle{align-self:end;min-height:36px}
     input[readonly]{background:#f2eee3;color:#5d523d;cursor:not-allowed}
     input[type="date"]{
       border-color:#c9bb9a;
@@ -126,6 +160,9 @@
     table{width:100%;border-collapse:collapse;font-size:12px;background:#fff}
     th,td{border:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
     th{position:sticky;top:0;background:#f5efdf;z-index:2;font-size:12px;font-weight:800;letter-spacing:.2px}
+    #reviewTable th:nth-child(7),#reviewTable td:nth-child(7){min-width:290px}
+    #reviewTable th:nth-child(8),#reviewTable td:nth-child(8){min-width:280px}
+    #reviewTable th:nth-child(9),#reviewTable td:nth-child(9){min-width:150px}
     .flags{display:flex;flex-wrap:wrap;gap:4px}
     .tag{border:1px solid #cdbf9e;background:#fff7e4;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700}
     .dirty{background:#fff8d8}
@@ -134,9 +171,10 @@
     .chkline label{display:flex;align-items:center;gap:4px;font-size:11px;color:#423b2b;font-weight:700}
     .chkline input{width:auto;height:auto}
     .aj-obs-grid{display:grid;grid-template-columns:1fr;gap:5px;margin-top:8px}
-    .aj-obs-item{display:grid;grid-template-columns:120px minmax(0,1fr);align-items:center;gap:6px}
+    .aj-obs-item{display:grid;grid-template-columns:96px minmax(180px,1fr);align-items:center;gap:6px}
     .aj-obs-item span{font-size:11px;color:#5c513a;font-weight:700}
-    .aj-obs-item input{height:31px;font-size:12px}
+    .aj-obs-item input{height:34px;font-size:12px;padding:0 10px}
+    .js-obs{min-height:96px;line-height:1.35;resize:both}
     .cell-actions{display:flex;gap:6px}
     .cell-actions button{height:31px;padding:0 10px;font-size:12px}
     .selected-row{outline:2px solid rgba(160,143,99,.45);outline-offset:-2px}
@@ -328,22 +366,59 @@
     }
   </style>
 </head>
-<body>
+<body class="metas-theme">
+   <!-- HEADER -->
+    <header class="metas-topbar bg-pmmg-black text-white shadow-lg z-30 flex-none border-b-4 border-pmmg-gold">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-pmmg-gold rounded flex items-center justify-center text-pmmg-black shadow-inner overflow-hidden">
+                    <img src="./imagens/Icones_logo_19bpm/android-chrome-192x192.png" alt="Logo 19º BPM" class="w-8 h-8 object-contain">
+                </div>
+                <div>
+                    <h1 class="metas-topbar-title text-lg font-bold tracking-wider leading-tight">QUALIDADE REDS</h1>
+                    <p class="text-[10px] text-pmmg-gold font-semibold uppercase tracking-widest">19º BPM - PMMG</p>
+                    <p>Marcacao de ajustes por REDS, progresso de avaliacao e relatorio mensal da comissao.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button
+                    id="btnHeaderFullscreenIndex"
+                    type="button"
+                    class="px-3 py-2 rounded border border-pmmg-gold/40 text-pmmg-gold text-xs font-semibold hover:bg-pmmg-gold/10 transition"
+                    title="Alternar tela cheia"
+                    aria-pressed="false"
+                >
+                    Tela cheia
+                </button>
+                <a
+                    id="auth-admin-link-index"
+                    href="/admin_users.html"
+                    class="hidden px-3 py-2 rounded border border-pmmg-gold/40 text-pmmg-gold text-xs font-semibold hover:bg-pmmg-gold/10 transition"
+                    title="Painel do Administrador"
+                >
+                    Admin
+                </a>
+                <div id="auth-user-badge-index" class="hidden md:flex flex-col px-3 py-1 rounded border border-white/10 bg-white/5 text-right">
+                    <span id="auth-user-name-index" class="text-[11px] font-semibold leading-tight text-white"></span>
+                    <span id="auth-user-meta-index" class="text-[10px] leading-tight text-pmmg-gold"></span>
+                </div>
+            </div>
+        </div>
+    </header>
   <div class="wrap">
-    <div class="head">
-      <h1>Qualidade REDS - Avaliacao Operacional</h1>
-      <p>Marcacao de ajustes por REDS, progresso de avaliacao e relatorio mensal da comissao.</p>
-    </div>
 
     <div class="panel sticky-controls collapsed" id="controlsPanel">
       <div class="controls-head">
         <p class="small"><b>Filtros de avaliacao</b> (use "Expandir" para acessar todas as acoes).</p>
-        <button id="bToggleControls" type="button" class="btn-toggle" aria-expanded="false">Expandir filtros e acoes</button>
+        <div class="toolbar">
+          <button id="bTutorialGuideTop" type="button" class="btn-sub">Abrir tutorial</button>
+          <button id="bToggleControls" type="button" class="btn-toggle" aria-expanded="false">Expandir filtros e acoes</button>
+        </div>
       </div>
       <div id="stepFlow" class="steps"></div>
       <div class="grid">
         <label>Numero de Policia
-          <input id="nr" placeholder="Ex: 1438704" inputmode="numeric" autocomplete="off">
+          <input id="nr" placeholder="Ex: 1438704" inputmode="numeric" autocomplete="off" readonly title="Campo automatico e bloqueado para edicao manual.">
         </label>
         <label class="control-core">Data inicial
           <input id="dateFrom" type="date">
@@ -411,6 +486,7 @@
         <div class="toolbar">
           <button id="bReload" type="button">Recarregar dados</button>
           <button id="bMeeting" type="button">Modo reuniao</button>
+          <button id="bTutorialGuide" type="button" class="btn-sub">Guia passo a passo</button>
           <button id="bComissaoManage" type="button" class="hidden">Gerir comissao</button>
           <span class="small" id="jobStatusInfo">Sem carga nesta sessao.</span>
         </div>
@@ -459,7 +535,7 @@
 
       <div class="panel hidden" id="reportPreviewPanel">
         <div class="row-info no-print">
-          <div><b>Preview do relatorio mensal</b></div>
+          <div><b id="reportPreviewTitle">Preview do relatorio mensal</b></div>
           <div class="report-controls">
             <button id="bDownloadPdfTop" class="btn-sub" type="button">Baixar PDF</button>
             <button id="bPrintReportTop" class="btn-sub" type="button">Imprimir / Salvar PDF</button>
@@ -607,6 +683,7 @@
       dirty:new Set(),
       kpis:null,
       sessionNr:"",
+      detectedNr:"",
       nrLocked:false,
       selectedIdx:-1,
       catalogErrors:[],
@@ -653,6 +730,8 @@
         tempo_empenho_suspeito: "Aponta tempo de empenho fora do padrao esperado para o tipo de fato.",
         possivel_erro_violenta: "Sinaliza indicio de natureza violenta possivelmente classificada de forma incorreta.",
         natureza_sugerida: "Natureza sugerida pelo motor como opcao mais aderente ao texto.",
+        envolvido_campos: "Indica envolvidos sem CPF, RG, email ou telefone validos.",
+        procedimento_policial: "Erro de procedimento: relatorio POLICIAL com envolvidos sem campos essenciais.",
       },
       motor3: {
         padrao_operacional: "Indica padrao operacional identificado pelos criterios do motor.",
@@ -696,41 +775,173 @@
       setControlsCollapsed(collapsed, false);
     }
 
-    function detectNumeroPolicia(){
-      const spanMeta = document.getElementById("auth-user-meta-index");
-      if (spanMeta) {
-        const txt = String(spanMeta.textContent || "");
-        const m = txt.match(/NR\s*PM\s*(\d{6,8})/i);
-        if (m && m[1]) {
-          $("nr").value = digitsOnly(m[1]);
-          return true;
+    async function loadAuthUserBadgeIndex(){
+      try {
+        const r = await fetch("/auth/me", { credentials: "same-origin" });
+        if (!r.ok) return null;
+        const data = await r.json();
+        const u = (data || {}).user || {};
+        const badge = document.getElementById("auth-user-badge-index");
+        const nameEl = document.getElementById("auth-user-name-index");
+        const metaEl = document.getElementById("auth-user-meta-index");
+        const adminLink = document.getElementById("auth-admin-link-index");
+        if (!badge || !nameEl || !metaEl) return data;
+
+        const nome = String(u.nome || u.username || "").trim();
+        const nr = digitsOnly((u && u.numero_policia) || "");
+        const ptgr = String(u.posto_graduacao || "").trim();
+        const lot = String(u.unidade_setor || "").trim();
+
+        if (nome || nr) {
+          nameEl.textContent = [ptgr, nome].filter(Boolean).join(" - ") || nome || nr;
+          metaEl.textContent = [nr ? `NR PM ${nr}` : "NR PM nao identificado", lot || "Sem lotacao"].filter(Boolean).join(" | ");
+          badge.classList.remove("hidden");
         }
+        if (adminLink && (String(u.perfil || "").toLowerCase() === "admin" || data.source === "legacy_env")) {
+          adminLink.classList.remove("hidden");
+        }
+        return data;
+      } catch (_) {
+        return null;
       }
-      const img = document.querySelector("img.c-foto[alt]");
-      if (img && img.alt) {
-        const nr = digitsOnly(img.alt || "");
-        if (nr) {
-          $("nr").value = nr;
-          return true;
-        }
+    }
+
+    function keepNrInputLocked(){
+      const input = $("nr");
+      if (!input) return;
+      input.readOnly = true;
+      input.setAttribute("readonly", "readonly");
+      input.setAttribute("autocomplete", "off");
+      input.setAttribute("inputmode", "numeric");
+    }
+
+    function setTrustedNumeroPolicia(raw, opts={}){
+      const nr = digitsOnly(raw || "");
+      if (!nr) return false;
+      const source = String((opts && opts.source) || "").trim().toLowerCase();
+      if (source === "session") {
+        state.sessionNr = nr;
+        state.nrLocked = true;
+      } else {
+        state.detectedNr = nr;
+      }
+      $("nr").value = nr;
+      keepNrInputLocked();
+      return true;
+    }
+
+    function extractNrFromText(value){
+      const txt = String(value || "");
+      const m = txt.match(/(?:NR\s*PM\s*)?(\d{6,8})/i);
+      return m && m[1] ? digitsOnly(m[1]) : "";
+    }
+
+    function extractNrFromImageElement(img){
+      if (!img) return "";
+      const byAlt = extractNrFromText(img.alt || "");
+      if (byAlt) return byAlt;
+      const src = String(img.getAttribute("src") || img.src || "");
+      const m = src.match(/retornaFoto\/(\d{6,8})\//i);
+      if (m && m[1]) return digitsOnly(m[1]);
+      return "";
+    }
+
+    function collectNrDetectionRoots(){
+      const roots = [document];
+      const seen = new Set([document]);
+      const pushRoot = (root) => {
+        if (!root || seen.has(root)) return;
+        seen.add(root);
+        roots.push(root);
+      };
+
+      try {
+        if (window.parent && window.parent !== window && window.parent.document) pushRoot(window.parent.document);
+      } catch (_) {}
+      try {
+        if (window.top && window.top !== window && window.top.document) pushRoot(window.top.document);
+      } catch (_) {}
+      try {
+        document.querySelectorAll("iframe").forEach((frame) => {
+          try {
+            if (frame && frame.contentDocument) pushRoot(frame.contentDocument);
+          } catch (_) {}
+        });
+      } catch (_) {}
+      return roots;
+    }
+
+    function detectNumeroPolicia(){
+      const roots = collectNrDetectionRoots();
+      for (const root of roots) {
+        try {
+          const metaEl = root.getElementById ? root.getElementById("auth-user-meta-index") : null;
+          const metaNr = extractNrFromText(metaEl ? metaEl.textContent : "");
+          if (metaNr && setTrustedNumeroPolicia(metaNr, { source: "badge" })) return true;
+
+          const selectors = [
+            "img.avatar-g",
+            "img.c-foto",
+            "img[alt][src*='retornaFoto']",
+            "#detalheUsr img[alt]",
+            "img[src*='retornaFoto']",
+          ];
+          for (const sel of selectors) {
+            const img = root.querySelector ? root.querySelector(sel) : null;
+            const nr = extractNrFromImageElement(img);
+            if (nr && setTrustedNumeroPolicia(nr, { source: "avatar" })) return true;
+          }
+        } catch (_) {}
       }
       return false;
     }
 
+    async function tryDetectNumeroPoliciaWithRetry(attempts=10, waitMs=400){
+      const total = Number.isFinite(Number(attempts)) ? Math.max(1, Math.floor(Number(attempts))) : 1;
+      for (let i = 0; i < total; i += 1) {
+        if (detectNumeroPolicia()) return true;
+        if (i < total - 1) await new Promise((resolve) => window.setTimeout(resolve, waitMs));
+      }
+      return false;
+    }
+
+    function watchNumeroPoliciaLateBinding(timeoutMs=30000){
+      if (!document.body || typeof MutationObserver === "undefined") return;
+      const startedAt = Date.now();
+      const obs = new MutationObserver(async () => {
+        if (selectedNr()) {
+          obs.disconnect();
+          return;
+        }
+        if (!detectNumeroPolicia()) {
+          if ((Date.now() - startedAt) > timeoutMs) obs.disconnect();
+          return;
+        }
+        obs.disconnect();
+        try {
+          await validateAccess();
+        } catch (_) {}
+      });
+      obs.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["alt", "src", "class"],
+      });
+      window.setTimeout(() => obs.disconnect(), timeoutMs + 200);
+    }
+
     async function initSessionNumeroPolicia(){
+      keepNrInputLocked();
       try {
         const d = await api("/auth/me");
         const nr = digitsOnly((d && d.user && d.user.numero_policia) || "");
         if (nr) {
-          state.sessionNr = nr;
-          state.nrLocked = true;
-          $("nr").value = nr;
-          $("nr").readOnly = true;
+          setTrustedNumeroPolicia(nr, { source: "session" });
           return;
         }
       } catch (_) {}
       state.nrLocked = false;
-      $("nr").readOnly = false;
     }
 
     function applyDefaultPreviousMonthRange(){
@@ -764,12 +975,49 @@
       return { first, last };
     }
 
+    function quarterBoundsFromDate(value){
+      const v = String(value || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+      const y = Number(v.slice(0, 4));
+      const m = Number(v.slice(5, 7));
+      if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) return null;
+      const qStartMonth = Math.floor((m - 1) / 3) * 3 + 1;
+      const first = `${y}-${String(qStartMonth).padStart(2, "0")}-01`;
+      const qEndMonth = qStartMonth + 2;
+      const lastDate = new Date(y, qEndMonth, 0);
+      const last = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}-${String(lastDate.getDate()).padStart(2, "0")}`;
+      return { first, last };
+    }
+
+    function isComissaoGeralScope(){
+      const block = selectedComissaoBlock();
+      return !!(block && block.kind === "comissao" && String(state.perfil || "").toLowerCase() !== "subcomissao");
+    }
+
+    function selectedReportScope(){
+      return isComissaoGeralScope() ? "comissao_geral" : "cia";
+    }
+
+    function selectedCiaForReport(){
+      return isComissaoGeralScope() ? "19BPM" : mustCia();
+    }
+
+    function updateReportActionLabels(){
+      const trimestral = isComissaoGeralScope();
+      const bMonthly = $("bMonthly");
+      const titleEl = $("reportPreviewTitle");
+      if (bMonthly) bMonthly.textContent = trimestral ? "Gerar relatorio trimestral da comissao" : "Gerar relatorio mensal";
+      if (titleEl) titleEl.textContent = trimestral ? "Preview do relatorio trimestral da comissao" : "Preview do relatorio mensal";
+    }
+
     function syncMonthlyDateConstraints(){
       const from = $("dateFrom");
       const to = $("dateTo");
       const periodo = $("periodoLabel");
       if (!from || !to) return;
-      const bounds = monthBoundsFromDate(from.value || "");
+      const bounds = isComissaoGeralScope()
+        ? quarterBoundsFromDate(from.value || "")
+        : monthBoundsFromDate(from.value || "");
       if (!bounds) {
         to.removeAttribute("min");
         to.removeAttribute("max");
@@ -780,7 +1028,16 @@
       if (!String(to.value || "").trim() || to.value < bounds.first || to.value > bounds.last) {
         to.value = bounds.last;
       }
-      if (periodo) periodo.value = monthNamePt(bounds.first);
+      if (periodo) {
+        if (isComissaoGeralScope()) {
+          const firstMonth = monthNamePt(bounds.first);
+          const lastMonth = monthNamePt(bounds.last);
+          const year = String(bounds.first || "").slice(0, 4);
+          periodo.value = `TRIMESTRE ${firstMonth} A ${lastMonth}/${year}`;
+        } else {
+          periodo.value = monthNamePt(bounds.first);
+        }
+      }
     }
 
     function monthNamePt(value){
@@ -935,7 +1192,26 @@
       return map[code] || `${code} CIA PM`;
     }
 
-    function normalizePostoGraduacao(value){
+    const COMISSAO_POSTO_OPTIONS = [
+      "CEL",
+      "TEN CEL",
+      "MAJ",
+      "CAP",
+      "1 TEN",
+      "2 TEN",
+      "ASP A OF",
+      "CAD",
+      "ALUNO",
+      "SUB TEN",
+      "1 SGT",
+      "2 SGT",
+      "3 SGT",
+      "CB",
+      "SD 1 CL",
+      "SD 2 CL",
+    ];
+
+    function normalizeComissaoPostoOption(value){
       const raw = String(value || "").trim();
       const norm = raw
         .normalize("NFD")
@@ -944,26 +1220,83 @@
         .replace(/\s+/g, " ")
         .trim()
         .toUpperCase();
-      if (!norm) return "MILITAR";
-      if (norm.includes("MAJ")) return "MAJ PM";
-      if (norm.includes("CAP")) return "CAP PM";
-      if (/1\s*TEN/.test(norm)) return "1 TEN PM";
-      if (/2\s*TEN/.test(norm)) return "2 TEN PM";
-      if (norm.includes("SUB TEN") || norm.includes("SUBTEN")) return "SUB TEN PM";
-      if (/1\s*SGT/.test(norm)) return "1 SGT PM";
-      if (/2\s*SGT/.test(norm)) return "2 SGT PM";
+      if (!norm) return "";
+      if (norm.includes("TEN CEL")) return "TEN CEL";
+      if (/\bCEL\b/.test(norm)) return "CEL";
+      if (norm.includes("MAJ")) return "MAJ";
+      if (norm.includes("CAP")) return "CAP";
+      if (/1\s*TEN/.test(norm)) return "1 TEN";
+      if (/2\s*TEN/.test(norm)) return "2 TEN";
+      if (norm.includes("ASP A OF") || norm.includes("ASPIRANTE")) return "ASP A OF";
+      if (norm.includes("CAD")) return "CAD";
+      if (norm.includes("ALUNO")) return "ALUNO";
+      if (norm.includes("SUB TEN") || norm.includes("SUBTEN")) return "SUB TEN";
+      if (/1\s*SGT/.test(norm)) return "1 SGT";
+      if (/2\s*SGT/.test(norm)) return "2 SGT";
+      if (/3\s*SGT/.test(norm)) return "3 SGT";
+      if (/\bCB\b/.test(norm)) return "CB";
+      if (/SD\s*1/.test(norm)) return "SD 1 CL";
+      if (/SD\s*2/.test(norm)) return "SD 2 CL";
       return raw.toUpperCase();
+    }
+
+    function comissaoPostoOptionsHtml(currentValue){
+      const normalized = normalizeComissaoPostoOption(currentValue);
+      const options = [{ value: "", label: "Todos" }, ...COMISSAO_POSTO_OPTIONS.map((p) => ({ value: p, label: p }))];
+      if (normalized && !options.some((o) => o.value === normalized)) {
+        options.splice(1, 0, { value: normalized, label: `${normalized} (atual)` });
+      }
+      return options
+        .map((opt) => `<option value="${esc(opt.value)}" ${opt.value === normalized ? "selected" : ""}>${esc(opt.label)}</option>`)
+        .join("");
+    }
+
+    function normalizePostoGraduacao(value){
+      const base = normalizeComissaoPostoOption(value);
+      if (!base) return "MILITAR";
+      if (base === "CEL") return "CEL PM";
+      if (base === "TEN CEL") return "TEN CEL PM";
+      if (base === "MAJ") return "MAJ PM";
+      if (base === "CAP") return "CAP PM";
+      if (base === "1 TEN") return "1 TEN PM";
+      if (base === "2 TEN") return "2 TEN PM";
+      if (base === "SUB TEN") return "SUB TEN PM";
+      if (base === "1 SGT") return "1 SGT PM";
+      if (base === "2 SGT") return "2 SGT PM";
+      if (base === "3 SGT") return "3 SGT PM";
+      if (base === "CB") return "CB PM";
+      return base;
     }
 
     function hierarchyWeight(postoNorm){
       const order = {
+        "CEL": 1,
+        "CEL PM": 1,
+        "TEN CEL": 2,
+        "TEN CEL PM": 2,
         "MAJ PM": 10,
+        "MAJ": 10,
         "CAP PM": 20,
+        "CAP": 20,
         "1 TEN PM": 30,
+        "1 TEN": 30,
         "2 TEN PM": 40,
+        "2 TEN": 40,
+        "ASP A OF": 45,
+        "CAD": 46,
+        "ALUNO": 47,
         "SUB TEN PM": 50,
+        "SUB TEN": 50,
         "1 SGT PM": 60,
+        "1 SGT": 60,
         "2 SGT PM": 70,
+        "2 SGT": 70,
+        "3 SGT PM": 80,
+        "3 SGT": 80,
+        "CB PM": 90,
+        "CB": 90,
+        "SD 1 CL": 100,
+        "SD 2 CL": 110,
       };
       return order[String(postoNorm || "").toUpperCase()] || 999;
     }
@@ -1227,7 +1560,8 @@
 
     function selectedNr(){
       if (state.nrLocked && state.sessionNr) return digitsOnly(state.sessionNr);
-      return digitsOnly($("nr").value || "");
+      if (state.detectedNr) return digitsOnly(state.detectedNr);
+      return "";
     }
 
     function withUserNr(params={}){
@@ -1513,6 +1847,11 @@
       const errs = new Set(Array.isArray(row.catalogErros) ? row.catalogErros : []);
       const meds = new Set(Array.isArray(row.catalogMedidas) ? row.catalogMedidas : []);
       const rec = [];
+      if (row.alerta_procedimento_relatorio_policial) {
+        const ajustes = new Set(Array.isArray(row.ajustes) ? row.ajustes : []);
+        ajustes.add("Ajuste procedimento");
+        row.ajustes = [...ajustes];
+      }
       if (!errs.size){
         if (row.alerta_classificacao) { errs.add("5.01"); rec.push("5.01"); }
         if (row.erro_ortografico) { errs.add("12.01"); rec.push("12.01"); }
@@ -1689,6 +2028,8 @@
         el.textContent = "Comissao do relatorio: nao selecionada.";
         syncCiaAccessByComissaoBlock();
         syncQuickSearchNrAccess();
+        updateReportActionLabels();
+        syncMonthlyDateConstraints();
         return;
       }
       const label = block.label || "Bloco";
@@ -1697,6 +2038,8 @@
       el.textContent = `Comissao do relatorio: ${label} (${effectiveMembers.length} militar(es))${members ? ` - ${members}` : ""}`;
       syncCiaAccessByComissaoBlock();
       syncQuickSearchNrAccess();
+      updateReportActionLabels();
+      syncMonthlyDateConstraints();
     }
 
     function renderComissaoBlocks(){
@@ -1816,6 +2159,7 @@
       let val = String(target.value || "");
       if (field === "id") val = digitsOnly(val);
       if (field === "funcao") val = normalizeComissaoFuncao(val);
+      if (field === "posto_graduacao") val = normalizeComissaoPostoOption(val);
       const next = {
         ...normalizeComissaoMember(members[idx]),
         [field]: val,
@@ -1852,6 +2196,7 @@
         const m = normalizeComissaoMember(raw);
         const resumo = formatComissaoMemberLine(m);
         const funcaoAtual = normalizeComissaoFuncao(m.funcao || "Membro");
+        const postoOptions = comissaoPostoOptionsHtml(m.posto_graduacao || m.posto || "");
         return `
           <div class="cm-card" data-idx="${idx}">
             <div class="cm-top">
@@ -1875,7 +2220,9 @@
                 <input type="text" class="js-cm-field" data-field="nome_guerra" data-idx="${idx}" value="${esc(m.nome_guerra || "")}" placeholder="Ex: FULANO">
               </label>
               <label>Posto/Graduacao
-                <input type="text" class="js-cm-field" data-field="posto_graduacao" data-idx="${idx}" value="${esc(m.posto_graduacao || "")}" placeholder="Ex: 1 TEN PM">
+                <select class="js-cm-field" data-field="posto_graduacao" data-idx="${idx}">
+                  ${postoOptions}
+                </select>
               </label>
               <label>NR PM
                 <input type="text" class="js-cm-field" data-field="id" data-idx="${idx}" value="${esc(m.id || "")}" placeholder="Ex: 1234567" inputmode="numeric">
@@ -2012,6 +2359,8 @@
       if (r.alerta_convergencia) tags.push("CONV");
       if (r.alerta_padrao_operacional) tags.push("PAD");
       if (r.alerta_classificacao) tags.push("CLASS");
+      if (r.alerta_campos_envolvido_incompletos || r.flag_envolvido_sem_cpf || r.flag_envolvido_sem_rg || r.flag_envolvido_sem_email || r.flag_envolvido_sem_telefone) tags.push("ENV");
+      if (r.alerta_procedimento_relatorio_policial) tags.push("PROC");
       if (r.alerta_c99) tags.push("C99");
       if (r.alerta_w01 || r.alerta_w02 || r.alerta_w03 || r.alerta_w04) tags.push("W");
       return tags;
@@ -2067,7 +2416,7 @@
         {
           k: "Outros (meta 2%)",
           v: outrosMeta2,
-          s: `${outrosPctTxt} avaliados | pendente ${outrosPend}`,
+          s: `${outrosAv} analisados | ${outrosPctTxt} avaliados | pendente ${outrosPend}`,
           vClass: outrosOk ? "v-ok" : "v-warn",
           sClass: outrosOk ? "s-ok" : "s-warn",
         },
@@ -2086,6 +2435,7 @@
         periodo_label: $("periodoLabel").value || "",
         comissao: selectedComissaoText(),
         comissao_json: members.length ? JSON.stringify(members) : "",
+        report_scope: selectedReportScope(),
       };
     }
 
@@ -2105,6 +2455,7 @@
       state.monthlyPreview = preview;
       const meta = preview.meta || {};
       const blocos = preview.blocos || [];
+      const reportTitle = String(meta.report_title || "RELATORIO MENSAL DE QUALIDADE REDS").trim();
       const comissaoItems = Array.isArray(meta.comissao_membros)
         ? meta.comissao_membros.map((s) => String(s || "").trim()).filter(Boolean)
         : String(meta.comissao || "")
@@ -2127,7 +2478,7 @@
               <div class="report-head-text">
                 <p class="report-head-line report-head-line-1">D&Eacute;CIMO NONO BATALH&Atilde;O DE POL&Iacute;CIA MILITAR</p>
                 <p class="report-head-line report-head-line-2">SE&Ccedil;&Atilde;O DE PLANEJAMENTO OPERACIONAL - P3</p>
-                <p class="report-head-line report-head-line-3">RELAT&Oacute;RIO MENSAL DE QUALIDADE REDS</p>
+                <p class="report-head-line report-head-line-3">${esc(reportTitle)}</p>
               </div>
             </div>
             <div class="report-meta-grid">
@@ -2153,9 +2504,12 @@
       `;
       const body = blocos.map((b) => {
         const criterios = Array.isArray(b.criterios) ? b.criterios : [];
+        const tabela = (b && typeof b.tabela === "object") ? b.tabela : null;
         const totalReg = Number(b.total_registros || 0);
         const totalAv = Number(b.total_avaliados || 0);
         const taxa = totalReg > 0 ? `${((totalAv * 100) / totalReg).toFixed(2).replace(".", ",")}%` : "0,00%";
+        const tabelaColunas = Array.isArray(tabela && tabela.colunas) ? tabela.colunas : [];
+        const tabelaLinhas = Array.isArray(tabela && tabela.linhas) ? tabela.linhas : [];
         const criteriosHtml = criterios.length
           ? criterios.map((c) => `
               <tr>
@@ -2165,16 +2519,21 @@
               </tr>
             `).join("")
           : '<tr><td colspan="3">Sem criterios para este bloco.</td></tr>';
-        return `
-          <section class="report-block">
-            <h3>${esc(b.titulo || "-")}</h3>
-            <table class="report-mini">
-              <tr><th>Naturezas</th><td>${esc(b.naturezas || "-")}</td></tr>
-              <tr><th>Total no periodo</th><td>${esc(totalReg)}</td></tr>
-              <tr><th>Total avaliados</th><td>${esc(totalAv)}</td></tr>
-              <tr><th>Taxa de avaliacao</th><td>${esc(taxa)}</td></tr>
+        const tabelaHtml = (tabelaColunas.length && tabelaLinhas.length)
+          ? `
+            <table class="report-criteria">
+              <thead>
+                <tr>${tabelaColunas.map((c) => `<th>${esc(c || "-")}</th>`).join("")}</tr>
+              </thead>
+              <tbody>
+                ${tabelaLinhas.map((linha) => {
+                  const vals = Array.isArray(linha) ? linha : [linha];
+                  return `<tr>${vals.map((v) => `<td>${withNl(v == null ? "-" : v)}</td>`).join("")}</tr>`;
+                }).join("")}
+              </tbody>
             </table>
-            <div class="report-open">${esc(b.texto_abertura || "-")}</div>
+          `
+          : `
             <table class="report-criteria">
               <thead>
                 <tr>
@@ -2185,6 +2544,18 @@
               </thead>
               <tbody>${criteriosHtml}</tbody>
             </table>
+          `;
+        return `
+          <section class="report-block">
+            <h3>${esc(b.titulo || "-")}</h3>
+            <table class="report-mini">
+              <tr><th>Naturezas</th><td>${esc(b.naturezas || "-")}</td></tr>
+              <tr><th>Total no periodo</th><td>${esc(totalReg)}</td></tr>
+              <tr><th>Total avaliados</th><td>${esc(totalAv)}</td></tr>
+              <tr><th>Taxa de avaliacao</th><td>${esc(taxa)}</td></tr>
+            </table>
+            <div class="report-open">${esc(b.texto_abertura || "-")}</div>
+            ${tabelaHtml}
           </section>
         `;
       }).join("");
@@ -2222,7 +2593,7 @@
         return;
       }
       syncMonthlyDateConstraints();
-      const cia = mustCia();
+      const cia = selectedCiaForReport();
       const url = `/quality/reds/monthly-report-pdf/${encodeURIComponent(cia)}${qs(withUserNr({...currentFilterParams(), ...currentReportParams()}))}`;
       const resp = await fetch(url, { method: "GET", credentials: "include" });
       if (!resp.ok) {
@@ -2328,6 +2699,8 @@
       $("detailMotor2").innerHTML = [
         pairHtml("Alerta convergencia", boolTxt(!!row.alerta_convergencia), MOTOR_HELP.motor2.alerta_convergencia),
         pairHtml("Alerta classificacao", boolTxt(!!row.alerta_classificacao), MOTOR_HELP.motor2.alerta_classificacao),
+        pairHtml("Campos envolvidos incompletos", boolTxt(!!row.alerta_campos_envolvido_incompletos), MOTOR_HELP.motor2.envolvido_campos),
+        pairHtml("Erro procedimento (POLICIAL)", boolTxt(!!row.alerta_procedimento_relatorio_policial), MOTOR_HELP.motor2.procedimento_policial),
         pairHtml("Tempo empenho suspeito", boolTxt(!!row.tempo_empenho_suspeito), MOTOR_HELP.motor2.tempo_empenho_suspeito),
         pairHtml("Possivel erro violenta", boolTxt(!!row.possivel_erro_natureza_violenta), MOTOR_HELP.motor2.possivel_erro_violenta),
         pairHtml("Natureza sugerida", row.natureza_sugerida || "-", MOTOR_HELP.motor2.natureza_sugerida),
@@ -2340,6 +2713,10 @@
         ["W02", !!row.alerta_w02, MOTOR_HELP.motor3.w02],
         ["W03", !!row.alerta_w03, MOTOR_HELP.motor3.w03],
         ["W04", !!row.alerta_w04, MOTOR_HELP.motor3.w04],
+        ["Sem CPF", !!row.alerta_envolvido_sem_cpf || !!row.flag_envolvido_sem_cpf, MOTOR_HELP.motor2.envolvido_campos],
+        ["Sem RG", !!row.alerta_envolvido_sem_rg || !!row.flag_envolvido_sem_rg, MOTOR_HELP.motor2.envolvido_campos],
+        ["Sem email", !!row.alerta_envolvido_sem_email || !!row.flag_envolvido_sem_email, MOTOR_HELP.motor2.envolvido_campos],
+        ["Sem telefone", !!row.alerta_envolvido_sem_telefone || !!row.flag_envolvido_sem_telefone, MOTOR_HELP.motor2.envolvido_campos],
         ["Copia historico", !!row.possivel_copia_historico, MOTOR_HELP.motor3.copia_historico],
         ["Repeticao guarnicao", !!row.repeticao_por_guarnicao, MOTOR_HELP.motor3.repeticao_guarnicao],
       ];
@@ -2611,7 +2988,7 @@
     }
 
     async function loadMonthlyKpis(){
-      const cia = mustCia();
+      const cia = selectedCiaForReport();
       const d = await api(`/quality/reds/monthly-kpis/${encodeURIComponent(cia)}${qs(withUserNr(currentFilterParams()))}`);
       state.kpis = d;
       renderCards(d);
@@ -2623,7 +3000,7 @@
         return;
       }
       syncMonthlyDateConstraints();
-      const cia = mustCia();
+      const cia = selectedCiaForReport();
       const d = await api(`/quality/reds/monthly-report/${encodeURIComponent(cia)}${qs(withUserNr({...currentFilterParams(), ...currentReportParams()}))}`);
       $("txtModelo1").value = d.texto_modelo_1 || "";
       $("txtModelo2").value = d.texto_modelo_2 || "";
@@ -2635,7 +3012,7 @@
       if (totalAv === 0) {
         toast("Relatorio sem registros avaliados para os filtros do periodo/CIA selecionados.", "err", 5200);
       }
-      toast("Relatorio mensal gerado.", "ok");
+      toast(isComissaoGeralScope() ? "Relatorio trimestral da Comissao gerado." : "Relatorio mensal gerado.", "ok");
       renderStepFlow();
     }
 
@@ -2808,6 +3185,12 @@
       renderReviewTable();
       toast(state.meetingMode ? "Modo reuniao ativado." : "Modo reuniao desativado.", "ok");
     });
+    bindClick("bTutorialGuide", () => {
+      window.open("/qualidade_reds_tutorial.html", "_blank", "noopener");
+    });
+    bindClick("bTutorialGuideTop", () => {
+      window.open("/qualidade_reds_tutorial.html", "_blank", "noopener");
+    });
     const comissaoModal = $("comissaoModal");
     if (comissaoModal) comissaoModal.addEventListener("click", (ev) => {
       if (ev.target && ev.target.id === "comissaoModal") closeComissaoModal();
@@ -2894,6 +3277,23 @@
     $("dateTo").addEventListener("change", () => {
       syncMonthlyDateConstraints();
     });
+    const nrInput = $("nr");
+    if (nrInput) {
+      keepNrInputLocked();
+      const hardBlock = (ev) => {
+        if (!ev) return;
+        ev.preventDefault();
+        const trusted = selectedNr();
+        nrInput.value = trusted || "";
+      };
+      ["keydown", "beforeinput", "paste", "drop"].forEach((evtName) => {
+        nrInput.addEventListener(evtName, hardBlock);
+      });
+      nrInput.addEventListener("input", () => {
+        const trusted = selectedNr();
+        if ((nrInput.value || "") !== (trusted || "")) nrInput.value = trusted || "";
+      });
+    }
 
     window.addEventListener("beforeunload", (ev) => {
       if (state.skipBeforeUnload || !state.dirty.size) return;
@@ -2961,13 +3361,43 @@
       applyDefaultReportHeader();
       await loadComissaoBlocks();
       await loadQualityCatalogs();
+      await loadAuthUserBadgeIndex();
       await initSessionNumeroPolicia();
-      state.canManageComissao = digitsOnly(state.sessionNr || $("nr").value || "") === "1438704";
-      if (!$("nr").value.trim()) detectNumeroPolicia();
-      if ($("nr").value.trim()) validateAccess();
+      state.canManageComissao = digitsOnly(state.sessionNr || state.detectedNr || "") === "1438704";
+      if (!selectedNr()) await tryDetectNumeroPoliciaWithRetry(18, 450);
+      if (selectedNr()) validateAccess();
       else togglePanels();
+      watchNumeroPoliciaLateBinding();
       renderAssistPanel();
       $("jobStatusInfo").textContent = "Sem carga nesta sessao.";
+    })();
+
+    (function initHeaderFullscreenIndex() {
+      const btn = document.getElementById("btnHeaderFullscreenIndex");
+      if (!btn || typeof document === "undefined") return;
+
+      const refreshState = () => {
+        const active = !!document.fullscreenElement;
+        btn.textContent = active ? "Sair tela cheia" : "Tela cheia";
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+      };
+
+      btn.addEventListener("click", async () => {
+        try {
+          if (!document.fullscreenElement) {
+            await document.documentElement.requestFullscreen();
+          } else {
+            await document.exitFullscreen();
+          }
+        } catch (_) {
+          // Sem permissao de fullscreen no contexto atual.
+        } finally {
+          refreshState();
+        }
+      });
+
+      document.addEventListener("fullscreenchange", refreshState);
+      refreshState();
     })();
   </script>
 </body>

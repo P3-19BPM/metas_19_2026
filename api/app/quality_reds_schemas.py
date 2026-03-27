@@ -32,6 +32,10 @@ class QualityRedsRawRowIn(BaseModel):
     natureza_secundaria3_codigo: Optional[str] = Field(default="", max_length=80)
     natureza_secundaria3_descricao: Optional[str] = Field(default="", max_length=400)
     historico_ocorrencia: Optional[str] = Field(default="", max_length=12000)
+    flag_envolvido_sem_cpf: Optional[int] = Field(default=0, ge=0, le=1)
+    flag_envolvido_sem_rg: Optional[int] = Field(default=0, ge=0, le=1)
+    flag_envolvido_sem_email: Optional[int] = Field(default=0, ge=0, le=1)
+    flag_envolvido_sem_telefone: Optional[int] = Field(default=0, ge=0, le=1)
 
 
 class QualityRedsIngestIn(BaseModel):

@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from math import ceil
 import hashlib
 import re
+import textwrap
 from pathlib import Path
 from typing import Any
 import json
@@ -54,6 +55,10 @@ _QR_RAW_TRACKED_FIELDS = (
     "natureza_secundaria3_codigo",
     "natureza_secundaria3_descricao",
     "historico_ocorrencia",
+    "flag_envolvido_sem_cpf",
+    "flag_envolvido_sem_rg",
+    "flag_envolvido_sem_email",
+    "flag_envolvido_sem_telefone",
 )
 
 
@@ -119,6 +124,10 @@ def ensure_quality_tables() -> None:
       natureza_secundaria3_codigo TEXT,
       natureza_secundaria3_descricao TEXT,
       historico_ocorrencia TEXT,
+      flag_envolvido_sem_cpf INTEGER NOT NULL DEFAULT 0,
+      flag_envolvido_sem_rg INTEGER NOT NULL DEFAULT 0,
+      flag_envolvido_sem_email INTEGER NOT NULL DEFAULT 0,
+      flag_envolvido_sem_telefone INTEGER NOT NULL DEFAULT 0,
       change_signature TEXT,
       alteracoes_count INTEGER NOT NULL DEFAULT 0,
       versao_atual INTEGER NOT NULL DEFAULT 1,
@@ -172,6 +181,12 @@ def ensure_quality_tables() -> None:
       repeticao_por_guarnicao INTEGER NOT NULL DEFAULT 0,
       tempo_empenho_suspeito INTEGER NOT NULL DEFAULT 0,
       possivel_erro_natureza_violenta INTEGER NOT NULL DEFAULT 0,
+      alerta_envolvido_sem_cpf INTEGER NOT NULL DEFAULT 0,
+      alerta_envolvido_sem_rg INTEGER NOT NULL DEFAULT 0,
+      alerta_envolvido_sem_email INTEGER NOT NULL DEFAULT 0,
+      alerta_envolvido_sem_telefone INTEGER NOT NULL DEFAULT 0,
+      alerta_campos_envolvido_incompletos INTEGER NOT NULL DEFAULT 0,
+      alerta_procedimento_relatorio_policial INTEGER NOT NULL DEFAULT 0,
       natureza_sugerida TEXT,
       recomendacoes_json TEXT,
       data_analise TEXT NOT NULL,
@@ -214,6 +229,10 @@ def ensure_quality_tables() -> None:
             ("natureza_secundaria2_descricao", "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria2_descricao TEXT"),
             ("natureza_secundaria3_codigo", "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria3_codigo TEXT"),
             ("natureza_secundaria3_descricao", "ALTER TABLE qr_raw_reds ADD COLUMN natureza_secundaria3_descricao TEXT"),
+            ("flag_envolvido_sem_cpf", "ALTER TABLE qr_raw_reds ADD COLUMN flag_envolvido_sem_cpf INTEGER NOT NULL DEFAULT 0"),
+            ("flag_envolvido_sem_rg", "ALTER TABLE qr_raw_reds ADD COLUMN flag_envolvido_sem_rg INTEGER NOT NULL DEFAULT 0"),
+            ("flag_envolvido_sem_email", "ALTER TABLE qr_raw_reds ADD COLUMN flag_envolvido_sem_email INTEGER NOT NULL DEFAULT 0"),
+            ("flag_envolvido_sem_telefone", "ALTER TABLE qr_raw_reds ADD COLUMN flag_envolvido_sem_telefone INTEGER NOT NULL DEFAULT 0"),
         ):
             if col_name in raw_cols:
                 continue
@@ -229,6 +248,19 @@ def ensure_quality_tables() -> None:
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_qr_raw_hist_detected ON qr_raw_reds_history(detected_at)"))
 
         conn.execute(text(sql_quality))
+        qa_cols = {str(c.get("name") or "").strip().lower() for c in inspect(conn).get_columns("qr_quality_analysis")}
+        for col_name, ddl in (
+            ("alerta_envolvido_sem_cpf", "ALTER TABLE qr_quality_analysis ADD COLUMN alerta_envolvido_sem_cpf INTEGER NOT NULL DEFAULT 0"),
+            ("alerta_envolvido_sem_rg", "ALTER TABLE qr_quality_analysis ADD COLUMN alerta_envolvido_sem_rg INTEGER NOT NULL DEFAULT 0"),
+            ("alerta_envolvido_sem_email", "ALTER TABLE qr_quality_analysis ADD COLUMN alerta_envolvido_sem_email INTEGER NOT NULL DEFAULT 0"),
+            ("alerta_envolvido_sem_telefone", "ALTER TABLE qr_quality_analysis ADD COLUMN alerta_envolvido_sem_telefone INTEGER NOT NULL DEFAULT 0"),
+            ("alerta_campos_envolvido_incompletos", "ALTER TABLE qr_quality_analysis ADD COLUMN alerta_campos_envolvido_incompletos INTEGER NOT NULL DEFAULT 0"),
+            ("alerta_procedimento_relatorio_policial", "ALTER TABLE qr_quality_analysis ADD COLUMN alerta_procedimento_relatorio_policial INTEGER NOT NULL DEFAULT 0"),
+        ):
+            if col_name in qa_cols:
+                continue
+            conn.execute(text(ddl))
+            qa_cols.add(col_name)
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_qr_quality_data ON qr_quality_analysis(data_fato)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_qr_quality_cia ON qr_quality_analysis(cia_pm)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_qr_quality_pelotao ON qr_quality_analysis(pelotao_pm)"))
@@ -321,6 +353,10 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
             "natureza_secundaria3_codigo": row.get("natureza_secundaria3_codigo"),
             "natureza_secundaria3_descricao": row.get("natureza_secundaria3_descricao"),
             "historico_ocorrencia": row.get("historico_ocorrencia"),
+            "flag_envolvido_sem_cpf": _to_bool_int(row.get("flag_envolvido_sem_cpf")),
+            "flag_envolvido_sem_rg": _to_bool_int(row.get("flag_envolvido_sem_rg")),
+            "flag_envolvido_sem_email": _to_bool_int(row.get("flag_envolvido_sem_email")),
+            "flag_envolvido_sem_telefone": _to_bool_int(row.get("flag_envolvido_sem_telefone")),
         }
         hashed_payload = _raw_payload_for_hash(payload_row)
         signature = _hash_payload(hashed_payload)
@@ -404,6 +440,7 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   natureza_secundaria2_codigo, natureza_secundaria2_descricao,
                   natureza_secundaria3_codigo, natureza_secundaria3_descricao,
                   historico_ocorrencia,
+                  flag_envolvido_sem_cpf, flag_envolvido_sem_rg, flag_envolvido_sem_email, flag_envolvido_sem_telefone,
                   change_signature, alteracoes_count, versao_atual, primeira_captura_em, ultima_alteracao_detectada_em,
                   created_at, updated_at
                 )
@@ -416,6 +453,7 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   :natureza_secundaria2_codigo, :natureza_secundaria2_descricao,
                   :natureza_secundaria3_codigo, :natureza_secundaria3_descricao,
                   :historico_ocorrencia,
+                  :flag_envolvido_sem_cpf, :flag_envolvido_sem_rg, :flag_envolvido_sem_email, :flag_envolvido_sem_telefone,
                   :change_signature, :alteracoes_count, :versao_atual, :primeira_captura_em, :ultima_alteracao_detectada_em,
                   :created_at, :updated_at
                 )
@@ -448,6 +486,10 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   natureza_secundaria3_codigo=excluded.natureza_secundaria3_codigo,
                   natureza_secundaria3_descricao=excluded.natureza_secundaria3_descricao,
                   historico_ocorrencia=excluded.historico_ocorrencia,
+                  flag_envolvido_sem_cpf=excluded.flag_envolvido_sem_cpf,
+                  flag_envolvido_sem_rg=excluded.flag_envolvido_sem_rg,
+                  flag_envolvido_sem_email=excluded.flag_envolvido_sem_email,
+                  flag_envolvido_sem_telefone=excluded.flag_envolvido_sem_telefone,
                   change_signature=excluded.change_signature,
                   alteracoes_count=excluded.alteracoes_count,
                   versao_atual=excluded.versao_atual,
@@ -526,6 +568,7 @@ def list_qr_raw_rows(
                   natureza_secundaria2_codigo, natureza_secundaria2_descricao,
                   natureza_secundaria3_codigo, natureza_secundaria3_descricao,
                   historico_ocorrencia,
+                  flag_envolvido_sem_cpf, flag_envolvido_sem_rg, flag_envolvido_sem_email, flag_envolvido_sem_telefone,
                   alteracoes_count, versao_atual, ultima_alteracao_detectada_em
                 FROM qr_raw_reds
                 WHERE {where_sql}
@@ -575,6 +618,12 @@ def upsert_qr_quality_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                 "repeticao_por_guarnicao": _to_bool_int(row.get("repeticao_por_guarnicao")),
                 "tempo_empenho_suspeito": _to_bool_int(row.get("tempo_empenho_suspeito")),
                 "possivel_erro_natureza_violenta": _to_bool_int(row.get("possivel_erro_natureza_violenta")),
+                "alerta_envolvido_sem_cpf": _to_bool_int(row.get("alerta_envolvido_sem_cpf")),
+                "alerta_envolvido_sem_rg": _to_bool_int(row.get("alerta_envolvido_sem_rg")),
+                "alerta_envolvido_sem_email": _to_bool_int(row.get("alerta_envolvido_sem_email")),
+                "alerta_envolvido_sem_telefone": _to_bool_int(row.get("alerta_envolvido_sem_telefone")),
+                "alerta_campos_envolvido_incompletos": _to_bool_int(row.get("alerta_campos_envolvido_incompletos")),
+                "alerta_procedimento_relatorio_policial": _to_bool_int(row.get("alerta_procedimento_relatorio_policial")),
                 "natureza_sugerida": row.get("natureza_sugerida"),
                 "recomendacoes_json": row.get("recomendacoes_json"),
                 "data_analise": row.get("data_analise") or now,
@@ -598,6 +647,8 @@ def upsert_qr_quality_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   alerta_c99, alerta_w01, alerta_w02, alerta_w03, alerta_w04,
                   possivel_copia_historico, repeticao_por_guarnicao, tempo_empenho_suspeito,
                   possivel_erro_natureza_violenta,
+                  alerta_envolvido_sem_cpf, alerta_envolvido_sem_rg, alerta_envolvido_sem_email, alerta_envolvido_sem_telefone,
+                  alerta_campos_envolvido_incompletos, alerta_procedimento_relatorio_policial,
                   natureza_sugerida, recomendacoes_json, data_analise, created_at, updated_at
                 )
                 VALUES(
@@ -609,6 +660,8 @@ def upsert_qr_quality_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   :alerta_c99, :alerta_w01, :alerta_w02, :alerta_w03, :alerta_w04,
                   :possivel_copia_historico, :repeticao_por_guarnicao, :tempo_empenho_suspeito,
                   :possivel_erro_natureza_violenta,
+                  :alerta_envolvido_sem_cpf, :alerta_envolvido_sem_rg, :alerta_envolvido_sem_email, :alerta_envolvido_sem_telefone,
+                  :alerta_campos_envolvido_incompletos, :alerta_procedimento_relatorio_policial,
                   :natureza_sugerida, :recomendacoes_json, :data_analise, :created_at, :updated_at
                 )
                 ON CONFLICT(numero_ocorrencia)
@@ -637,6 +690,12 @@ def upsert_qr_quality_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   repeticao_por_guarnicao=excluded.repeticao_por_guarnicao,
                   tempo_empenho_suspeito=excluded.tempo_empenho_suspeito,
                   possivel_erro_natureza_violenta=excluded.possivel_erro_natureza_violenta,
+                  alerta_envolvido_sem_cpf=excluded.alerta_envolvido_sem_cpf,
+                  alerta_envolvido_sem_rg=excluded.alerta_envolvido_sem_rg,
+                  alerta_envolvido_sem_email=excluded.alerta_envolvido_sem_email,
+                  alerta_envolvido_sem_telefone=excluded.alerta_envolvido_sem_telefone,
+                  alerta_campos_envolvido_incompletos=excluded.alerta_campos_envolvido_incompletos,
+                  alerta_procedimento_relatorio_policial=excluded.alerta_procedimento_relatorio_policial,
                   natureza_sugerida=excluded.natureza_sugerida,
                   recomendacoes_json=excluded.recomendacoes_json,
                   data_analise=excluded.data_analise,
@@ -674,7 +733,8 @@ def get_qr_dashboard(
                   COALESCE(SUM(
                     CASE WHEN
                       alerta_texto_curto=1 OR erro_ortografico=1 OR ausencia_pontuacao=1 OR historico_incompleto=1 OR
-                      alerta_convergencia=1 OR alerta_padrao_operacional=1 OR alerta_classificacao=1
+                      alerta_convergencia=1 OR alerta_padrao_operacional=1 OR alerta_classificacao=1 OR
+                      alerta_campos_envolvido_incompletos=1 OR alerta_procedimento_relatorio_policial=1
                     THEN 1 ELSE 0 END
                   ),0) AS inconformidades,
                   COALESCE(SUM(CASE WHEN alerta_texto_curto=1 THEN 1 ELSE 0 END),0) AS historicos_curtos,
@@ -695,7 +755,8 @@ def get_qr_dashboard(
                   COALESCE(SUM(
                     CASE WHEN
                       alerta_texto_curto=1 OR erro_ortografico=1 OR ausencia_pontuacao=1 OR historico_incompleto=1 OR
-                      alerta_convergencia=1 OR alerta_padrao_operacional=1 OR alerta_classificacao=1
+                      alerta_convergencia=1 OR alerta_padrao_operacional=1 OR alerta_classificacao=1 OR
+                      alerta_campos_envolvido_incompletos=1 OR alerta_procedimento_relatorio_policial=1
                     THEN 1 ELSE 0 END
                   ),0) AS inconformidades
                 FROM qr_quality_analysis
@@ -812,7 +873,10 @@ def get_qr_company_report(
                   historico_incompleto, alerta_convergencia, alerta_padrao_operacional, alerta_classificacao,
                   alerta_c99, alerta_w01, alerta_w02, alerta_w03, alerta_w04,
                   possivel_copia_historico, repeticao_por_guarnicao, tempo_empenho_suspeito,
-                  possivel_erro_natureza_violenta, natureza_sugerida, recomendacoes_json, data_analise
+                  possivel_erro_natureza_violenta,
+                  alerta_envolvido_sem_cpf, alerta_envolvido_sem_rg, alerta_envolvido_sem_email, alerta_envolvido_sem_telefone,
+                  alerta_campos_envolvido_incompletos, alerta_procedimento_relatorio_policial,
+                  natureza_sugerida, recomendacoes_json, data_analise
                 FROM qr_quality_analysis
                 WHERE {where_sql}
                 ORDER BY data_analise DESC, numero_ocorrencia ASC
@@ -1079,6 +1143,43 @@ def _strip_markers_from_obs(text_value: Any) -> str:
     return txt.strip()
 
 
+def _extract_ajustes_obs_map(text_value: Any) -> dict[str, str]:
+    txt = str(text_value or "")
+    m = re.search(r"\[AJUSTES_OBS_JSON\]\s*([^\r\n]+)", txt, flags=re.IGNORECASE)
+    if not m:
+        return {}
+    try:
+        parsed = json.loads(str(m.group(1) or ""))
+    except Exception:
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+    out: dict[str, str] = {}
+    for k, v in parsed.items():
+        key = str(k or "").strip()
+        val = str(v or "").strip()
+        if key and val:
+            out[key] = val
+    return out
+
+
+def _normalize_ajustes_set(row: dict[str, Any]) -> set[str]:
+    ajustes = row.get("ajustes")
+    if isinstance(ajustes, list):
+        base = ajustes
+    else:
+        raw = row.get("ajustes_json")
+        base = []
+        if raw:
+            try:
+                parsed = json.loads(str(raw))
+                if isinstance(parsed, list):
+                    base = parsed
+            except Exception:
+                base = []
+    return {str(x or "").strip().lower() for x in base if str(x or "").strip()}
+
+
 def _load_medidas_catalog() -> dict[str, str]:
     base = Path(__file__).resolve().parents[2] / "public" / "data" / "medidas_adotadas_qualidad.json"
     if not base.exists():
@@ -1108,17 +1209,34 @@ def _load_medidas_catalog() -> dict[str, str]:
 
 def _aggregate_criteria(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     medidas_dict = _load_medidas_catalog()
+    ajustes_por_row = {
+        str(r.get("numero_ocorrencia") or "").strip(): _normalize_ajustes_set(r)
+        for r in rows
+        if str(r.get("numero_ocorrencia") or "").strip()
+    }
+
+    def _has_ajuste(row: dict[str, Any], *labels: str) -> bool:
+        nr = str(row.get("numero_ocorrencia") or "").strip()
+        got = ajustes_por_row.get(nr, set())
+        wanted = {str(x or "").strip().lower() for x in labels if str(x or "").strip()}
+        return bool(got.intersection(wanted))
+
     defs = [
         (
             "correcoes_ortograficas",
             "Correcao ortografica, gramatical, morfologica e semantica",
-            lambda r: bool(r.get("erro_ortografico")),
+            lambda r: bool(r.get("erro_ortografico")) or _has_ajuste(r, "Ajuste textual"),
             ["02"],
         ),
         (
             "qualidade_texto",
             "Qualidade do texto produzido sobre os fatos",
-            lambda r: bool(r.get("alerta_texto_curto")) or bool(r.get("historico_incompleto")) or bool(r.get("ausencia_pontuacao")),
+            lambda r: (
+                bool(r.get("alerta_texto_curto"))
+                or bool(r.get("historico_incompleto"))
+                or bool(r.get("ausencia_pontuacao"))
+                or _has_ajuste(r, "Ajuste textual")
+            ),
             ["02", "03"],
         ),
         (
@@ -1130,16 +1248,31 @@ def _aggregate_criteria(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         (
             "tempo_empenho",
             "Tempo de empenho da guarnicao policial",
-            lambda r: bool(r.get("tempo_empenho_suspeito")) or "15.01" in _extract_codes_from_marker(r.get("observacao"), "ERROS_COD"),
+            lambda r: (
+                bool(r.get("tempo_empenho_suspeito"))
+                or "15.01" in _extract_codes_from_marker(r.get("observacao"), "ERROS_COD")
+                or _has_ajuste(r, "Ajuste procedimento")
+            ),
             ["02"],
         ),
         (
             "convergencia_dados",
             "Convergencia entre dados reais do fato e os lancados no REDS",
-            lambda r: bool(r.get("alerta_convergencia")) or bool(r.get("alerta_classificacao")),
+            lambda r: (
+                bool(r.get("alerta_convergencia"))
+                or bool(r.get("alerta_classificacao"))
+                or _has_ajuste(r, "Ajuste natureza", "Ajuste classificacao")
+            ),
             ["01", "02"],
         ),
     ]
+    ajuste_obs_map_by_key = {
+        "correcoes_ortograficas": ("Ajuste textual",),
+        "qualidade_texto": ("Ajuste textual",),
+        "qualificacao_envolvidos": ("Ajuste procedimento",),
+        "tempo_empenho": ("Ajuste procedimento",),
+        "convergencia_dados": ("Ajuste natureza", "Ajuste classificacao"),
+    }
     out: list[dict[str, Any]] = []
     for key, label, fn, default_measures in defs:
         selected = [r for r in rows if fn(r)]
@@ -1152,8 +1285,15 @@ def _aggregate_criteria(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if obs:
                 obs_lines.append(f"{nr}: {obs}")
             else:
-                nat = str(row.get("natureza_codigo") or "").strip()
-                obs_lines.append(f"{nr}: Inconformidade detectada em {nat or 'natureza nao informada'}.")
+                ajustes_obs = _extract_ajustes_obs_map(row.get("observacao"))
+                mapped_labels = ajuste_obs_map_by_key.get(key, tuple())
+                mapped_obs = [str(ajustes_obs.get(lbl) or "").strip() for lbl in mapped_labels]
+                mapped_obs = [txt for txt in mapped_obs if txt]
+                if mapped_obs:
+                    obs_lines.append(f"{nr}: {' | '.join(mapped_obs)}")
+                else:
+                    nat = str(row.get("natureza_codigo") or "").strip()
+                    obs_lines.append(f"{nr}: Inconformidade detectada em {nat or 'natureza nao informada'}.")
             codes = _extract_codes_from_marker(row.get("observacao"), "MEDIDAS_COD")
             if not codes:
                 codes = list(default_measures)
@@ -1188,6 +1328,83 @@ def _cia_label(cia_pm: str) -> str:
     if c == "74":
         return "74ª Cia TM/19º BPM"
     return f"{c} Cia PM/19º BPM"
+
+
+_REPORT_ALL_SCOPE_TOKENS = {"", "ALL", "TODAS", "TODOS", "19", "19BPM", "19_BPM", "BPM19"}
+_DEFAULT_19BPM_CIAS = ("42", "47", "74", "155", "232")
+
+
+def _is_report_all_scope(cia_pm: str | None) -> bool:
+    raw = str(cia_pm or "").strip().upper()
+    return raw in _REPORT_ALL_SCOPE_TOKENS
+
+
+def _cia_key(value: Any) -> str:
+    return "".join(ch for ch in str(value or "") if ch.isdigit())
+
+
+def _row_iso_date(row: dict[str, Any]) -> str:
+    date_fato = str(row.get("data_fato") or "").strip()
+    if len(date_fato) >= 10 and date_fato[4] == "-" and date_fato[7] == "-":
+        return date_fato[:10]
+    dt_fato = str(row.get("data_hora_fato") or "").strip()
+    if len(dt_fato) >= 10 and dt_fato[4] == "-" and dt_fato[7] == "-":
+        return dt_fato[:10]
+    return ""
+
+
+def _month_key_from_iso(value: str) -> str:
+    txt = str(value or "").strip()
+    if len(txt) >= 7 and txt[4] == "-":
+        return txt[:7]
+    return ""
+
+
+def _month_label_pt(month_key: str) -> str:
+    txt = str(month_key or "").strip()
+    if len(txt) != 7 or txt[4] != "-":
+        return txt
+    month_names = {
+        "01": "JAN",
+        "02": "FEV",
+        "03": "MAR",
+        "04": "ABR",
+        "05": "MAI",
+        "06": "JUN",
+        "07": "JUL",
+        "08": "AGO",
+        "09": "SET",
+        "10": "OUT",
+        "11": "NOV",
+        "12": "DEZ",
+    }
+    mm = txt[5:7]
+    yy = txt[0:4]
+    return f"{month_names.get(mm, mm)}/{yy}"
+
+
+def _iter_month_keys(date_from: str | None, date_to: str | None) -> list[str]:
+    ini = str(date_from or "").strip()
+    fim = str(date_to or "").strip()
+    if not (len(ini) >= 10 and len(fim) >= 10 and ini[4] == "-" and ini[7] == "-" and fim[4] == "-" and fim[7] == "-"):
+        return []
+    try:
+        start = datetime.strptime(ini[:10], "%Y-%m-%d")
+        end = datetime.strptime(fim[:10], "%Y-%m-%d")
+    except Exception:
+        return []
+    if end < start:
+        start, end = end, start
+    cur_y, cur_m = start.year, start.month
+    end_y, end_m = end.year, end.month
+    out: list[str] = []
+    while (cur_y < end_y) or (cur_y == end_y and cur_m <= end_m):
+        out.append(f"{cur_y:04d}-{cur_m:02d}")
+        cur_m += 1
+        if cur_m > 12:
+            cur_m = 1
+            cur_y += 1
+    return out
 
 
 def upsert_qr_evaluation_rows(rows: list[dict[str, Any]], avaliado_por: str = "") -> dict[str, int]:
@@ -1255,8 +1472,12 @@ def list_qr_review_rows(
 ) -> list[dict[str, Any]]:
     ensure_quality_tables()
     cia = str(cia_pm or "").strip()
-    where = ["(COALESCE(NULLIF(TRIM(r.cia_pm),''), 'SEM_CIA') = :cia_pm OR COALESCE(NULLIF(TRIM(r.cia_pm),''), 'SEM_CIA') LIKE :cia_pm_like)"]
-    params: dict[str, Any] = {"cia_pm": cia, "cia_pm_like": f"%{cia}%", "limit": int(limit)}
+    where: list[str] = []
+    params: dict[str, Any] = {"limit": int(limit)}
+    if not _is_report_all_scope(cia):
+        where.append("(COALESCE(NULLIF(TRIM(r.cia_pm),''), 'SEM_CIA') = :cia_pm OR COALESCE(NULLIF(TRIM(r.cia_pm),''), 'SEM_CIA') LIKE :cia_pm_like)")
+        params["cia_pm"] = cia
+        params["cia_pm_like"] = f"%{cia}%"
     if date_from:
         where.append("COALESCE(r.data_fato, SUBSTR(r.data_hora_fato,1,10)) >= :date_from")
         params["date_from"] = date_from
@@ -1288,7 +1509,7 @@ def list_qr_review_rows(
         params["tipo_relatorio_like"] = f"%{tipo_rel.upper()}%"
     if only_pending:
         where.append("COALESCE(e.avaliado, 0) = 0")
-    where_sql = " AND ".join(where)
+    where_sql = " AND ".join(where) if where else "1=1"
     with get_engine().begin() as conn:
         rows = conn.execute(
             text(
@@ -1313,6 +1534,10 @@ def list_qr_review_rows(
                   r.natureza_secundaria3_codigo,
                   r.natureza_secundaria3_descricao,
                   r.historico_ocorrencia,
+                  r.flag_envolvido_sem_cpf,
+                  r.flag_envolvido_sem_rg,
+                  r.flag_envolvido_sem_email,
+                  r.flag_envolvido_sem_telefone,
                   r.alteracoes_count,
                   r.versao_atual,
                   r.ultima_alteracao_detectada_em,
@@ -1333,6 +1558,12 @@ def list_qr_review_rows(
                   qa.repeticao_por_guarnicao,
                   qa.tempo_empenho_suspeito,
                   qa.possivel_erro_natureza_violenta,
+                  qa.alerta_envolvido_sem_cpf,
+                  qa.alerta_envolvido_sem_rg,
+                  qa.alerta_envolvido_sem_email,
+                  qa.alerta_envolvido_sem_telefone,
+                  qa.alerta_campos_envolvido_incompletos,
+                  qa.alerta_procedimento_relatorio_policial,
                   qa.natureza_sugerida,
                   qa.recomendacoes_json,
                   qa.data_analise,
@@ -1386,6 +1617,19 @@ def list_qr_review_rows(
                 "repeticao_por_guarnicao",
                 "tempo_empenho_suspeito",
                 "possivel_erro_natureza_violenta",
+                "alerta_envolvido_sem_cpf",
+                "alerta_envolvido_sem_rg",
+                "alerta_envolvido_sem_email",
+                "alerta_envolvido_sem_telefone",
+                "alerta_campos_envolvido_incompletos",
+                "alerta_procedimento_relatorio_policial",
+            ):
+                m[f] = bool(int(m.get(f) or 0)) if m.get(f) is not None else False
+            for f in (
+                "flag_envolvido_sem_cpf",
+                "flag_envolvido_sem_rg",
+                "flag_envolvido_sem_email",
+                "flag_envolvido_sem_telefone",
             ):
                 m[f] = bool(int(m.get(f) or 0)) if m.get(f) is not None else False
             recs: list[str] = []
@@ -1402,22 +1646,7 @@ def list_qr_review_rows(
         return out
 
 
-def get_qr_monthly_kpis(
-    cia_pm: str,
-    date_from: str | None = None,
-    date_to: str | None = None,
-    natureza_grupo: str | None = None,
-    nome_tipo_relatorio: str | None = None,
-) -> dict[str, Any]:
-    rows = list_qr_review_rows(
-        cia_pm=cia_pm,
-        date_from=date_from,
-        date_to=date_to,
-        natureza_grupo=natureza_grupo,
-        nome_tipo_relatorio=nome_tipo_relatorio,
-        limit=50000,
-        only_pending=False,
-    )
+def _compute_qr_kpis_from_rows(rows: list[dict[str, Any]], cia_pm: str) -> dict[str, Any]:
     total = len(rows)
     avaliados = sum(1 for r in rows if r.get("avaliado"))
     pct = round((avaliados * 100.0 / total), 2) if total else 0.0
@@ -1452,6 +1681,8 @@ def get_qr_monthly_kpis(
                 bool(r.get("alerta_convergencia")),
                 bool(r.get("alerta_padrao_operacional")),
                 bool(r.get("alerta_classificacao")),
+                bool(r.get("alerta_campos_envolvido_incompletos")),
+                bool(r.get("alerta_procedimento_relatorio_policial")),
             ]
         )
         if has_alert:
@@ -1478,11 +1709,195 @@ def get_qr_monthly_kpis(
         "outros_meta_2pct": outros_meta_2pct,
         "outros_pendentes_meta_2pct": outros_pend_meta,
         "outros_percentual_avaliado_2pct_base": outros_pct_av,
-        # Compat: "outros_pendentes" agora representa o pendente para bater a meta de 2%.
         "outros_pendentes": outros_pend_meta,
         "sinalizados_total": sinalizados_total,
         "sinalizados_avaliados": sinalizados_av,
     }
+
+
+def _build_comissao_geral_blocks(rows: list[dict[str, Any]], date_from: str | None, date_to: str | None) -> dict[str, Any]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        cia = _cia_key(row.get("cia_pm")) or "SEM_CIA"
+        grouped.setdefault(cia, []).append(row)
+
+    cias = list(_DEFAULT_19BPM_CIAS)
+    extras = [c for c in grouped.keys() if c not in set(cias) and c != "SEM_CIA"]
+    extras_sorted = sorted(extras, key=lambda x: int(x) if str(x).isdigit() else 9999)
+    cias.extend(extras_sorted)
+    if "SEM_CIA" in grouped:
+        cias.append("SEM_CIA")
+
+    kpis_por_cia: list[dict[str, Any]] = []
+    for cia in cias:
+        rows_cia = grouped.get(cia, [])
+        kpi = _compute_qr_kpis_from_rows(rows_cia, cia)
+        kpi["cia_label"] = "Sem CIA informada" if cia == "SEM_CIA" else _cia_label(cia)
+        kpis_por_cia.append(kpi)
+
+    month_keys = _iter_month_keys(date_from, date_to)
+    if not month_keys:
+        month_keys = sorted({mk for mk in (_month_key_from_iso(_row_iso_date(r)) for r in rows) if mk})
+
+    tabela_mensal_linhas: list[list[Any]] = []
+    for cia in cias:
+        rows_cia = grouped.get(cia, [])
+        cia_label = "Sem CIA informada" if cia == "SEM_CIA" else _cia_label(cia)
+        for month_key in month_keys:
+            rows_mes = [r for r in rows_cia if _month_key_from_iso(_row_iso_date(r)) == month_key]
+            k_mes = _compute_qr_kpis_from_rows(rows_mes, cia)
+            tabela_mensal_linhas.append(
+                [
+                    cia_label,
+                    _month_label_pt(month_key),
+                    int(k_mes.get("total_registros") or 0),
+                    int(k_mes.get("total_avaliados") or 0),
+                    f"{float(k_mes.get('percentual_avaliado') or 0):.2f}%",
+                    int(k_mes.get("outros_meta_2pct") or 0),
+                    int(k_mes.get("outros_avaliados") or 0),
+                ]
+            )
+
+    tabela_ajustes_linhas: list[list[Any]] = []
+    for cia in cias:
+        rows_cia = grouped.get(cia, [])
+        avaliados = [r for r in rows_cia if bool(r.get("avaliado"))]
+        registros_com_ajuste = 0
+        marcacoes_total = 0
+        ajuste_textual = 0
+        ajuste_natureza = 0
+        ajuste_classificacao = 0
+        ajuste_procedimento = 0
+        for row in avaliados:
+            ajustes = [str(x or "").strip().lower() for x in (row.get("ajustes") or []) if str(x or "").strip()]
+            if not ajustes:
+                continue
+            registros_com_ajuste += 1
+            marcacoes_total += len(ajustes)
+            if "ajuste textual" in ajustes:
+                ajuste_textual += 1
+            if "ajuste natureza" in ajustes:
+                ajuste_natureza += 1
+            if "ajuste classificacao" in ajustes:
+                ajuste_classificacao += 1
+            if "ajuste procedimento" in ajustes:
+                ajuste_procedimento += 1
+        pct_com_ajuste = (registros_com_ajuste * 100.0 / len(avaliados)) if avaliados else 0.0
+        cia_label = "Sem CIA informada" if cia == "SEM_CIA" else _cia_label(cia)
+        tabela_ajustes_linhas.append(
+            [
+                cia_label,
+                len(avaliados),
+                registros_com_ajuste,
+                f"{pct_com_ajuste:.2f}%",
+                marcacoes_total,
+                ajuste_textual,
+                ajuste_natureza,
+                ajuste_classificacao,
+                ajuste_procedimento,
+            ]
+        )
+
+    bloco_kpis = {
+        "id": "comparativo_percentual_cias",
+        "titulo": "Bloco 3 - Indicadores Percentuais por CIA",
+        "naturezas": "Todas as naturezas",
+        "total_registros": len(rows),
+        "total_avaliados": sum(1 for r in rows if r.get("avaliado")),
+        "texto_abertura": "Comparativo consolidado com os mesmos indicadores percentuais aplicados nas CIAs.",
+        "tabela": {
+            "colunas": [
+                "CIA",
+                "Total",
+                "Avaliados",
+                "% Avaliado",
+                "CV (av/total)",
+                "ARMA (av/total)",
+                "W (av/total)",
+                "C99 (av/total)",
+                "Outros meta 2%",
+                "Outros avaliados",
+            ],
+            "linhas": [
+                [
+                    str(k.get("cia_label") or k.get("cia_pm") or "-"),
+                    int(k.get("total_registros") or 0),
+                    int(k.get("total_avaliados") or 0),
+                    f"{float(k.get('percentual_avaliado') or 0):.2f}%",
+                    f"{int(k.get('cv_avaliados') or 0)}/{int(k.get('cv_total') or 0)}",
+                    f"{int(k.get('arma_avaliados') or 0)}/{int(k.get('arma_total') or 0)}",
+                    f"{int(k.get('w_avaliados') or 0)}/{int(k.get('w_total') or 0)}",
+                    f"{int(k.get('c99_avaliados') or 0)}/{int(k.get('c99_total') or 0)}",
+                    int(k.get("outros_meta_2pct") or 0),
+                    int(k.get("outros_avaliados") or 0),
+                ]
+                for k in kpis_por_cia
+            ],
+        },
+    }
+
+    bloco_mensal = {
+        "id": "evolucao_mensal_cias",
+        "titulo": "Bloco 4 - Evolucao Mensal por CIA",
+        "naturezas": "Consolidado mensal",
+        "total_registros": len(rows),
+        "total_avaliados": sum(1 for r in rows if r.get("avaliado")),
+        "texto_abertura": "Distribuicao mensal da analise em cada CIA no periodo do relatorio da Comissao.",
+        "tabela": {
+            "colunas": ["CIA", "Mes", "Total", "Avaliados", "% Avaliado", "Meta 2% (Outros)", "Outros avaliados"],
+            "linhas": tabela_mensal_linhas,
+        },
+    }
+
+    bloco_ajustes = {
+        "id": "ajustes_por_cia",
+        "titulo": "Bloco 5 - Ajustes Registrados por CIA",
+        "naturezas": "Ajustes de avaliacao",
+        "total_registros": len(rows),
+        "total_avaliados": sum(1 for r in rows if r.get("avaliado")),
+        "texto_abertura": "Apanhado de todos os ajustes marcados pelos avaliadores em cada CIA.",
+        "tabela": {
+            "colunas": [
+                "CIA",
+                "Avaliados",
+                "Registros com ajuste",
+                "% avaliados com ajuste",
+                "Marcacoes de ajustes",
+                "Ajuste textual",
+                "Ajuste natureza",
+                "Ajuste classificacao",
+                "Ajuste procedimento",
+            ],
+            "linhas": tabela_ajustes_linhas,
+        },
+    }
+
+    return {
+        "kpis_por_cia": kpis_por_cia,
+        "meses_referencia": [_month_label_pt(m) for m in month_keys],
+        "blocos_extra": [bloco_kpis, bloco_mensal, bloco_ajustes],
+    }
+
+
+def get_qr_monthly_kpis(
+    cia_pm: str,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    natureza_grupo: str | None = None,
+    nome_tipo_relatorio: str | None = None,
+) -> dict[str, Any]:
+    cia_query = "" if _is_report_all_scope(cia_pm) else cia_pm
+    rows = list_qr_review_rows(
+        cia_pm=cia_query,
+        date_from=date_from,
+        date_to=date_to,
+        natureza_grupo=natureza_grupo,
+        nome_tipo_relatorio=nome_tipo_relatorio,
+        limit=50000,
+        only_pending=False,
+    )
+    scope_cia = "19BPM" if _is_report_all_scope(cia_pm) else str(cia_pm or "").strip()
+    return _compute_qr_kpis_from_rows(rows, scope_cia)
 
 
 def build_qr_monthly_report(
@@ -1495,16 +1910,13 @@ def build_qr_monthly_report(
     comissao: str | None = None,
     comissao_json: str | None = None,
     periodo_label: str | None = None,
+    report_scope: str | None = None,
 ) -> dict[str, Any]:
-    k = get_qr_monthly_kpis(
-        cia_pm=cia_pm,
-        date_from=date_from,
-        date_to=date_to,
-        natureza_grupo=natureza_grupo,
-        nome_tipo_relatorio=nome_tipo_relatorio,
-    )
+    scope = str(report_scope or "").strip().lower()
+    comissao_geral_scope = scope == "comissao_geral"
+    cia_query = "" if comissao_geral_scope else cia_pm
     rows = list_qr_review_rows(
-        cia_pm=cia_pm,
+        cia_pm=cia_query,
         date_from=date_from,
         date_to=date_to,
         natureza_grupo=natureza_grupo,
@@ -1512,6 +1924,7 @@ def build_qr_monthly_report(
         limit=50000,
         only_pending=False,
     )
+    k = _compute_qr_kpis_from_rows(rows, "19BPM" if comissao_geral_scope else str(cia_pm or "").strip())
     avaliados_rows = [r for r in rows if bool(r.get("avaliado"))]
     cv_base_rows = [r for r in rows if str(r.get("tipo_natureza") or "") == "CV"]
     nao_cv_base_rows = [r for r in rows if str(r.get("tipo_natureza") or "") != "CV"]
@@ -1522,12 +1935,13 @@ def build_qr_monthly_report(
     alvo_2pct = int(ceil(total_base * 0.02)) if total_base else 0
     amostra_ref = min(alvo_2pct, len(nao_cv_base_rows)) if nao_cv_base_rows else 0
     pct_amostra = round((amostra_ref * 100.0 / total_base), 2) if total_base else 0.0
-    avaliados_nao_cv = len(nao_cv_rows)
-    pct_avaliados_nao_cv = round((avaliados_nao_cv * 100.0 / total_base), 2) if total_base else 0.0
+    total_avaliados_nao_cv = len(nao_cv_rows)
+    pct_avaliados_nao_cv = round((total_avaliados_nao_cv * 100.0 / total_base), 2) if total_base else 0.0
     pct_avaliados_nao_cv_txt = f"{pct_avaliados_nao_cv:.2f}"
-    arma_qtd = sum(1 for r in nao_cv_base_rows if str(r.get("tipo_natureza") or "") == "ARMA")
-    w_qtd = sum(1 for r in nao_cv_base_rows if str(r.get("tipo_natureza") or "") == "GRUPO_W")
-    c99_qtd = sum(1 for r in nao_cv_base_rows if str(r.get("tipo_natureza") or "") == "C99000")
+    arma_qtd = sum(1 for r in nao_cv_rows if str(r.get("tipo_natureza") or "") == "ARMA")
+    w_qtd = sum(1 for r in nao_cv_rows if str(r.get("tipo_natureza") or "") == "GRUPO_W")
+    c99_qtd = sum(1 for r in nao_cv_rows if str(r.get("tipo_natureza") or "") == "C99000")
+    outros_qtd = int(k.get("outros_avaliados") or 0)
     comissao_raw_members = _parse_comissao_members(comissao_json, comissao)
     comissao_validos = [
         m for m in comissao_raw_members
@@ -1559,25 +1973,75 @@ def build_qr_monthly_report(
     ]
     comissao_texto = "\n".join(comissao_membros) if comissao_membros else "Nao informada"
 
-    cia_label = _cia_label(str(cia_pm or ""))
+    cia_label = "19 BPM (Consolidado)" if comissao_geral_scope else _cia_label(str(cia_pm or ""))
     periodo = f"{date_from or 'inicio'} a {date_to or 'fim'}"
     periodo_nome = _periodo_label_pt(date_from, date_to, periodo_label=periodo_label)
-    t1 = (
-        f"A Comissão de avaliação de REDS da {cia_label} procedeu a análise de "
-        f"{len(cv_base_rows)} registro(s) de crimes violentos ocorridos na área da Cia "
-        f"no período avaliado ({periodo}). A seguir serão descritas as inconformidades detectadas."
-    )
-    t2 = (
-        f"A Comissão de avaliação de REDS da {cia_label} procedeu a análise de {avaliados_nao_cv} "
-        f"ocorrências referente a {pct_avaliados_nao_cv_txt}% de todos os registros confeccionados na área da Cia no período avaliado; "
-        f"de {arma_qtd} REDS de natureza E03012, E03014 e E03016; "
-        f"de {w_qtd} BOS de natureza W01.000, W02.000, W03.000, W04.000 e; "
-        f"de {c99_qtd} REDS de natureza C99.000. A seguir serão descritas inconformidades detectadas, "
-        f"separando-se por naturezas."
-    )
+    if comissao_geral_scope:
+        t1 = (
+            f"A Comissao Geral de Qualidade REDS do {cia_label} analisou {len(cv_base_rows)} registro(s) de crimes violentos "
+            f"no periodo {periodo}, consolidando dados de todas as CIAs do batalhao."
+        )
+        t2 = (
+            f"No bloco de nao violentos, foram avaliadas {total_avaliados_nao_cv} ocorrencias ({pct_avaliados_nao_cv_txt}% do total), "
+            f"sendo {arma_qtd} de natureza ARMA, {w_qtd} do Grupo W, {c99_qtd} C99 e {outros_qtd} de outras naturezas."
+        )
+        report_title = "RELATORIO TRIMESTRAL CONSOLIDADO DE QUALIDADE REDS"
+    else:
+        t1 = (
+            f"A Comissao de avaliacao de REDS da {cia_label} procedeu a analise de "
+            f"{len(cv_base_rows)} registro(s) de crimes violentos ocorridos na area da Cia "
+            f"no periodo avaliado ({periodo}). A seguir serao descritas as inconformidades detectadas."
+        )
+        t2 = (
+            f"A Comissao de avaliacao de REDS da {cia_label} procedeu a analise de {total_avaliados_nao_cv} "
+            f"ocorrencias referente a {pct_avaliados_nao_cv_txt}% de todos os registros confeccionados na area da Cia no periodo avaliado; "
+            f"de {arma_qtd} REDS de natureza E03012, E03014 e E03016; "
+            f"de {w_qtd} BOS de natureza W01.000, W02.000, W03.000, W04.000 e; "
+            f"de {c99_qtd} REDS de natureza C99.000; e de {outros_qtd} REDS de outras naturezas. "
+            f"A seguir serao descritas inconformidades detectadas, "
+            f"separando-se por naturezas."
+        )
+        report_title = "RELATORIO MENSAL DE QUALIDADE REDS"
+
+    blocos = [
+        {
+            "id": "cv",
+            "titulo": "Bloco 1 - Crimes Violentos",
+            "naturezas": "Crimes Violentos",
+            "total_registros": len(cv_base_rows),
+            "total_avaliados": len(cv_rows),
+            "texto_abertura": t1,
+            "criterios": _aggregate_criteria(cv_rows),
+        },
+        {
+            "id": "nao_violentos",
+            "titulo": "Bloco 2 - Crimes Nao Violentos",
+            "naturezas": "Crimes Nao Violentos",
+            "total_registros": len(nao_cv_base_rows),
+            "total_avaliados": total_avaliados_nao_cv,
+            "percentual_amostra": pct_amostra,
+            "alvo_2pct": alvo_2pct,
+            "amostra_referencia": amostra_ref,
+            "qtd_arma": arma_qtd,
+            "qtd_grupo_w": w_qtd,
+            "qtd_c99": c99_qtd,
+            "texto_abertura": t2,
+            "criterios": _aggregate_criteria(nao_cv_rows),
+        },
+    ]
+
+    meta_extra: dict[str, Any] = {}
+    if comissao_geral_scope:
+        extra = _build_comissao_geral_blocks(rows, date_from, date_to)
+        blocos.extend(extra.get("blocos_extra") or [])
+        meta_extra = {
+            "kpis_por_cia": extra.get("kpis_por_cia") or [],
+            "meses_referencia": extra.get("meses_referencia") or [],
+        }
+
     preview = {
         "meta": {
-            "cia_pm": str(cia_pm or "").strip(),
+            "cia_pm": "19BPM" if comissao_geral_scope else str(cia_pm or "").strip(),
             "cia_label": cia_label,
             "date_from": date_from,
             "date_to": date_to,
@@ -1590,35 +2054,177 @@ def build_qr_monthly_report(
             "total_registros_periodo": total_base,
             "total_alvo_2pct": alvo_2pct,
             "total_avaliados_periodo": len(avaliados_rows),
+            "report_scope": "comissao_geral" if comissao_geral_scope else "cia",
+            "report_title": report_title,
+            **meta_extra,
         },
-        "blocos": [
-            {
-                "id": "cv",
-                "titulo": "Bloco 1 - Crimes Violentos",
-                "naturezas": "Crimes Violentos",
-                "total_registros": len(cv_base_rows),
-                "total_avaliados": len(cv_rows),
-                "texto_abertura": t1,
-                "criterios": _aggregate_criteria(cv_rows),
-            },
-            {
-                "id": "nao_violentos",
-                "titulo": "Bloco 2 - Crimes Nao Violentos",
-                "naturezas": "Crimes Nao Violentos",
-                "total_registros": len(nao_cv_base_rows),
-                "total_avaliados": len(nao_cv_rows),
-                "percentual_amostra": pct_amostra,
-                "alvo_2pct": alvo_2pct,
-                "amostra_referencia": amostra_ref,
-                "qtd_arma": arma_qtd,
-                "qtd_grupo_w": w_qtd,
-                "qtd_c99": c99_qtd,
-                "texto_abertura": t2,
-                "criterios": _aggregate_criteria(nao_cv_rows),
-            },
-        ],
+        "blocos": blocos,
     }
     return {"kpis": k, "texto_modelo_1": t1, "texto_modelo_2": t2, "preview": preview}
+
+
+def _pdf_escape_text(value: Any) -> str:
+    txt = str(value or "")
+    txt = txt.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    txt = txt.replace("\r", " ").replace("\n", " ")
+    return txt
+
+
+def _report_to_plain_lines(report: dict[str, Any]) -> list[str]:
+    preview = dict((report or {}).get("preview") or {})
+    meta = dict(preview.get("meta") or {})
+    blocos = list(preview.get("blocos") or [])
+    lines: list[str] = []
+
+    lines.append(str(meta.get("report_title") or "RELATORIO DE QUALIDADE REDS"))
+    lines.append("DECIMO NONO BATALHAO DE POLICIA MILITAR - SECAO P3")
+    lines.append("")
+    lines.append(f"Unidade: {meta.get('cia_label') or meta.get('cia_pm') or '-'}")
+    lines.append(f"Periodo: {meta.get('periodo_label') or meta.get('periodo_intervalo') or '-'}")
+    lines.append(f"Data da reuniao: {meta.get('data_reuniao') or '-'}")
+    lines.append(f"Total no periodo: {meta.get('total_registros_periodo') or 0}")
+    lines.append(f"Amostra alvo (2%): {meta.get('total_alvo_2pct') or 0}")
+    lines.append(f"Total avaliados: {meta.get('total_avaliados_periodo') or 0}")
+
+    comissao = meta.get("comissao_membros")
+    if isinstance(comissao, list) and comissao:
+        lines.append("Comissao:")
+        for membro in comissao:
+            lines.append(f"- {membro}")
+    else:
+        lines.append(f"Comissao: {meta.get('comissao') or 'Nao informada'}")
+
+    lines.append("")
+    for idx, bloco in enumerate(blocos, start=1):
+        lines.append(f"{idx}. {bloco.get('titulo') or f'Bloco {idx}'}")
+        lines.append(f"Naturezas: {bloco.get('naturezas') or '-'}")
+        lines.append(f"Total no periodo: {bloco.get('total_registros') or 0}")
+        lines.append(f"Total avaliados: {bloco.get('total_avaliados') or 0}")
+        lines.append(f"Texto: {bloco.get('texto_abertura') or '-'}")
+
+        tabela = bloco.get("tabela") if isinstance(bloco.get("tabela"), dict) else {}
+        colunas = list(tabela.get("colunas") or [])
+        linhas = list(tabela.get("linhas") or [])
+        if colunas:
+            lines.append("Tabela:")
+            lines.append(" | ".join(str(c or "-") for c in colunas))
+            for linha in linhas:
+                vals = linha if isinstance(linha, list) else [linha]
+                lines.append(" | ".join(str(v if v is not None else "-") for v in vals))
+        else:
+            criterios = list(bloco.get("criterios") or [])
+            if criterios:
+                lines.append("Criterios:")
+                for c in criterios:
+                    lines.append(f"- Criterio: {c.get('criterio') or '-'}")
+                    lines.append(f"  Observacoes: {c.get('observacao_inconformidades') or '-'}")
+                    lines.append(f"  Medidas: {c.get('medidas_adotadas') or '-'}")
+            else:
+                lines.append("Sem criterios para este bloco.")
+        lines.append("")
+
+    assinatura_items_raw = meta.get("comissao_assinaturas")
+    assinatura_items = [
+        dict(item or {})
+        for item in assinatura_items_raw
+        if isinstance(item, dict) and str((item or {}).get("linha") or "").strip()
+    ] if isinstance(assinatura_items_raw, list) else []
+    if assinatura_items:
+        lines.append("Assinaturas dos Responsaveis:")
+        for item in assinatura_items:
+            linha = str(item.get("linha") or "").strip()
+            funcao = str(item.get("funcao") or "").strip()
+            lines.append(f"- {linha} ({funcao})")
+
+    return lines
+
+
+def _build_basic_pdf_bytes(lines: list[str], title: str = "Relatorio Qualidade REDS") -> bytes:
+    page_width = 595
+    page_height = 842
+    margin_left = 36
+    start_y = 806
+    line_height = 12
+    max_chars = 112
+    lines_per_page = 58
+
+    normalized: list[str] = []
+    normalized.append(str(title or "Relatorio Qualidade REDS").strip())
+    normalized.append("")
+    for raw_line in lines:
+        txt = str(raw_line or "")
+        wrapped = textwrap.wrap(txt, width=max_chars, replace_whitespace=False) or [""]
+        normalized.extend(wrapped)
+
+    pages: list[list[str]] = [normalized[i:i + lines_per_page] for i in range(0, len(normalized), lines_per_page)] or [[]]
+    total_pages = len(pages)
+
+    objects: dict[int, bytes] = {}
+    objects[1] = b"<< /Type /Catalog /Pages 2 0 R >>"
+    objects[3] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+
+    page_obj_nums: list[int] = []
+    next_obj = 4
+    for _ in pages:
+        page_obj_nums.append(next_obj)
+        next_obj += 2
+
+    kids_refs = " ".join(f"{n} 0 R" for n in page_obj_nums)
+    objects[2] = f"<< /Type /Pages /Kids [{kids_refs}] /Count {len(page_obj_nums)} >>".encode("latin-1")
+
+    for page_idx, page_lines in enumerate(pages, start=1):
+        page_obj_num = page_obj_nums[page_idx - 1]
+        content_obj_num = page_obj_num + 1
+
+        stream_cmds = [
+            "BT",
+            "/F1 9 Tf",
+            f"{margin_left} {start_y} Td",
+            f"{line_height} TL",
+        ]
+        for line in page_lines:
+            stream_cmds.append(f"({_pdf_escape_text(line)}) Tj")
+            stream_cmds.append("T*")
+        stream_cmds.append(f"(Pagina {page_idx}/{total_pages}) Tj")
+        stream_cmds.append("ET")
+        stream = "\n".join(stream_cmds).encode("latin-1", errors="replace")
+        objects[content_obj_num] = b"<< /Length " + str(len(stream)).encode("ascii") + b" >>\nstream\n" + stream + b"\nendstream"
+        objects[page_obj_num] = (
+            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
+            f"/Resources << /Font << /F1 3 0 R >> >> /Contents {content_obj_num} 0 R >>"
+        ).encode("latin-1")
+
+    max_obj = max(objects.keys())
+    out = bytearray()
+    out.extend(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0] * (max_obj + 1)
+    for n in range(1, max_obj + 1):
+        body = objects.get(n, b"<<>>")
+        offsets[n] = len(out)
+        out.extend(f"{n} 0 obj\n".encode("ascii"))
+        out.extend(body)
+        out.extend(b"\nendobj\n")
+
+    xref_offset = len(out)
+    out.extend(f"xref\n0 {max_obj + 1}\n".encode("ascii"))
+    out.extend(b"0000000000 65535 f \n")
+    for n in range(1, max_obj + 1):
+        out.extend(f"{offsets[n]:010d} 00000 n \n".encode("ascii"))
+    out.extend(
+        (
+            f"trailer\n<< /Size {max_obj + 1} /Root 1 0 R >>\n"
+            f"startxref\n{xref_offset}\n%%EOF\n"
+        ).encode("ascii")
+    )
+    return bytes(out)
+
+
+def _build_qr_monthly_report_pdf_fallback(report: dict[str, Any]) -> bytes:
+    preview = dict((report or {}).get("preview") or {})
+    meta = dict(preview.get("meta") or {})
+    title = str(meta.get("report_title") or "Relatorio de Qualidade REDS")
+    lines = _report_to_plain_lines(report)
+    return _build_basic_pdf_bytes(lines, title=title)
 
 
 def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
@@ -1628,8 +2234,8 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import mm
         from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-    except Exception as exc:  # pragma: no cover
-        raise RuntimeError("Dependencia reportlab nao instalada no ambiente.") from exc
+    except Exception:  # pragma: no cover
+        return _build_qr_monthly_report_pdf_fallback(report)
 
     preview = dict((report or {}).get("preview") or {})
     meta = dict(preview.get("meta") or {})
@@ -1643,7 +2249,7 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         rightMargin=15 * mm,
         topMargin=15 * mm,
         bottomMargin=15 * mm,
-        title="Relatorio Mensal de Qualidade REDS",
+        title=str(meta.get("report_title") or "Relatorio Mensal de Qualidade REDS"),
     )
 
     styles = getSampleStyleSheet()
@@ -1699,7 +2305,7 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
     header_text = [
         Paragraph("D\u00c9CIMO NONO BATALH\u00c3O DE POL\u00cdCIA MILITAR", st_head_1),
         Paragraph("SE\u00c7\u00c3O DE PLANEJAMENTO OPERACIONAL - P3", st_head_2),
-        Paragraph("RELAT\u00d3RIO MENSAL DE QUALIDADE REDS", st_head_3),
+        Paragraph(str(meta.get("report_title") or "RELAT\u00d3RIO MENSAL DE QUALIDADE REDS"), st_head_3),
     ]
     head_table = Table([[logo_cell, header_text]], colWidths=[20 * mm, 160 * mm], repeatRows=0)
     head_table.setStyle(
@@ -1791,6 +2397,36 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         story.append(Spacer(1, 4))
         story.append(Paragraph(str(bloco.get("texto_abertura") or "-"), st_small))
         story.append(Spacer(1, 5))
+
+        tabela = bloco.get("tabela") if isinstance(bloco.get("tabela"), dict) else {}
+        colunas = list(tabela.get("colunas") or [])
+        linhas = list(tabela.get("linhas") or [])
+        if colunas and linhas:
+            tab_rows: list[list[Any]] = [[Paragraph(str(c or "-"), st_small) for c in colunas]]
+            for linha in linhas:
+                vals = linha if isinstance(linha, list) else [linha]
+                tab_rows.append([Paragraph(str(v if v is not None else "-"), st_small) for v in vals])
+            col_count = max(1, len(colunas))
+            col_w = (180 * mm) / col_count
+            full_table = Table(tab_rows, colWidths=[col_w] * col_count, repeatRows=1)
+            full_table.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d8cfbc")),
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eee4cf")),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, -1), 8),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                        ("TOPPADDING", (0, 0), (-1, -1), 3),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                    ]
+                )
+            )
+            story.append(full_table)
+            story.append(Spacer(1, 8))
+            continue
 
         criterios = list(bloco.get("criterios") or [])
         if not criterios:

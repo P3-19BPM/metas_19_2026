@@ -61,6 +61,18 @@ def _normalize_quality_df(df: pd.DataFrame) -> pd.DataFrame:
     out["natureza_secundaria3_codigo"] = df.get(_pick_col(df, ["natureza_secundaria3_codigo"]), None)
     out["natureza_secundaria3_descricao"] = df.get(_pick_col(df, ["natureza_secundaria3_descricao"]), None)
     out["historico_ocorrencia"] = df.get(_pick_col(df, ["historico_ocorrencia"]), None)
+    out["flag_envolvido_sem_cpf"] = pd.to_numeric(
+        df.get(_pick_col(df, ["flag_envolvido_sem_cpf"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["flag_envolvido_sem_rg"] = pd.to_numeric(
+        df.get(_pick_col(df, ["flag_envolvido_sem_rg"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["flag_envolvido_sem_email"] = pd.to_numeric(
+        df.get(_pick_col(df, ["flag_envolvido_sem_email"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["flag_envolvido_sem_telefone"] = pd.to_numeric(
+        df.get(_pick_col(df, ["flag_envolvido_sem_telefone"])), errors="coerce"
+    ).fillna(0).astype(int)
 
     if out["data_fato"].isna().all():
         out["data_fato"] = out["data_hora_fato"].dt.normalize()
