@@ -149,6 +149,17 @@ def _inject_runtime_sql_markers(sql_query: str, *, extract_mode: str = "incremen
     return query
 
 
+def _prepare_query_for_impala(sql_query: str) -> str:
+    """Normaliza SQL para o driver ODBC (comentarios de cabecalho e ';' final)."""
+    query = str(sql_query or "").replace("\ufeff", "")
+    # Cabecalhos do tipo `--NAME: ...` sao uteis para catalogo, mas nao para execucao.
+    query = re.sub(r"^\s*--\s*NAME\s*:[^\n]*\n", "", query, flags=re.IGNORECASE)
+    query = query.strip()
+    while query.endswith(";"):
+        query = query[:-1].strip()
+    return query
+
+
 def _ensure_route(hostname: str, next_hop: str) -> None:
     if not ensure_host_route:
         _log("rota BISP: helper indisponivel; seguindo sem ajuste")
@@ -192,9 +203,23 @@ def fetch_data_from_impala(sql_query: str, user: str, pwd: str, cert_path: Path,
 
     try:
         _log("consulta: executando SQL...")
+        query = _prepare_query_for_impala(sql_query)
         cursor = conn.cursor()
-        cursor.execute(sql_query)
-        columns = [col[0] for col in cursor.description] if cursor.description else []
+        cursor.execute(query)
+        max_nextsets = 10
+        nextset_count = 0
+        while cursor.description is None and nextset_count < max_nextsets:
+            if not cursor.nextset():
+                break
+            nextset_count += 1
+        if cursor.description is None:
+            preview = " ".join(query.split())[:240]
+            raise RuntimeError(
+                "SQL executado sem result set consultavel. "
+                "Garanta que o script contenha apenas um SELECT final. "
+                f"Preview: {preview}"
+            )
+        columns = [col[0] for col in cursor.description]
         rows = cursor.fetchall()
         _log(f"consulta: concluida com {len(rows)} linhas")
         return pd.DataFrame.from_records(rows, columns=columns)
