@@ -220,7 +220,29 @@ def fetch_data_from_impala(sql_query: str, user: str, pwd: str, cert_path: Path,
                 f"Preview: {preview}"
             )
         columns = [col[0] for col in cursor.description]
-        rows = cursor.fetchall()
+        try:
+            rows = cursor.fetchall()
+        except Exception as exc:
+            msg = str(exc).lower()
+            if "previous sql was not a query" not in msg and "no results" not in msg:
+                raise
+            # Alguns drivers ODBC do Impala retornam esse erro no primeiro fetchall.
+            recovered = False
+            nextset_count = 0
+            while nextset_count < max_nextsets:
+                if not cursor.nextset():
+                    break
+                nextset_count += 1
+                if cursor.description is not None:
+                    columns = [col[0] for col in cursor.description]
+                    rows = cursor.fetchall()
+                    recovered = True
+                    break
+            if not recovered:
+                # Fallback final: deixa o pandas reexecutar a query no mesmo conn.
+                df_fallback = pd.read_sql_query(query, conn)
+                _log(f"consulta: concluida com {len(df_fallback)} linhas (fallback pandas)")
+                return df_fallback
         _log(f"consulta: concluida com {len(rows)} linhas")
         return pd.DataFrame.from_records(rows, columns=columns)
     finally:
