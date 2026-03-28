@@ -1293,7 +1293,18 @@ def _aggregate_criteria(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         (
             "qualificacao_envolvidos",
             "Qualificacao dos envolvidos (testemunhas, vitimas e agentes)",
-            lambda r: "14.01" in _extract_codes_from_marker(r.get("observacao"), "ERROS_COD"),
+            lambda r: (
+                bool(int(r.get("qtd_envolvidos_sem_cpf") or 0) > 0)
+                or bool(int(r.get("qtd_envolvidos_sem_rg") or 0) > 0)
+                or bool(int(r.get("qtd_envolvidos_sem_email") or 0) > 0)
+                or bool(int(r.get("qtd_envolvidos_sem_telefone") or 0) > 0)
+                or bool(r.get("flag_envolvido_sem_cpf"))
+                or bool(r.get("flag_envolvido_sem_rg"))
+                or bool(r.get("flag_envolvido_sem_email"))
+                or bool(r.get("flag_envolvido_sem_telefone"))
+                or bool(r.get("alerta_campos_envolvido_incompletos"))
+                or ("14.01" in _extract_codes_from_marker(r.get("observacao"), "ERROS_COD"))
+            ),
             ["02"],
         ),
         (
