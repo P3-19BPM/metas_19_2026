@@ -2724,6 +2724,11 @@
 
       $("detailEval").innerHTML = [
         pairHtml("Avaliado", boolTxt(!!row.avaliado)),
+        pairHtml("Envolvidos (total)", row.total_envolvidos == null ? "-" : String(row.total_envolvidos)),
+        pairHtml("CPF ausente", `${Number(row.qtd_envolvidos_sem_cpf || 0)} de ${Number(row.total_envolvidos || 0)} | Todos sem CPF: ${boolTxt(!!row.flag_todos_envolvidos_sem_cpf)}`),
+        pairHtml("RG ausente", `${Number(row.qtd_envolvidos_sem_rg || 0)} de ${Number(row.total_envolvidos || 0)} | Todos sem RG: ${boolTxt(!!row.flag_todos_envolvidos_sem_rg)}`),
+        pairHtml("Email ausente", `${Number(row.qtd_envolvidos_sem_email || 0)} de ${Number(row.total_envolvidos || 0)} | Todos sem email: ${boolTxt(!!row.flag_todos_envolvidos_sem_email)}`),
+        pairHtml("Telefone ausente", `${Number(row.qtd_envolvidos_sem_telefone || 0)} de ${Number(row.total_envolvidos || 0)} | Todos sem telefone: ${boolTxt(!!row.flag_todos_envolvidos_sem_telefone)}`),
         pairHtml("IND Estado", row.ind_estado || "-"),
         pairHtml("Descricao Estado", row.descricao_estado || "-"),
         pairHtml("Naturezas secundarias", secondaryNaturezasLabel(row).join(" | ") || "-"),

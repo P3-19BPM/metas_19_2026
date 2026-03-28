@@ -59,6 +59,15 @@ _QR_RAW_TRACKED_FIELDS = (
     "flag_envolvido_sem_rg",
     "flag_envolvido_sem_email",
     "flag_envolvido_sem_telefone",
+    "total_envolvidos",
+    "qtd_envolvidos_sem_cpf",
+    "qtd_envolvidos_sem_rg",
+    "qtd_envolvidos_sem_email",
+    "qtd_envolvidos_sem_telefone",
+    "flag_todos_envolvidos_sem_cpf",
+    "flag_todos_envolvidos_sem_rg",
+    "flag_todos_envolvidos_sem_email",
+    "flag_todos_envolvidos_sem_telefone",
 )
 
 
@@ -128,6 +137,15 @@ def ensure_quality_tables() -> None:
       flag_envolvido_sem_rg INTEGER NOT NULL DEFAULT 0,
       flag_envolvido_sem_email INTEGER NOT NULL DEFAULT 0,
       flag_envolvido_sem_telefone INTEGER NOT NULL DEFAULT 0,
+      total_envolvidos INTEGER NOT NULL DEFAULT 0,
+      qtd_envolvidos_sem_cpf INTEGER NOT NULL DEFAULT 0,
+      qtd_envolvidos_sem_rg INTEGER NOT NULL DEFAULT 0,
+      qtd_envolvidos_sem_email INTEGER NOT NULL DEFAULT 0,
+      qtd_envolvidos_sem_telefone INTEGER NOT NULL DEFAULT 0,
+      flag_todos_envolvidos_sem_cpf INTEGER NOT NULL DEFAULT 0,
+      flag_todos_envolvidos_sem_rg INTEGER NOT NULL DEFAULT 0,
+      flag_todos_envolvidos_sem_email INTEGER NOT NULL DEFAULT 0,
+      flag_todos_envolvidos_sem_telefone INTEGER NOT NULL DEFAULT 0,
       change_signature TEXT,
       alteracoes_count INTEGER NOT NULL DEFAULT 0,
       versao_atual INTEGER NOT NULL DEFAULT 1,
@@ -233,6 +251,15 @@ def ensure_quality_tables() -> None:
             ("flag_envolvido_sem_rg", "ALTER TABLE qr_raw_reds ADD COLUMN flag_envolvido_sem_rg INTEGER NOT NULL DEFAULT 0"),
             ("flag_envolvido_sem_email", "ALTER TABLE qr_raw_reds ADD COLUMN flag_envolvido_sem_email INTEGER NOT NULL DEFAULT 0"),
             ("flag_envolvido_sem_telefone", "ALTER TABLE qr_raw_reds ADD COLUMN flag_envolvido_sem_telefone INTEGER NOT NULL DEFAULT 0"),
+            ("total_envolvidos", "ALTER TABLE qr_raw_reds ADD COLUMN total_envolvidos INTEGER NOT NULL DEFAULT 0"),
+            ("qtd_envolvidos_sem_cpf", "ALTER TABLE qr_raw_reds ADD COLUMN qtd_envolvidos_sem_cpf INTEGER NOT NULL DEFAULT 0"),
+            ("qtd_envolvidos_sem_rg", "ALTER TABLE qr_raw_reds ADD COLUMN qtd_envolvidos_sem_rg INTEGER NOT NULL DEFAULT 0"),
+            ("qtd_envolvidos_sem_email", "ALTER TABLE qr_raw_reds ADD COLUMN qtd_envolvidos_sem_email INTEGER NOT NULL DEFAULT 0"),
+            ("qtd_envolvidos_sem_telefone", "ALTER TABLE qr_raw_reds ADD COLUMN qtd_envolvidos_sem_telefone INTEGER NOT NULL DEFAULT 0"),
+            ("flag_todos_envolvidos_sem_cpf", "ALTER TABLE qr_raw_reds ADD COLUMN flag_todos_envolvidos_sem_cpf INTEGER NOT NULL DEFAULT 0"),
+            ("flag_todos_envolvidos_sem_rg", "ALTER TABLE qr_raw_reds ADD COLUMN flag_todos_envolvidos_sem_rg INTEGER NOT NULL DEFAULT 0"),
+            ("flag_todos_envolvidos_sem_email", "ALTER TABLE qr_raw_reds ADD COLUMN flag_todos_envolvidos_sem_email INTEGER NOT NULL DEFAULT 0"),
+            ("flag_todos_envolvidos_sem_telefone", "ALTER TABLE qr_raw_reds ADD COLUMN flag_todos_envolvidos_sem_telefone INTEGER NOT NULL DEFAULT 0"),
         ):
             if col_name in raw_cols:
                 continue
@@ -357,6 +384,15 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
             "flag_envolvido_sem_rg": _to_bool_int(row.get("flag_envolvido_sem_rg")),
             "flag_envolvido_sem_email": _to_bool_int(row.get("flag_envolvido_sem_email")),
             "flag_envolvido_sem_telefone": _to_bool_int(row.get("flag_envolvido_sem_telefone")),
+            "total_envolvidos": int(row.get("total_envolvidos") or 0),
+            "qtd_envolvidos_sem_cpf": int(row.get("qtd_envolvidos_sem_cpf") or 0),
+            "qtd_envolvidos_sem_rg": int(row.get("qtd_envolvidos_sem_rg") or 0),
+            "qtd_envolvidos_sem_email": int(row.get("qtd_envolvidos_sem_email") or 0),
+            "qtd_envolvidos_sem_telefone": int(row.get("qtd_envolvidos_sem_telefone") or 0),
+            "flag_todos_envolvidos_sem_cpf": _to_bool_int(row.get("flag_todos_envolvidos_sem_cpf")),
+            "flag_todos_envolvidos_sem_rg": _to_bool_int(row.get("flag_todos_envolvidos_sem_rg")),
+            "flag_todos_envolvidos_sem_email": _to_bool_int(row.get("flag_todos_envolvidos_sem_email")),
+            "flag_todos_envolvidos_sem_telefone": _to_bool_int(row.get("flag_todos_envolvidos_sem_telefone")),
         }
         hashed_payload = _raw_payload_for_hash(payload_row)
         signature = _hash_payload(hashed_payload)
@@ -441,6 +477,8 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   natureza_secundaria3_codigo, natureza_secundaria3_descricao,
                   historico_ocorrencia,
                   flag_envolvido_sem_cpf, flag_envolvido_sem_rg, flag_envolvido_sem_email, flag_envolvido_sem_telefone,
+                  total_envolvidos, qtd_envolvidos_sem_cpf, qtd_envolvidos_sem_rg, qtd_envolvidos_sem_email, qtd_envolvidos_sem_telefone,
+                  flag_todos_envolvidos_sem_cpf, flag_todos_envolvidos_sem_rg, flag_todos_envolvidos_sem_email, flag_todos_envolvidos_sem_telefone,
                   change_signature, alteracoes_count, versao_atual, primeira_captura_em, ultima_alteracao_detectada_em,
                   created_at, updated_at
                 )
@@ -454,6 +492,8 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   :natureza_secundaria3_codigo, :natureza_secundaria3_descricao,
                   :historico_ocorrencia,
                   :flag_envolvido_sem_cpf, :flag_envolvido_sem_rg, :flag_envolvido_sem_email, :flag_envolvido_sem_telefone,
+                  :total_envolvidos, :qtd_envolvidos_sem_cpf, :qtd_envolvidos_sem_rg, :qtd_envolvidos_sem_email, :qtd_envolvidos_sem_telefone,
+                  :flag_todos_envolvidos_sem_cpf, :flag_todos_envolvidos_sem_rg, :flag_todos_envolvidos_sem_email, :flag_todos_envolvidos_sem_telefone,
                   :change_signature, :alteracoes_count, :versao_atual, :primeira_captura_em, :ultima_alteracao_detectada_em,
                   :created_at, :updated_at
                 )
@@ -490,6 +530,15 @@ def upsert_qr_raw_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
                   flag_envolvido_sem_rg=excluded.flag_envolvido_sem_rg,
                   flag_envolvido_sem_email=excluded.flag_envolvido_sem_email,
                   flag_envolvido_sem_telefone=excluded.flag_envolvido_sem_telefone,
+                  total_envolvidos=excluded.total_envolvidos,
+                  qtd_envolvidos_sem_cpf=excluded.qtd_envolvidos_sem_cpf,
+                  qtd_envolvidos_sem_rg=excluded.qtd_envolvidos_sem_rg,
+                  qtd_envolvidos_sem_email=excluded.qtd_envolvidos_sem_email,
+                  qtd_envolvidos_sem_telefone=excluded.qtd_envolvidos_sem_telefone,
+                  flag_todos_envolvidos_sem_cpf=excluded.flag_todos_envolvidos_sem_cpf,
+                  flag_todos_envolvidos_sem_rg=excluded.flag_todos_envolvidos_sem_rg,
+                  flag_todos_envolvidos_sem_email=excluded.flag_todos_envolvidos_sem_email,
+                  flag_todos_envolvidos_sem_telefone=excluded.flag_todos_envolvidos_sem_telefone,
                   change_signature=excluded.change_signature,
                   alteracoes_count=excluded.alteracoes_count,
                   versao_atual=excluded.versao_atual,
@@ -569,6 +618,8 @@ def list_qr_raw_rows(
                   natureza_secundaria3_codigo, natureza_secundaria3_descricao,
                   historico_ocorrencia,
                   flag_envolvido_sem_cpf, flag_envolvido_sem_rg, flag_envolvido_sem_email, flag_envolvido_sem_telefone,
+                  total_envolvidos, qtd_envolvidos_sem_cpf, qtd_envolvidos_sem_rg, qtd_envolvidos_sem_email, qtd_envolvidos_sem_telefone,
+                  flag_todos_envolvidos_sem_cpf, flag_todos_envolvidos_sem_rg, flag_todos_envolvidos_sem_email, flag_todos_envolvidos_sem_telefone,
                   alteracoes_count, versao_atual, ultima_alteracao_detectada_em
                 FROM qr_raw_reds
                 WHERE {where_sql}
@@ -1538,6 +1589,15 @@ def list_qr_review_rows(
                   r.flag_envolvido_sem_rg,
                   r.flag_envolvido_sem_email,
                   r.flag_envolvido_sem_telefone,
+                  r.total_envolvidos,
+                  r.qtd_envolvidos_sem_cpf,
+                  r.qtd_envolvidos_sem_rg,
+                  r.qtd_envolvidos_sem_email,
+                  r.qtd_envolvidos_sem_telefone,
+                  r.flag_todos_envolvidos_sem_cpf,
+                  r.flag_todos_envolvidos_sem_rg,
+                  r.flag_todos_envolvidos_sem_email,
+                  r.flag_todos_envolvidos_sem_telefone,
                   r.alteracoes_count,
                   r.versao_atual,
                   r.ultima_alteracao_detectada_em,
@@ -1630,8 +1690,20 @@ def list_qr_review_rows(
                 "flag_envolvido_sem_rg",
                 "flag_envolvido_sem_email",
                 "flag_envolvido_sem_telefone",
+                "flag_todos_envolvidos_sem_cpf",
+                "flag_todos_envolvidos_sem_rg",
+                "flag_todos_envolvidos_sem_email",
+                "flag_todos_envolvidos_sem_telefone",
             ):
                 m[f] = bool(int(m.get(f) or 0)) if m.get(f) is not None else False
+            for f in (
+                "total_envolvidos",
+                "qtd_envolvidos_sem_cpf",
+                "qtd_envolvidos_sem_rg",
+                "qtd_envolvidos_sem_email",
+                "qtd_envolvidos_sem_telefone",
+            ):
+                m[f] = int(m.get(f) or 0)
             recs: list[str] = []
             raw_recs = m.get("recomendacoes_json")
             if raw_recs:

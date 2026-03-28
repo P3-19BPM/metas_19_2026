@@ -2,6 +2,7 @@
 WITH envolvidos_flags AS (
     SELECT
         ENV.numero_ocorrencia,
+        COUNT(1) AS total_envolvidos,
         MAX(
             CASE
                 WHEN
@@ -12,6 +13,16 @@ WITH envolvidos_flags AS (
                 THEN 1 ELSE 0
             END
         ) AS flag_envolvido_sem_cpf,
+        SUM(
+            CASE
+                WHEN
+                    REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.numero_cpf_cnpj, ''))), '[^a-z0-9]', '') = ''
+                    OR REGEXP_EXTRACT(REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.numero_cpf_cnpj, ''))), '[^a-z0-9]', ''), '^x+$', 0) <> ''
+                    OR REGEXP_EXTRACT(REGEXP_REPLACE(COALESCE(ENV.numero_cpf_cnpj, ''), '[^0-9]', ''), '^0+$', 0) <> ''
+                    OR LENGTH(REGEXP_REPLACE(COALESCE(ENV.numero_cpf_cnpj, ''), '[^0-9]', '')) < 11
+                THEN 1 ELSE 0
+            END
+        ) AS qtd_envolvidos_sem_cpf,
         MAX(
             CASE
                 WHEN
@@ -21,6 +32,15 @@ WITH envolvidos_flags AS (
                 THEN 1 ELSE 0
             END
         ) AS flag_envolvido_sem_rg,
+        SUM(
+            CASE
+                WHEN
+                    REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.numero_documento_id, ''))), '[^a-z0-9]', '') = ''
+                    OR REGEXP_EXTRACT(REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.numero_documento_id, ''))), '[^a-z0-9]', ''), '^x+$', 0) <> ''
+                    OR REGEXP_EXTRACT(REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.numero_documento_id, ''))), '[^a-z0-9]', ''), '^0+$', 0) <> ''
+                THEN 1 ELSE 0
+            END
+        ) AS qtd_envolvidos_sem_rg,
         MAX(
             CASE
                 WHEN
@@ -31,6 +51,16 @@ WITH envolvidos_flags AS (
                 THEN 1 ELSE 0
             END
         ) AS flag_envolvido_sem_email,
+        SUM(
+            CASE
+                WHEN
+                    REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.email, ''))), '[^a-z0-9@._-]', '') = ''
+                    OR REGEXP_EXTRACT(REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.email, ''))), '[^a-z0-9@._-]', ''), '^x+$', 0) <> ''
+                    OR REGEXP_EXTRACT(REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.email, ''))), '[^a-z0-9@._-]', ''), '^0+$', 0) <> ''
+                    OR INSTR(LOWER(TRIM(COALESCE(ENV.email, ''))), '@') = 0
+                THEN 1 ELSE 0
+            END
+        ) AS qtd_envolvidos_sem_email,
         MAX(
             CASE
                 WHEN
@@ -50,6 +80,26 @@ WITH envolvidos_flags AS (
                 THEN 1 ELSE 0
             END
         ) AS flag_envolvido_sem_telefone
+        ,
+        SUM(
+            CASE
+                WHEN
+                    (
+                        REGEXP_REPLACE(COALESCE(ENV.numero_telefone_residencial, ''), '[^0-9]', '') = ''
+                        OR REGEXP_EXTRACT(REGEXP_REPLACE(COALESCE(ENV.numero_telefone_residencial, ''), '[^0-9]', ''), '^0+$', 0) <> ''
+                        OR REGEXP_EXTRACT(REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.numero_telefone_residencial, ''))), '[^a-z0-9]', ''), '^x+$', 0) <> ''
+                        OR LENGTH(REGEXP_REPLACE(COALESCE(ENV.numero_telefone_residencial, ''), '[^0-9]', '')) < 8
+                    )
+                    AND
+                    (
+                        REGEXP_REPLACE(COALESCE(ENV.numero_telefone_comercial, ''), '[^0-9]', '') = ''
+                        OR REGEXP_EXTRACT(REGEXP_REPLACE(COALESCE(ENV.numero_telefone_comercial, ''), '[^0-9]', ''), '^0+$', 0) <> ''
+                        OR REGEXP_EXTRACT(REGEXP_REPLACE(LOWER(TRIM(COALESCE(ENV.numero_telefone_comercial, ''))), '[^a-z0-9]', ''), '^x+$', 0) <> ''
+                        OR LENGTH(REGEXP_REPLACE(COALESCE(ENV.numero_telefone_comercial, ''), '[^0-9]', '')) < 8
+                    )
+                THEN 1 ELSE 0
+            END
+        ) AS qtd_envolvidos_sem_telefone
     FROM db_bisp_reds_reporting.tb_envolvido_ocorrencia AS ENV
     GROUP BY ENV.numero_ocorrencia
 )
@@ -113,10 +163,32 @@ SELECT
     OCO.digitador_nome,
     OCO.digitador_nome_unidade,
     OCO.historico_ocorrencia,
+    COALESCE(ENVF.total_envolvidos, 0) AS total_envolvidos,
     COALESCE(ENVF.flag_envolvido_sem_cpf, 1) AS flag_envolvido_sem_cpf,
+    COALESCE(ENVF.qtd_envolvidos_sem_cpf, 0) AS qtd_envolvidos_sem_cpf,
+    CASE
+        WHEN COALESCE(ENVF.total_envolvidos, 0) > 0 AND COALESCE(ENVF.qtd_envolvidos_sem_cpf, 0) = COALESCE(ENVF.total_envolvidos, 0)
+        THEN 1 ELSE 0
+    END AS flag_todos_envolvidos_sem_cpf,
     COALESCE(ENVF.flag_envolvido_sem_rg, 1) AS flag_envolvido_sem_rg,
+    COALESCE(ENVF.qtd_envolvidos_sem_rg, 0) AS qtd_envolvidos_sem_rg,
+    CASE
+        WHEN COALESCE(ENVF.total_envolvidos, 0) > 0 AND COALESCE(ENVF.qtd_envolvidos_sem_rg, 0) = COALESCE(ENVF.total_envolvidos, 0)
+        THEN 1 ELSE 0
+    END AS flag_todos_envolvidos_sem_rg,
     COALESCE(ENVF.flag_envolvido_sem_email, 1) AS flag_envolvido_sem_email,
+    COALESCE(ENVF.qtd_envolvidos_sem_email, 0) AS qtd_envolvidos_sem_email,
+    CASE
+        WHEN COALESCE(ENVF.total_envolvidos, 0) > 0 AND COALESCE(ENVF.qtd_envolvidos_sem_email, 0) = COALESCE(ENVF.total_envolvidos, 0)
+        THEN 1 ELSE 0
+    END AS flag_todos_envolvidos_sem_email,
     COALESCE(ENVF.flag_envolvido_sem_telefone, 1) AS flag_envolvido_sem_telefone
+    ,
+    COALESCE(ENVF.qtd_envolvidos_sem_telefone, 0) AS qtd_envolvidos_sem_telefone,
+    CASE
+        WHEN COALESCE(ENVF.total_envolvidos, 0) > 0 AND COALESCE(ENVF.qtd_envolvidos_sem_telefone, 0) = COALESCE(ENVF.total_envolvidos, 0)
+        THEN 1 ELSE 0
+    END AS flag_todos_envolvidos_sem_telefone
 FROM db_bisp_reds_reporting.tb_ocorrencia AS OCO
 LEFT JOIN envolvidos_flags AS ENVF
     ON ENVF.numero_ocorrencia = OCO.numero_ocorrencia

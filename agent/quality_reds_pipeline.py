@@ -73,6 +73,33 @@ def _normalize_quality_df(df: pd.DataFrame) -> pd.DataFrame:
     out["flag_envolvido_sem_telefone"] = pd.to_numeric(
         df.get(_pick_col(df, ["flag_envolvido_sem_telefone"])), errors="coerce"
     ).fillna(0).astype(int)
+    out["total_envolvidos"] = pd.to_numeric(
+        df.get(_pick_col(df, ["total_envolvidos"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["qtd_envolvidos_sem_cpf"] = pd.to_numeric(
+        df.get(_pick_col(df, ["qtd_envolvidos_sem_cpf"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["qtd_envolvidos_sem_rg"] = pd.to_numeric(
+        df.get(_pick_col(df, ["qtd_envolvidos_sem_rg"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["qtd_envolvidos_sem_email"] = pd.to_numeric(
+        df.get(_pick_col(df, ["qtd_envolvidos_sem_email"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["qtd_envolvidos_sem_telefone"] = pd.to_numeric(
+        df.get(_pick_col(df, ["qtd_envolvidos_sem_telefone"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["flag_todos_envolvidos_sem_cpf"] = pd.to_numeric(
+        df.get(_pick_col(df, ["flag_todos_envolvidos_sem_cpf"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["flag_todos_envolvidos_sem_rg"] = pd.to_numeric(
+        df.get(_pick_col(df, ["flag_todos_envolvidos_sem_rg"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["flag_todos_envolvidos_sem_email"] = pd.to_numeric(
+        df.get(_pick_col(df, ["flag_todos_envolvidos_sem_email"])), errors="coerce"
+    ).fillna(0).astype(int)
+    out["flag_todos_envolvidos_sem_telefone"] = pd.to_numeric(
+        df.get(_pick_col(df, ["flag_todos_envolvidos_sem_telefone"])), errors="coerce"
+    ).fillna(0).astype(int)
 
     if out["data_fato"].isna().all():
         out["data_fato"] = out["data_hora_fato"].dt.normalize()

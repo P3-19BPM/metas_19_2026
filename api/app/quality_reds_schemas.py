@@ -36,6 +36,15 @@ class QualityRedsRawRowIn(BaseModel):
     flag_envolvido_sem_rg: Optional[int] = Field(default=0, ge=0, le=1)
     flag_envolvido_sem_email: Optional[int] = Field(default=0, ge=0, le=1)
     flag_envolvido_sem_telefone: Optional[int] = Field(default=0, ge=0, le=1)
+    total_envolvidos: Optional[int] = Field(default=0, ge=0)
+    qtd_envolvidos_sem_cpf: Optional[int] = Field(default=0, ge=0)
+    qtd_envolvidos_sem_rg: Optional[int] = Field(default=0, ge=0)
+    qtd_envolvidos_sem_email: Optional[int] = Field(default=0, ge=0)
+    qtd_envolvidos_sem_telefone: Optional[int] = Field(default=0, ge=0)
+    flag_todos_envolvidos_sem_cpf: Optional[int] = Field(default=0, ge=0, le=1)
+    flag_todos_envolvidos_sem_rg: Optional[int] = Field(default=0, ge=0, le=1)
+    flag_todos_envolvidos_sem_email: Optional[int] = Field(default=0, ge=0, le=1)
+    flag_todos_envolvidos_sem_telefone: Optional[int] = Field(default=0, ge=0, le=1)
 
 
 class QualityRedsIngestIn(BaseModel):
