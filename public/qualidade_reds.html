@@ -151,7 +151,7 @@
     .card{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:12px}
     .card .k{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:.25px}
     .card .v{font-size:24px;font-weight:900;line-height:1.05;margin-top:2px}
-    .card .s{font-size:12px;color:#5d523d;margin-top:4px}
+    .card .s{font-size:12px;color:#5d523d;margin-top:4px;white-space:pre-line}
     .card .v-ok,.card .s-ok{color:#0c7a43}
     .card .v-warn,.card .s-warn{color:#8f1d22}
     .row-info{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:9px 0}
@@ -2406,6 +2406,16 @@
       const outrosPct = Number.isFinite(outrosPctRaw) ? outrosPctRaw : 0;
       const outrosPctTxt = `${outrosPct.toFixed(2).replace(".", ",")}%`;
       const outrosOk = outrosPct >= 2;
+      const resumoFlagsLinhas = Array.isArray(k.resumo_flags_cadastro_linhas)
+        ? k.resumo_flags_cadastro_linhas.map((x) => String(x || "").trim()).filter(Boolean)
+        : [];
+      const resumoFlagsTexto = resumoFlagsLinhas.length
+        ? resumoFlagsLinhas.join("\n")
+        : `${String(Number(k.reds_sem_cpf || 0)).padStart(2, "0")} REDS sem CPF | ${Number(k.envolvidos_sem_cpf || 0)} Envolvidos\n`
+          + `${String(Number(k.reds_sem_endereco || 0)).padStart(2, "0")} REDS sem endereco | ${Number(k.envolvidos_sem_endereco || 0)} Envolvidos\n`
+          + `${String(Number(k.reds_sem_email || 0)).padStart(2, "0")} REDS sem email | ${Number(k.envolvidos_sem_email || 0)} Envolvidos\n`
+          + `${String(Number(k.reds_sem_telefone || 0)).padStart(2, "0")} REDS sem telefone | ${Number(k.envolvidos_sem_telefone || 0)} Envolvidos\n`
+          + `${String(Number(k.reds_faltando_documento || 0)).padStart(2, "0")} REDS faltando documento | ${Number(k.envolvidos_faltando_documento || 0)} Envolvidos`;
       const cards = [
         { k: "Total REDS no periodo", v: k.total_registros, s: `${k.total_avaliados} avaliados` },
         { k: "Percentual avaliado", v: `${k.percentual_avaliado}%`, s: "progresso da comissao" },
@@ -2424,6 +2434,7 @@
         { k: "Avaliados hoje", v: state.kpiProd.avaliadosHoje, s: "produtividade diaria" },
         { k: "Pendentes da comissao", v: state.kpiProd.pendentes, s: "fila de revisao" },
         { k: "Tempo medio (sessao)", v: state.kpiProd.tempoMedioSessao, s: "por registro salvo" },
+        { k: "Qualificacao dos envolvidos", v: "Flags de cadastro", s: resumoFlagsTexto },
       ];
       wrap.innerHTML = cards.map((c) => `<div class="card"><div class="k">${c.k}</div><div class="v ${c.vClass || ""}">${c.v}</div><div class="s ${c.sClass || ""}">${c.s}</div></div>`).join("");
     }
@@ -2881,6 +2892,16 @@
         outros_pendentes: fallbackOutrosPend,
         sinalizados_total: state.rows.filter((r)=>buildFlags(r).length>0).length,
         sinalizados_avaliados: state.rows.filter((r)=>buildFlags(r).length>0 && r.avaliado).length,
+        reds_sem_cpf: state.rows.filter((r)=>Number(r.qtd_envolvidos_sem_cpf || 0) > 0 || !!r.flag_envolvido_sem_cpf).length,
+        envolvidos_sem_cpf: state.rows.reduce((acc, r)=>acc + Number(r.qtd_envolvidos_sem_cpf || 0), 0),
+        reds_sem_endereco: 0,
+        envolvidos_sem_endereco: 0,
+        reds_sem_email: state.rows.filter((r)=>Number(r.qtd_envolvidos_sem_email || 0) > 0 || !!r.flag_envolvido_sem_email).length,
+        envolvidos_sem_email: state.rows.reduce((acc, r)=>acc + Number(r.qtd_envolvidos_sem_email || 0), 0),
+        reds_sem_telefone: state.rows.filter((r)=>Number(r.qtd_envolvidos_sem_telefone || 0) > 0 || !!r.flag_envolvido_sem_telefone).length,
+        envolvidos_sem_telefone: state.rows.reduce((acc, r)=>acc + Number(r.qtd_envolvidos_sem_telefone || 0), 0),
+        reds_faltando_documento: state.rows.filter((r)=>Number(r.qtd_envolvidos_sem_rg || 0) > 0 || !!r.flag_envolvido_sem_rg).length,
+        envolvidos_faltando_documento: state.rows.reduce((acc, r)=>acc + Number(r.qtd_envolvidos_sem_rg || 0), 0),
       });
       renderRecordDetails();
       renderStepFlow();

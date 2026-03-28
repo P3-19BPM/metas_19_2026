@@ -1330,21 +1330,56 @@ def _aggregate_criteria(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         qtd = len(selected)
         obs_lines: list[str] = []
         measures_count: dict[str, int] = {}
+        if key == "qualificacao_envolvidos":
+            cad_rows: list[dict[str, Any]] = []
+            detail_lines: list[str] = []
+            for row in selected:
+                nr = str(row.get("numero_ocorrencia") or "").strip() or "-"
+                problemas: list[tuple[str, int]] = []
+                qtd_cpf = int(row.get("qtd_envolvidos_sem_cpf") or 0)
+                qtd_rg = int(row.get("qtd_envolvidos_sem_rg") or 0)
+                qtd_email = int(row.get("qtd_envolvidos_sem_email") or 0)
+                qtd_tel = int(row.get("qtd_envolvidos_sem_telefone") or 0)
+                qtd_end = int(row.get("qtd_envolvidos_sem_endereco") or 0)
+                if qtd_cpf > 0:
+                    problemas.append(("CPF invalido/nao informado", qtd_cpf))
+                if qtd_email > 0:
+                    problemas.append(("Email vazio/invalido", qtd_email))
+                if qtd_tel > 0:
+                    problemas.append(("Telefone vazio/invalido", qtd_tel))
+                if qtd_end > 0:
+                    problemas.append(("Endereco nao informado", qtd_end))
+                if qtd_rg > 0:
+                    problemas.append(("Documento nao informado", qtd_rg))
+                if not problemas:
+                    if "14.01" in _extract_codes_from_marker(row.get("observacao"), "ERROS_COD"):
+                        cad_rows.append(row)
+                        detail_lines.append(f"REDS {nr} | Inconformidade de qualificacao registrada pela comissao | 0 envolvido(s)")
+                    continue
+                cad_rows.append(row)
+                for campo, qtd_env in problemas:
+                    detail_lines.append(f"REDS {nr} | {campo} | {qtd_env} envolvido(s)")
+            qtd = len(cad_rows)
+            if detail_lines:
+                obs_lines.append("REDS com inconsistência nos cadastros:")
+                obs_lines.extend(detail_lines[:80])
+            selected = cad_rows
         for row in selected[:10]:
             nr = str(row.get("numero_ocorrencia") or "").strip()
-            obs = _strip_markers_from_obs(row.get("observacao"))
-            if obs:
-                obs_lines.append(f"{nr}: {obs}")
-            else:
-                ajustes_obs = _extract_ajustes_obs_map(row.get("observacao"))
-                mapped_labels = ajuste_obs_map_by_key.get(key, tuple())
-                mapped_obs = [str(ajustes_obs.get(lbl) or "").strip() for lbl in mapped_labels]
-                mapped_obs = [txt for txt in mapped_obs if txt]
-                if mapped_obs:
-                    obs_lines.append(f"{nr}: {' | '.join(mapped_obs)}")
+            if key != "qualificacao_envolvidos":
+                obs = _strip_markers_from_obs(row.get("observacao"))
+                if obs:
+                    obs_lines.append(f"{nr}: {obs}")
                 else:
-                    nat = str(row.get("natureza_codigo") or "").strip()
-                    obs_lines.append(f"{nr}: Inconformidade detectada em {nat or 'natureza nao informada'}.")
+                    ajustes_obs = _extract_ajustes_obs_map(row.get("observacao"))
+                    mapped_labels = ajuste_obs_map_by_key.get(key, tuple())
+                    mapped_obs = [str(ajustes_obs.get(lbl) or "").strip() for lbl in mapped_labels]
+                    mapped_obs = [txt for txt in mapped_obs if txt]
+                    if mapped_obs:
+                        obs_lines.append(f"{nr}: {' | '.join(mapped_obs)}")
+                    else:
+                        nat = str(row.get("natureza_codigo") or "").strip()
+                        obs_lines.append(f"{nr}: Inconformidade detectada em {nat or 'natureza nao informada'}.")
             codes = _extract_codes_from_marker(row.get("observacao"), "MEDIDAS_COD")
             if not codes:
                 codes = list(default_measures)
@@ -1762,6 +1797,36 @@ def _compute_qr_kpis_from_rows(rows: list[dict[str, Any]], cia_pm: str) -> dict[
             if r.get("avaliado"):
                 sinalizados_av += 1
 
+    def _count_reds_env(qtd_key: str, flag_key: str) -> tuple[int, int]:
+        reds = 0
+        envs = 0
+        for r in rows:
+            qtd_env = int(r.get(qtd_key) or 0)
+            has_flag = bool(r.get(flag_key)) if flag_key else False
+            if qtd_env > 0 or has_flag:
+                reds += 1
+            if qtd_env > 0:
+                envs += qtd_env
+        return reds, envs
+
+    reds_sem_cpf, env_sem_cpf = _count_reds_env("qtd_envolvidos_sem_cpf", "flag_envolvido_sem_cpf")
+    reds_sem_email, env_sem_email = _count_reds_env("qtd_envolvidos_sem_email", "flag_envolvido_sem_email")
+    reds_sem_tel, env_sem_tel = _count_reds_env("qtd_envolvidos_sem_telefone", "flag_envolvido_sem_telefone")
+    reds_sem_doc, env_sem_doc = _count_reds_env("qtd_envolvidos_sem_rg", "flag_envolvido_sem_rg")
+    reds_sem_endereco = 0
+    env_sem_endereco = 0
+
+    def _line(reds: int, label: str, envs: int) -> str:
+        return f"{reds:02d} REDS sem {label} | {envs} Envolvidos"
+
+    resumo_cadastro_linhas = [
+        _line(reds_sem_cpf, "CPF", env_sem_cpf),
+        _line(reds_sem_endereco, "endereco", env_sem_endereco),
+        _line(reds_sem_email, "email", env_sem_email),
+        _line(reds_sem_tel, "telefone", env_sem_tel),
+        f"{reds_sem_doc:02d} REDS faltando documento | {env_sem_doc} Envolvidos",
+    ]
+
     return {
         "cia_pm": str(cia_pm or "").strip(),
         "total_registros": total,
@@ -1784,6 +1849,17 @@ def _compute_qr_kpis_from_rows(rows: list[dict[str, Any]], cia_pm: str) -> dict[
         "outros_pendentes": outros_pend_meta,
         "sinalizados_total": sinalizados_total,
         "sinalizados_avaliados": sinalizados_av,
+        "reds_sem_cpf": reds_sem_cpf,
+        "envolvidos_sem_cpf": env_sem_cpf,
+        "reds_sem_endereco": reds_sem_endereco,
+        "envolvidos_sem_endereco": env_sem_endereco,
+        "reds_sem_email": reds_sem_email,
+        "envolvidos_sem_email": env_sem_email,
+        "reds_sem_telefone": reds_sem_tel,
+        "envolvidos_sem_telefone": env_sem_tel,
+        "reds_faltando_documento": reds_sem_doc,
+        "envolvidos_faltando_documento": env_sem_doc,
+        "resumo_flags_cadastro_linhas": resumo_cadastro_linhas,
     }
 
 
