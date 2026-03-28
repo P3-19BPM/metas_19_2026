@@ -123,6 +123,6 @@ LEFT JOIN envolvidos_flags AS ENVF
 WHERE 1=1
     AND (OCO.nome_tipo_relatorio IN ('POLICIAL', 'AMBIENTAL', 'TRANSITO') OR OCO.natureza_codigo IN ('W01000', 'W02000', 'W03000', 'W04000'))
     AND OCO.unidade_responsavel_registro_nome LIKE '%19 BPM%'
-    -- Filtro fixo: incremental dos ultimos 12 dias.
-    AND COALESCE(OCO.data_hora_primeiro_fim_preenchimento, OCO.data_hora_alteracao, OCO.data_hora_fechamento, OCO.data_hora_inclusao, OCO.data_hora_fato) >= CAST(date_sub(current_date(), 12) AS TIMESTAMP)
+    -- Filtro dinamico de janela (injetado pelo pipeline): incremental_12d ou full_2026.
+    AND {{QUALITY_DATE_FILTER}}
     AND OCO.digitador_sigla_orgao = 'PM';
