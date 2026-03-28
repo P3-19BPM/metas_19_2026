@@ -193,7 +193,17 @@ FROM db_bisp_reds_reporting.tb_ocorrencia AS OCO
 LEFT JOIN envolvidos_flags AS ENVF
     ON ENVF.numero_ocorrencia = OCO.numero_ocorrencia
 WHERE 1=1
-    AND (OCO.nome_tipo_relatorio IN ('POLICIAL', 'AMBIENTAL', 'TRANSITO') OR OCO.natureza_codigo IN ('W01000', 'W02000', 'W03000', 'W04000'))
+    AND (
+        UPPER(COALESCE(OCO.nome_tipo_relatorio, '')) LIKE '%POLICIAL%'
+        OR UPPER(COALESCE(OCO.nome_tipo_relatorio, '')) LIKE '%AMBIENTAL%'
+        OR UPPER(COALESCE(OCO.nome_tipo_relatorio, '')) LIKE '%TRANSITO%'
+        OR UPPER(COALESCE(OCO.nome_tipo_relatorio, '')) LIKE '%RAT%'
+        OR UPPER(COALESCE(OCO.nome_tipo_relatorio, '')) LIKE '%BOS AMPLO%'
+        OR UPPER(COALESCE(OCO.nome_tipo_relatorio, '')) LIKE '%BOS%'
+        OR UPPER(COALESCE(OCO.nome_tipo_relatorio, '')) LIKE '%DESAPARECIMENTO%'
+        OR UPPER(COALESCE(OCO.nome_tipo_relatorio, '')) LIKE '%LOCALIZA%'
+        OR OCO.natureza_codigo IN ('W01000', 'W02000', 'W03000', 'W04000')
+    )
     AND OCO.unidade_responsavel_registro_nome LIKE '%19 BPM%'
     -- Filtro dinamico de janela (injetado pelo pipeline): incremental_12d ou full_2026.
     AND {{QUALITY_DATE_FILTER}}
