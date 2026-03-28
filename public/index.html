@@ -747,6 +747,17 @@
                     const raw = (this.updateForm.scriptsText || '').replace(/;/g, ',');
                     return [...new Set(raw.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean))];
                 },
+                resolveQualityExtractMode(runMode, scripts) {
+                    const mode = String(runMode || '').trim().toLowerCase();
+                    const list = Array.isArray(scripts) ? scripts : [];
+                    if (mode === 'all') return 'incremental_12d';
+                    const normalized = list.map(s => String(s || '').replace(/\\/g, '/').toLowerCase());
+                    const hasQreds2026 = normalized.some(s => s.endsWith('qualidade_reds/qualidade_reds_2026.sql'));
+                    if (hasQreds2026) return 'full_2026';
+                    const hasQredsInc = normalized.some(s => s.endsWith('qualidade_reds/qualidade_reds.sql'));
+                    if (hasQredsInc) return 'incremental_12d';
+                    return 'incremental_12d';
+                },
                 getNomeGrupoScript(rawGroup) {
                     const aliases = {
                         'indicadores_resultado_gdo': 'GDO',
@@ -820,9 +831,12 @@
                         }
                         localStorage.setItem('metasApiBaseUrl', this.apiBaseUrl || '');
                         localStorage.setItem('metasAdminToken', this.adminToken || '');
+                        const selectedScripts = this.updateForm.run_mode === 'all' ? [] : this.normalizeScriptsList();
+                        const extractMode = this.resolveQualityExtractMode(this.updateForm.run_mode, selectedScripts);
                         const payload = {
                             run_mode: this.updateForm.run_mode,
-                            scripts: this.updateForm.run_mode === 'all' ? [] : this.normalizeScriptsList()
+                            scripts: selectedScripts,
+                            extract_mode: extractMode
                         };
                         const response = await fetch(this.getApiUrl('/jobs/manual'), {
                             method: 'POST',
