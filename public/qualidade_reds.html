@@ -165,6 +165,15 @@
     #reviewTable th:nth-child(9),#reviewTable td:nth-child(9){min-width:150px}
     .flags{display:flex;flex-wrap:wrap;gap:4px}
     .tag{border:1px solid #cdbf9e;background:#fff7e4;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700}
+    .tag-btn{
+      border:1px solid #cdbf9e;background:#fff7e4;border-radius:999px;
+      padding:2px 7px;font-size:11px;font-weight:700;color:#2d2517;cursor:pointer;
+      transition:all .12s ease;
+    }
+    .tag-btn:hover,.tag-btn:focus{
+      background:#f3e6ca;border-color:#a48e5b;outline:none;
+      box-shadow:0 0 0 2px rgba(160,143,99,.25);
+    }
     .dirty{background:#fff8d8}
     .small{font-size:12px;color:var(--muted)}
     .chkline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -265,6 +274,18 @@
     .modal-controls .toolbar{justify-content:flex-end}
     .modal-controls .toolbar button{width:auto;min-width:160px}
     .modal-members{display:grid;grid-template-columns:1fr;gap:8px}
+    .modal-help-flag{
+      border:1px solid #d8ccb0;border-radius:12px;background:#fcf7eb;padding:12px;
+      display:grid;gap:10px;
+    }
+    .modal-help-flag .sigla{
+      display:inline-flex;align-items:center;justify-content:center;
+      min-width:42px;height:28px;padding:0 10px;border-radius:999px;
+      border:1px solid #bfa574;background:#fff0d0;color:#3b2e15;font-weight:900;
+      letter-spacing:.4px;
+    }
+    .modal-help-flag .titulo{font-size:16px;font-weight:900;color:#1b160d}
+    .modal-help-flag p{margin:0;font-size:13px;line-height:1.45;color:#3e3523}
     .cm-card{border:1px solid #d9cdaa;border-radius:10px;background:#fff;padding:10px}
     .cm-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
     .cm-title{font-size:12px;font-weight:700;color:#423b2b}
@@ -667,6 +688,25 @@
       <div class="modal-foot">
         <button id="bUnsavedStay" type="button">Nao, continuar editando</button>
         <button id="bUnsavedLeave" type="button" class="btn-main">Sim, sair sem salvar</button>
+      </div>
+    </div>
+  </div>
+  <div id="flagHelpModal" class="modal-shell hidden" aria-hidden="true">
+    <div class="modal-box" style="width:min(720px,100%)">
+      <div class="modal-head">
+        <div>
+          <b>Guia das Flags de Analise</b>
+          <div class="small">Interpretacao padronizada das sinalizacoes automaticas.</div>
+        </div>
+        <button id="bFlagHelpCloseTop" type="button">Fechar</button>
+      </div>
+      <div class="modal-help-flag">
+        <div><span id="flagHelpSigla" class="sigla">-</span></div>
+        <div id="flagHelpTitulo" class="titulo">Selecione uma flag</div>
+        <p id="flagHelpDesc">Clique em uma sigla na coluna de Flags para visualizar o significado.</p>
+      </div>
+      <div class="modal-foot">
+        <button id="bFlagHelpClose" type="button" class="btn-main">Entendi</button>
       </div>
     </div>
   </div>
@@ -2374,6 +2414,90 @@
       return cia;
     }
 
+    const FLAG_HELP_MAP = {
+      TXT: {
+        titulo: "Texto com alerta de consistencia",
+        desc: "O motor detectou padrao textual suspeito para revisao humana da redacao."
+      },
+      ORT: {
+        titulo: "Possivel erro ortografico",
+        desc: "Foram encontrados termos com alta chance de erro de ortografia."
+      },
+      PONT: {
+        titulo: "Possivel ausencia de pontuacao",
+        desc: "Texto com padrao de pontuacao insuficiente ou quebrado para o contexto do historico."
+      },
+      INC: {
+        titulo: "Historico incompleto",
+        desc: "A narrativa pode estar incompleta, sem elementos minimos esperados para compreensao do fato."
+      },
+      CONV: {
+        titulo: "Possivel divergencia de convergencia",
+        desc: "Ha indicios de divergencia entre campos do REDS e o texto/historico da ocorrencia."
+      },
+      PAD: {
+        titulo: "Padrao operacional",
+        desc: "Indica possivel descumprimento de padrao operacional (Motor 3) para a natureza avaliada."
+      },
+      CLASS: {
+        titulo: "Classificacao/Natureza",
+        desc: "Sinaliza possivel ajuste de classificacao ou enquadramento da natureza do registro."
+      },
+      ENV: {
+        titulo: "Campos de envolvidos incompletos",
+        desc: "Foi detectada ausencia/inconsistencia de cadastro de envolvidos (CPF, RG, email, telefone)."
+      },
+      PROC: {
+        titulo: "Erro de procedimento",
+        desc: "Registro sinalizado com indicio de erro de procedimento, especialmente em relatorio do tipo policial."
+      },
+      C99: {
+        titulo: "Natureza C99",
+        desc: "Registro classificado em natureza C99, que exige conferencia conforme criterio da comissao."
+      },
+      W: {
+        titulo: "Grupo W",
+        desc: "Registro com natureza do grupo W (W01, W02, W03 ou W04), sujeito a criterio especifico de avaliacao."
+      }
+    };
+
+    function flagHelpData(flag){
+      const key = String(flag || "").trim().toUpperCase();
+      return FLAG_HELP_MAP[key] || {
+        titulo: "Flag sem descricao cadastrada",
+        desc: "Nao existe descricao padrao para esta sigla. Solicite inclusao no dicionario de flags."
+      };
+    }
+
+    function renderFlagTags(row){
+      const tags = buildFlags(row);
+      if (!tags.length) return "-";
+      return tags.map((flag) => (
+        `<button type="button" class="tag-btn js-flag-help" data-flag="${esc(flag)}" title="Clique para ver o significado da flag">${esc(flag)}</button>`
+      )).join("");
+    }
+
+    function openFlagHelpModal(flag){
+      const code = String(flag || "").trim().toUpperCase();
+      const info = flagHelpData(code);
+      $("flagHelpSigla").textContent = code || "-";
+      $("flagHelpTitulo").textContent = info.titulo;
+      $("flagHelpDesc").textContent = info.desc;
+      const modal = $("flagHelpModal");
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeFlagHelpModal(){
+      const modal = $("flagHelpModal");
+      if (!modal) return;
+      modal.classList.remove("is-open");
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
     function buildFlags(r){
       const tags = [];
       if (r.alerta_texto_curto) tags.push("TXT");
@@ -2817,7 +2941,7 @@
         const r = state.rows[idx];
         const secNats = secondaryNaturezasLabel(r);
         const occ = ocorrenciaState(r);
-        const flags = buildFlags(r).map(f => `<span class="tag">${f}</span>`).join("") || "-";
+        const flags = renderFlagTags(r);
         const ajustes = new Set(Array.isArray(r.ajustes) ? r.ajustes : []);
         const ajustesObs = normalizeAjustesObsMap(r.ajustesObs || {}, [...ajustes]);
         const st = rowStatus(idx, r);
@@ -3147,6 +3271,13 @@
       const tr = ev.target.closest("tr[data-idx]");
       if (!tr) return;
       const idx = Number(tr.dataset.idx);
+      const flagBtn = ev.target.closest(".js-flag-help");
+      if (flagBtn) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        openFlagHelpModal(String(flagBtn.dataset.flag || ""));
+        return;
+      }
       if (ev.target.classList.contains("js-open")) {
         state.selectedIdx = idx;
         state.drawerClosed = false;
@@ -3203,6 +3334,8 @@
     });
     bindClick("bComissaoClose", () => closeComissaoModal());
     bindClick("bComissaoCancel", () => closeComissaoModal());
+    bindClick("bFlagHelpCloseTop", () => closeFlagHelpModal());
+    bindClick("bFlagHelpClose", () => closeFlagHelpModal());
     bindClick("bComissaoAdd", () => {
       const members = comissaoDraftCurrentMembers();
       members.push(normalizeComissaoMember({}));
@@ -3245,6 +3378,10 @@
     if (comissaoModal) comissaoModal.addEventListener("click", (ev) => {
       if (ev.target && ev.target.id === "comissaoModal") closeComissaoModal();
       if (ev.target && ev.target.closest && ev.target.closest("[data-close-comissao='1']")) closeComissaoModal();
+    });
+    const flagHelpModal = $("flagHelpModal");
+    if (flagHelpModal) flagHelpModal.addEventListener("click", (ev) => {
+      if (ev.target && ev.target.id === "flagHelpModal") closeFlagHelpModal();
     });
     const comissaoEditBlock = $("comissaoEditBlock");
     if (comissaoEditBlock) comissaoEditBlock.addEventListener("change", (ev) => {
@@ -3365,6 +3502,10 @@
       }
       if (ev.key === "Escape" && $("comissaoModal") && !$("comissaoModal").classList.contains("hidden")) {
         closeComissaoModal();
+        return;
+      }
+      if (ev.key === "Escape" && $("flagHelpModal") && !$("flagHelpModal").classList.contains("hidden")) {
+        closeFlagHelpModal();
         return;
       }
       if ($("unsavedExitModal") && !$("unsavedExitModal").classList.contains("hidden")) return;
