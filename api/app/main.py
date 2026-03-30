@@ -335,7 +335,15 @@ def _quality_user_nr_from_request(request: Request, user_nr: str | None = None) 
     request_nr = q or hdr
     db_user = _session_db_user(request) or {}
     sess = normalize_user_nr(db_user.get("numero_policia") or _session_user_from_request(request) or "")
-    if _is_ui_authenticated(request) and sess:
+    if _is_ui_authenticated(request):
+        if not sess:
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    "sessao autenticada sem numero_policia valido. "
+                    "cadastre o NR PM do usuario para liberar o acesso ao Qualidade REDS."
+                ),
+            )
         if request_nr and request_nr != sess:
             raise HTTPException(status_code=403, detail="numero_policia divergente da sessao autenticada")
         return sess
@@ -441,6 +449,16 @@ def _quality_comissao_funcao_rank(value: str | None) -> int:
 
 
 def _quality_comissao_normalize_member(row: dict | str | None, cia: str = "") -> dict:
+    def _norm_date(value: str | None) -> str:
+        raw = str(value or "").strip()
+        if not raw:
+            return ""
+        if len(raw) >= 10 and raw[4] == "-" and raw[7] == "-":
+            return raw[:10]
+        if len(raw) >= 10 and raw[2] == "/" and raw[5] == "/":
+            return f"{raw[6:10]}-{raw[3:5]}-{raw[0:2]}"
+        return ""
+
     src = row if isinstance(row, dict) else {"id": row}
     nr = _quality_comissao_member_nr(src)
     nome_completo = str(src.get("nome_completo") or src.get("nome") or "").strip()
@@ -461,6 +479,8 @@ def _quality_comissao_normalize_member(row: dict | str | None, cia: str = "") ->
         "nome_guerra": nome_guerra,
         "posto_graduacao": posto,
         "funcao": funcao,
+        "vigencia_inicio": _norm_date(str(src.get("vigencia_inicio") or src.get("inicio_vigencia") or "")),
+        "vigencia_fim": _norm_date(str(src.get("vigencia_fim") or src.get("fim_vigencia") or "")),
     }
     if ordem is not None:
         out["ordem"] = ordem
@@ -1819,12 +1839,14 @@ def quality_reds_monthly_report(
     comissao: str | None = Query(default=None),
     comissao_json: str | None = Query(default=None),
     periodo_label: str | None = Query(default=None),
+    report_scope: str | None = Query(default=None),
     user_nr: str | None = Query(default=None),
     _: None = Depends(_check_admin_or_ui),
 ) -> dict:
     nr, _ = _quality_require_profile(request, user_nr=user_nr)
     if not can_access_cia(nr, cia_pm):
         raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    comissao_cfg = _quality_comissao_load()
     return build_qr_monthly_report(
         cia_pm=cia_pm,
         date_from=date_from,
@@ -1834,7 +1856,9 @@ def quality_reds_monthly_report(
         data_reuniao=data_reuniao,
         comissao=comissao,
         comissao_json=comissao_json,
+        comissao_cfg=comissao_cfg,
         periodo_label=periodo_label,
+        report_scope=report_scope,
     )
 
 
@@ -1850,12 +1874,14 @@ def quality_reds_monthly_report_pdf(
     comissao: str | None = Query(default=None),
     comissao_json: str | None = Query(default=None),
     periodo_label: str | None = Query(default=None),
+    report_scope: str | None = Query(default=None),
     user_nr: str | None = Query(default=None),
     _: None = Depends(_check_admin_or_ui),
 ) -> StreamingResponse:
     nr, _ = _quality_require_profile(request, user_nr=user_nr)
     if not can_access_cia(nr, cia_pm):
         raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    comissao_cfg = _quality_comissao_load()
     report = build_qr_monthly_report(
         cia_pm=cia_pm,
         date_from=date_from,
@@ -1865,7 +1891,9 @@ def quality_reds_monthly_report_pdf(
         data_reuniao=data_reuniao,
         comissao=comissao,
         comissao_json=comissao_json,
+        comissao_cfg=comissao_cfg,
         periodo_label=periodo_label,
+        report_scope=report_scope,
     )
     try:
         pdf_bytes = build_qr_monthly_report_pdf(report)

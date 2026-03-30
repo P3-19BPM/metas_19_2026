@@ -1,5 +1,6 @@
 import json
 import re
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -27,9 +28,34 @@ def _member_nr(value: Any) -> str:
     return normalize_user_nr(value)
 
 
+def _date_flex(value: Any) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    if len(raw) >= 10 and raw[4] == "-" and raw[7] == "-":
+        try:
+            return datetime.strptime(raw[:10], "%Y-%m-%d")
+        except Exception:
+            return None
+    if len(raw) >= 10 and raw[2] == "/" and raw[5] == "/":
+        try:
+            return datetime.strptime(raw[:10], "%d/%m/%Y")
+        except Exception:
+            return None
+    return None
+
+
 def _member_nr_list(values: list[Any]) -> list[str]:
     out: list[str] = []
+    today = datetime.now()
     for value in (values or []):
+        if isinstance(value, dict):
+            ini = _date_flex(value.get("vigencia_inicio") or value.get("inicio_vigencia"))
+            fim = _date_flex(value.get("vigencia_fim") or value.get("fim_vigencia"))
+            if ini and today < ini:
+                continue
+            if fim and today > fim:
+                continue
         nr = _member_nr(value)
         if nr:
             out.append(nr)

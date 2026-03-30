@@ -1344,6 +1344,15 @@
       return String(value || "").replace(/\D/g, "");
     }
 
+    function normalizeComissaoDate(value){
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+      const m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      return "";
+    }
+
     function normalizeComissaoMember(row){
       if (row && typeof row === "object" && !Array.isArray(row)) {
         const id = digitsOnly(row.id || row.numero_policia || row.nr || row.matricula || "");
@@ -1364,6 +1373,8 @@
           posto_graduacao: postoRaw || posto,
           funcao,
           ordem,
+          vigencia_inicio: normalizeComissaoDate(row.vigencia_inicio || row.inicio_vigencia || row.inicio || ""),
+          vigencia_fim: normalizeComissaoDate(row.vigencia_fim || row.fim_vigencia || row.fim || ""),
         };
       }
       const id = digitsOnly(row || "");
@@ -1376,6 +1387,8 @@
         posto_graduacao: "",
         funcao: "Membro",
         ordem: null,
+        vigencia_inicio: "",
+        vigencia_fim: "",
       };
     }
 
@@ -1475,6 +1488,8 @@
             posto_graduacao: normalizePostoGraduacao(item.posto || item.posto_graduacao || ""),
             funcao: normalizeComissaoFuncao(item.funcao || "Membro"),
             ordem: Number.isFinite(Number(item.ordem)) ? Number(item.ordem) : null,
+            vigencia_inicio: normalizeComissaoDate(item.vigencia_inicio || ""),
+            vigencia_fim: normalizeComissaoDate(item.vigencia_fim || ""),
           };
         })
         .filter((m) => !!m.nome_completo || !!m.id);
@@ -1933,6 +1948,8 @@
         posto_graduacao: postoNorm && postoNorm !== "MILITAR" ? postoNorm : String(m.posto_graduacao || m.posto || "").trim(),
         funcao: funcaoNorm,
         ordem: Number.isFinite(ordemNum) && ordemNum > 0 ? Math.floor(ordemNum) : 1,
+        vigencia_inicio: normalizeComissaoDate(m.vigencia_inicio || ""),
+        vigencia_fim: normalizeComissaoDate(m.vigencia_fim || ""),
       };
       const ciaNorm = digitsOnly(cia);
       if (ciaNorm) out.cia = ciaNorm;
@@ -2160,6 +2177,7 @@
       if (field === "id") val = digitsOnly(val);
       if (field === "funcao") val = normalizeComissaoFuncao(val);
       if (field === "posto_graduacao") val = normalizeComissaoPostoOption(val);
+      if (field === "vigencia_inicio" || field === "vigencia_fim") val = normalizeComissaoDate(val);
       const next = {
         ...normalizeComissaoMember(members[idx]),
         [field]: val,
@@ -2226,6 +2244,12 @@
               </label>
               <label>NR PM
                 <input type="text" class="js-cm-field" data-field="id" data-idx="${idx}" value="${esc(m.id || "")}" placeholder="Ex: 1234567" inputmode="numeric">
+              </label>
+              <label>Vigencia inicio
+                <input type="date" class="js-cm-field" data-field="vigencia_inicio" data-idx="${idx}" value="${esc(normalizeComissaoDate(m.vigencia_inicio || ""))}">
+              </label>
+              <label>Vigencia fim
+                <input type="date" class="js-cm-field" data-field="vigencia_fim" data-idx="${idx}" value="${esc(normalizeComissaoDate(m.vigencia_fim || ""))}">
               </label>
             </div>
           </div>

@@ -1130,12 +1130,28 @@ def _normalize_comissao_member_dict(row: dict[str, Any], idx: int = 0) -> dict[s
         ordem = idx + 1
     if ordem < 1:
         ordem = idx + 1
+    vig_ini = str(row.get("vigencia_inicio") or row.get("inicio_vigencia") or "").strip()
+    vig_fim = str(row.get("vigencia_fim") or row.get("fim_vigencia") or "").strip()
+    if len(vig_ini) >= 10 and vig_ini[2] == "/" and vig_ini[5] == "/":
+        vig_ini = f"{vig_ini[6:10]}-{vig_ini[3:5]}-{vig_ini[0:2]}"
+    if len(vig_fim) >= 10 and vig_fim[2] == "/" and vig_fim[5] == "/":
+        vig_fim = f"{vig_fim[6:10]}-{vig_fim[3:5]}-{vig_fim[0:2]}"
+    if not (len(vig_ini) >= 10 and vig_ini[4] == "-" and vig_ini[7] == "-"):
+        vig_ini = ""
+    else:
+        vig_ini = vig_ini[:10]
+    if not (len(vig_fim) >= 10 and vig_fim[4] == "-" and vig_fim[7] == "-"):
+        vig_fim = ""
+    else:
+        vig_fim = vig_fim[:10]
     return {
         "id": member_id,
         "nome_completo": nome,
         "posto_graduacao": posto,
         "funcao": funcao,
         "ordem": ordem,
+        "vigencia_inicio": vig_ini,
+        "vigencia_fim": vig_fim,
     }
 
 
@@ -1181,9 +1197,62 @@ def _parse_comissao_members(comissao_json: Any, comissao_text: Any) -> list[dict
             "posto_graduacao": "",
             "funcao": "Membro",
             "ordem": idx + 1,
+            "vigencia_inicio": "",
+            "vigencia_fim": "",
         }
         for idx, name in enumerate(names)
     ]
+
+
+def _parse_iso_date_flex(value: Any) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    if len(raw) >= 10 and raw[4] == "-" and raw[7] == "-":
+        try:
+            return datetime.strptime(raw[:10], "%Y-%m-%d")
+        except Exception:
+            return None
+    if len(raw) >= 10 and raw[2] == "/" and raw[5] == "/":
+        try:
+            return datetime.strptime(raw[:10], "%d/%m/%Y")
+        except Exception:
+            return None
+    return None
+
+
+def _resolve_comissao_members_from_config(
+    comissao_cfg: dict[str, Any] | None,
+    cia_pm: str | None,
+    report_scope: str | None,
+    date_from: str | None,
+    date_to: str | None,
+) -> list[dict[str, Any]]:
+    cfg = comissao_cfg if isinstance(comissao_cfg, dict) else {}
+    ref_dt = _parse_iso_date_flex(date_to) or _parse_iso_date_flex(date_from) or datetime.now()
+    scope = str(report_scope or "").strip().lower()
+    is_geral = scope == "comissao_geral"
+    cia_key = "".join(ch for ch in str(cia_pm or "") if ch.isdigit())
+    base_members: list[Any]
+    if is_geral:
+        base_members = list(cfg.get("comissao") or [])
+    else:
+        sub = cfg.get("subcomissoes") or {}
+        base_members = list((sub.get(cia_key) or [])) if cia_key else []
+    norm_members = [
+        _normalize_comissao_member_dict(item if isinstance(item, dict) else {}, idx=i)
+        for i, item in enumerate(base_members)
+    ]
+    out: list[dict[str, Any]] = []
+    for m in norm_members:
+        ini = _parse_iso_date_flex(m.get("vigencia_inicio"))
+        fim = _parse_iso_date_flex(m.get("vigencia_fim"))
+        if ini and ref_dt < ini:
+            continue
+        if fim and ref_dt > fim:
+            continue
+        out.append(m)
+    return out
 
 
 def _strip_markers_from_obs(text_value: Any) -> str:
@@ -2071,6 +2140,7 @@ def build_qr_monthly_report(
     data_reuniao: str | None = None,
     comissao: str | None = None,
     comissao_json: str | None = None,
+    comissao_cfg: dict[str, Any] | None = None,
     periodo_label: str | None = None,
     report_scope: str | None = None,
 ) -> dict[str, Any]:
@@ -2104,7 +2174,15 @@ def build_qr_monthly_report(
     w_qtd = sum(1 for r in nao_cv_rows if str(r.get("tipo_natureza") or "") == "GRUPO_W")
     c99_qtd = sum(1 for r in nao_cv_rows if str(r.get("tipo_natureza") or "") == "C99000")
     outros_qtd = int(k.get("outros_avaliados") or 0)
-    comissao_raw_members = _parse_comissao_members(comissao_json, comissao)
+    comissao_raw_members = _resolve_comissao_members_from_config(
+        comissao_cfg=comissao_cfg,
+        cia_pm=cia_pm,
+        report_scope=report_scope,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    if not comissao_raw_members:
+        comissao_raw_members = _parse_comissao_members(comissao_json, comissao)
     comissao_validos = [
         m for m in comissao_raw_members
         if _normalize_comissao_funcao(m.get("funcao")) != "Auxiliar" and str(m.get("nome_completo") or "").strip()

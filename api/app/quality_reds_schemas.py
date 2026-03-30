@@ -89,6 +89,8 @@ class QualityRedsComissaoMemberIn(BaseModel):
     cia: Optional[str] = Field(default="", max_length=40)
     funcao: Optional[str] = Field(default="", max_length=80)
     ordem: Optional[int] = Field(default=None, ge=1, le=999)
+    vigencia_inicio: Optional[str] = Field(default="", max_length=20)
+    vigencia_fim: Optional[str] = Field(default="", max_length=20)
 
 
 class QualityRedsComissaoConfigIn(BaseModel):
