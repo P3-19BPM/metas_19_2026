@@ -2537,6 +2537,30 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         safe = _xml_escape(str(text if text is not None else "-")).replace("\n", "<br/>")
         return Paragraph(safe, st_small)
 
+    def _chunk_pdf_text(text: Any, max_chars: int = 900, max_lines: int = 18) -> list[str]:
+        raw = str(text if text is not None else "").replace("\r\n", "\n").replace("\r", "\n").strip()
+        if not raw:
+            return ["-"]
+        src_lines = [ln.strip() for ln in raw.split("\n")]
+        src_lines = [ln for ln in src_lines if ln]
+        if not src_lines:
+            return ["-"]
+        chunks: list[str] = []
+        cur: list[str] = []
+        cur_chars = 0
+        for ln in src_lines:
+            ln_len = len(ln) + 1
+            if cur and (len(cur) >= max_lines or (cur_chars + ln_len) > max_chars):
+                chunks.append("\n".join(cur))
+                cur = [ln]
+                cur_chars = len(ln)
+            else:
+                cur.append(ln)
+                cur_chars += ln_len
+        if cur:
+            chunks.append("\n".join(cur))
+        return chunks or ["-"]
+
     story: list[Any] = []
     logo_path = Path(__file__).resolve().parents[2] / "public" / "imagens" / "Icones_logo_19bpm" / "android-chrome-192x192.png"
     logo_cell: Any = Spacer(20 * mm, 20 * mm)
@@ -2685,13 +2709,18 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         ]
         rows = [header]
         for c in criterios:
-            rows.append(
-                [
-                    _p(c.get("criterio") or "-"),
-                    _p(c.get("observacao_inconformidades") or "-"),
-                    _p(c.get("medidas_adotadas") or "-"),
-                ]
-            )
+            criterio_txt = str(c.get("criterio") or "-")
+            obs_chunks = _chunk_pdf_text(c.get("observacao_inconformidades") or "-")
+            med_chunks = _chunk_pdf_text(c.get("medidas_adotadas") or "-")
+            total_parts = max(len(obs_chunks), len(med_chunks))
+            for i in range(total_parts):
+                rows.append(
+                    [
+                        _p(criterio_txt if i == 0 else ""),
+                        _p(obs_chunks[i] if i < len(obs_chunks) else ""),
+                        _p(med_chunks[i] if i < len(med_chunks) else ""),
+                    ]
+                )
 
         crit_table = Table(
             rows,
