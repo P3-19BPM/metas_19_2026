@@ -1298,11 +1298,11 @@ def _aggregate_criteria(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 or bool(int(r.get("qtd_envolvidos_sem_rg") or 0) > 0)
                 or bool(int(r.get("qtd_envolvidos_sem_email") or 0) > 0)
                 or bool(int(r.get("qtd_envolvidos_sem_telefone") or 0) > 0)
-                or bool(r.get("flag_envolvido_sem_cpf"))
-                or bool(r.get("flag_envolvido_sem_rg"))
-                or bool(r.get("flag_envolvido_sem_email"))
-                or bool(r.get("flag_envolvido_sem_telefone"))
-                or bool(r.get("alerta_campos_envolvido_incompletos"))
+                or (int(r.get("total_envolvidos") or 0) > 0 and bool(r.get("flag_envolvido_sem_cpf")))
+                or (int(r.get("total_envolvidos") or 0) > 0 and bool(r.get("flag_envolvido_sem_rg")))
+                or (int(r.get("total_envolvidos") or 0) > 0 and bool(r.get("flag_envolvido_sem_email")))
+                or (int(r.get("total_envolvidos") or 0) > 0 and bool(r.get("flag_envolvido_sem_telefone")))
+                or (int(r.get("total_envolvidos") or 0) > 0 and bool(r.get("alerta_campos_envolvido_incompletos")))
                 or ("14.01" in _extract_codes_from_marker(r.get("observacao"), "ERROS_COD"))
             ),
             ["02"],
@@ -1812,6 +1812,9 @@ def _compute_qr_kpis_from_rows(rows: list[dict[str, Any]], cia_pm: str) -> dict[
         reds = 0
         envs = 0
         for r in rows:
+            total_env = int(r.get("total_envolvidos") or 0)
+            if total_env <= 0:
+                continue
             qtd_env = int(r.get(qtd_key) or 0)
             has_flag = bool(r.get(flag_key)) if flag_key else False
             if qtd_env > 0 or has_flag:

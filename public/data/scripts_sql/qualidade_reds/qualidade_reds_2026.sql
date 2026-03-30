@@ -164,25 +164,25 @@ SELECT
     OCO.digitador_nome_unidade,
     OCO.historico_ocorrencia,
     COALESCE(ENVF.total_envolvidos, 0) AS total_envolvidos,
-    COALESCE(ENVF.flag_envolvido_sem_cpf, 1) AS flag_envolvido_sem_cpf,
+    COALESCE(ENVF.flag_envolvido_sem_cpf, 0) AS flag_envolvido_sem_cpf,
     COALESCE(ENVF.qtd_envolvidos_sem_cpf, 0) AS qtd_envolvidos_sem_cpf,
     CASE
         WHEN COALESCE(ENVF.total_envolvidos, 0) > 0 AND COALESCE(ENVF.qtd_envolvidos_sem_cpf, 0) = COALESCE(ENVF.total_envolvidos, 0)
         THEN 1 ELSE 0
     END AS flag_todos_envolvidos_sem_cpf,
-    COALESCE(ENVF.flag_envolvido_sem_rg, 1) AS flag_envolvido_sem_rg,
+    COALESCE(ENVF.flag_envolvido_sem_rg, 0) AS flag_envolvido_sem_rg,
     COALESCE(ENVF.qtd_envolvidos_sem_rg, 0) AS qtd_envolvidos_sem_rg,
     CASE
         WHEN COALESCE(ENVF.total_envolvidos, 0) > 0 AND COALESCE(ENVF.qtd_envolvidos_sem_rg, 0) = COALESCE(ENVF.total_envolvidos, 0)
         THEN 1 ELSE 0
     END AS flag_todos_envolvidos_sem_rg,
-    COALESCE(ENVF.flag_envolvido_sem_email, 1) AS flag_envolvido_sem_email,
+    COALESCE(ENVF.flag_envolvido_sem_email, 0) AS flag_envolvido_sem_email,
     COALESCE(ENVF.qtd_envolvidos_sem_email, 0) AS qtd_envolvidos_sem_email,
     CASE
         WHEN COALESCE(ENVF.total_envolvidos, 0) > 0 AND COALESCE(ENVF.qtd_envolvidos_sem_email, 0) = COALESCE(ENVF.total_envolvidos, 0)
         THEN 1 ELSE 0
     END AS flag_todos_envolvidos_sem_email,
-    COALESCE(ENVF.flag_envolvido_sem_telefone, 1) AS flag_envolvido_sem_telefone
+    COALESCE(ENVF.flag_envolvido_sem_telefone, 0) AS flag_envolvido_sem_telefone
     ,
     COALESCE(ENVF.qtd_envolvidos_sem_telefone, 0) AS qtd_envolvidos_sem_telefone,
     CASE
