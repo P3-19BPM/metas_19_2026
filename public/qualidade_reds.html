@@ -2756,8 +2756,14 @@
       }
       syncMonthlyDateConstraints();
       const cia = selectedCiaForReport();
-      const url = `/quality/reds/monthly-report-pdf/${encodeURIComponent(cia)}${qs(withUserNr({...currentFilterParams(), ...currentReportParams()}))}`;
-      const resp = await fetch(url, { method: "GET", credentials: "include" });
+      const payload = { ...currentFilterParams(), ...currentReportParams() };
+      const url = `/quality/reds/monthly-report-pdf/${encodeURIComponent(cia)}${qs(withUserNr())}`;
+      const resp = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       if (!resp.ok) {
         const txt = await resp.text();
         let detail = `Erro HTTP ${resp.status}`;

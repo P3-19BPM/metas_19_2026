@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import quote, quote_plus
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
+from fastapi import Body, Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -1903,6 +1903,46 @@ def quality_reds_monthly_report_pdf(
         raise HTTPException(status_code=500, detail=f"falha ao gerar pdf mensal: {exc}") from exc
     date_ini = str(date_from or "inicio").replace("/", "-")
     date_end = str(date_to or "fim").replace("/", "-")
+    cia_txt = "".join(ch for ch in str(cia_pm or "") if ch.isdigit()) or str(cia_pm or "cia")
+    filename = f"relatorio_qreds_cia{cia_txt}_{date_ini}_{date_end}.pdf"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
+
+
+@app.post("/quality/reds/monthly-report-pdf/{cia_pm}")
+def quality_reds_monthly_report_pdf_post(
+    request: Request,
+    cia_pm: str,
+    payload: dict = Body(default_factory=dict),
+    user_nr: str | None = Query(default=None),
+    _: None = Depends(_check_admin_or_ui),
+) -> StreamingResponse:
+    nr, _ = _quality_require_profile(request, user_nr=user_nr)
+    if not can_access_cia(nr, cia_pm):
+        raise HTTPException(status_code=403, detail="subcomissao sem acesso a esta Cia.")
+    p = payload if isinstance(payload, dict) else {}
+    comissao_cfg = _quality_comissao_load()
+    report = build_qr_monthly_report(
+        cia_pm=cia_pm,
+        date_from=str(p.get("date_from") or "") or None,
+        date_to=str(p.get("date_to") or "") or None,
+        natureza_grupo=str(p.get("natureza_grupo") or "") or None,
+        nome_tipo_relatorio=str(p.get("nome_tipo_relatorio") or "") or None,
+        data_reuniao=str(p.get("data_reuniao") or "") or None,
+        comissao=str(p.get("comissao") or "") or None,
+        comissao_json=str(p.get("comissao_json") or "") or None,
+        comissao_cfg=comissao_cfg,
+        periodo_label=str(p.get("periodo_label") or "") or None,
+        report_scope=str(p.get("report_scope") or "") or None,
+    )
+    try:
+        pdf_bytes = build_qr_monthly_report_pdf(report)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"falha ao gerar pdf mensal: {exc}") from exc
+    date_ini = str(p.get("date_from") or "inicio").replace("/", "-")
+    date_end = str(p.get("date_to") or "fim").replace("/", "-")
     cia_txt = "".join(ch for ch in str(cia_pm or "") if ch.isdigit()) or str(cia_pm or "cia")
     filename = f"relatorio_qreds_cia{cia_txt}_{date_ini}_{date_end}.pdf"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
