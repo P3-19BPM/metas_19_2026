@@ -2752,8 +2752,5 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         canvas_obj.setFillColor(colors.HexColor("#5a4f39"))
         canvas_obj.drawRightString(195 * mm, 8 * mm, f"Pagina {canvas_obj.getPageNumber()}")
 
-    try:
-        doc.build(story, onFirstPage=_draw_page_number, onLaterPages=_draw_page_number)
-        return buf.getvalue()
-    except Exception:
-        return _build_qr_monthly_report_pdf_fallback(report)
+    doc.build(story, onFirstPage=_draw_page_number, onLaterPages=_draw_page_number)
+    return buf.getvalue()
