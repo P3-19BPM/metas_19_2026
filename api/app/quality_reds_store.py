@@ -2639,7 +2639,7 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         )
         story.append(resumo_table)
         story.append(Spacer(1, 4))
-        story.append(Paragraph(str(bloco.get("texto_abertura") or "-"), st_small))
+        story.append(_p(bloco.get("texto_abertura") or "-"))
         story.append(Spacer(1, 5))
 
         tabela = bloco.get("tabela") if isinstance(bloco.get("tabela"), dict) else {}
@@ -2752,5 +2752,8 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         canvas_obj.setFillColor(colors.HexColor("#5a4f39"))
         canvas_obj.drawRightString(195 * mm, 8 * mm, f"Pagina {canvas_obj.getPageNumber()}")
 
-    doc.build(story, onFirstPage=_draw_page_number, onLaterPages=_draw_page_number)
-    return buf.getvalue()
+    try:
+        doc.build(story, onFirstPage=_draw_page_number, onLaterPages=_draw_page_number)
+        return buf.getvalue()
+    except Exception:
+        return _build_qr_monthly_report_pdf_fallback(report)

@@ -2589,13 +2589,16 @@
 
     function currentReportParams(){
       const members = selectedComissaoMembersForReport(false);
-      return {
+      const params = {
         data_reuniao: $("dataReuniao").value || "",
         periodo_label: $("periodoLabel").value || "",
-        comissao: selectedComissaoText(),
-        comissao_json: members.length ? JSON.stringify(members) : "",
         report_scope: selectedReportScope(),
       };
+      if (params.report_scope !== "comissao_geral") {
+        params.comissao = selectedComissaoText();
+        params.comissao_json = members.length ? JSON.stringify(members) : "";
+      }
+      return params;
     }
 
     function withNl(text){

@@ -1899,6 +1899,8 @@ def quality_reds_monthly_report_pdf(
         pdf_bytes = build_qr_monthly_report_pdf(report)
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"falha ao gerar pdf mensal: {exc}") from exc
     date_ini = str(date_from or "inicio").replace("/", "-")
     date_end = str(date_to or "fim").replace("/", "-")
     cia_txt = "".join(ch for ch in str(cia_pm or "") if ch.isdigit()) or str(cia_pm or "cia")
