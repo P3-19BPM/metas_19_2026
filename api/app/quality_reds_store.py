@@ -2533,6 +2533,10 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         leading=16,
     )
 
+    def _p(text: Any) -> Any:
+        safe = _xml_escape(str(text if text is not None else "-")).replace("\n", "<br/>")
+        return Paragraph(safe, st_small)
+
     story: list[Any] = []
     logo_path = Path(__file__).resolve().parents[2] / "public" / "imagens" / "Icones_logo_19bpm" / "android-chrome-192x192.png"
     logo_cell: Any = Spacer(20 * mm, 20 * mm)
@@ -2545,7 +2549,7 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
     header_text = [
         Paragraph("D\u00c9CIMO NONO BATALH\u00c3O DE POL\u00cdCIA MILITAR", st_head_1),
         Paragraph("SE\u00c7\u00c3O DE PLANEJAMENTO OPERACIONAL - P3", st_head_2),
-        Paragraph(str(meta.get("report_title") or "RELAT\u00d3RIO MENSAL DE QUALIDADE REDS"), st_head_3),
+        Paragraph(_xml_escape(str(meta.get("report_title") or "RELAT\u00d3RIO MENSAL DE QUALIDADE REDS")), st_head_3),
     ]
     head_table = Table([[logo_cell, header_text]], colWidths=[20 * mm, 160 * mm], repeatRows=0)
     head_table.setStyle(
@@ -2642,10 +2646,10 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         colunas = list(tabela.get("colunas") or [])
         linhas = list(tabela.get("linhas") or [])
         if colunas and linhas:
-            tab_rows: list[list[Any]] = [[Paragraph(str(c or "-"), st_small) for c in colunas]]
+            tab_rows: list[list[Any]] = [[_p(c or "-") for c in colunas]]
             for linha in linhas:
                 vals = linha if isinstance(linha, list) else [linha]
-                tab_rows.append([Paragraph(str(v if v is not None else "-"), st_small) for v in vals])
+                tab_rows.append([_p(v if v is not None else "-") for v in vals])
             col_count = max(1, len(colunas))
             col_w = (180 * mm) / col_count
             full_table = Table(tab_rows, colWidths=[col_w] * col_count, repeatRows=1)
@@ -2683,9 +2687,9 @@ def build_qr_monthly_report_pdf(report: dict[str, Any]) -> bytes:
         for c in criterios:
             rows.append(
                 [
-                    Paragraph(str(c.get("criterio") or "-"), st_small),
-                    Paragraph(str(c.get("observacao_inconformidades") or "-").replace("\n", "<br/>"), st_small),
-                    Paragraph(str(c.get("medidas_adotadas") or "-").replace("\n", "<br/>"), st_small),
+                    _p(c.get("criterio") or "-"),
+                    _p(c.get("observacao_inconformidades") or "-"),
+                    _p(c.get("medidas_adotadas") or "-"),
                 ]
             )
 
