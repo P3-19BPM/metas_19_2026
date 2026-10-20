@@ -2,7 +2,7 @@
 ARG BASE_IMAGE=mmpgnovaiscrud/painel-gdo-19bpm:v9.2.6@sha256:24c91cd7724a89b8742f6119b62f612c4934186613061a17c04d440d82eafcfe
 FROM ${BASE_IMAGE}
 
-COPY public/gdo_unico_metas.html /app/public/gdo_unico_metas.html
+COPY public/metas19 /app/public/metas19
 COPY public/vendor /app/public/vendor
 COPY scripts/release/enable_public_metas.py /tmp/enable_public_metas.py
 RUN python /tmp/enable_public_metas.py && rm /tmp/enable_public_metas.py

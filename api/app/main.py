@@ -939,8 +939,11 @@ async def ui_gate(request: Request, call_next):
     is_html = method == "GET" and (path == "/" or path.endswith(".html"))
     if path == "/admin_users.html" and not _is_ui_admin(request):
         return RedirectResponse(url="/login?next=/admin_users.html", status_code=302)
+    if method == "GET" and path in {"/metas19", "/gdo_unico_metas.html"}:
+        query = f"?{request.url.query}" if request.url.query else ""
+        return RedirectResponse(url=f"/metas19/{query}", status_code=308)
     # Consulta publica somente das metas desdobradas; nao concede sessao.
-    is_public_metas = path == "/gdo_unico_metas.html"
+    is_public_metas = path in {"/metas19/", "/metas19/index.html"}
     if is_html and not is_public_metas and not _is_trusted_embed(request) and not _has_login_session(request):
         nxt = path + (f"?{request.url.query}" if request.url.query else "")
         return RedirectResponse(url=f"/login?next={nxt}", status_code=302)

@@ -11,8 +11,11 @@ def enable_public_metas(source: str) -> str:
         raise RuntimeError("Unexpected production middleware; refusing to patch authentication")
     source = source.replace(
         gate,
+        '    if method == "GET" and path in {"/metas19", "/gdo_unico_metas.html"}:\n'
+        '        query = f"?{request.url.query}" if request.url.query else ""\n'
+        '        return RedirectResponse(url=f"/metas19/{query}", status_code=308)\n'
         '    # Consulta publica somente das metas desdobradas; nao concede sessao.\n'
-        '    is_public_metas = path == "/gdo_unico_metas.html"\n'
+        '    is_public_metas = path in {"/metas19/", "/metas19/index.html"}\n'
         '    if is_html and not is_public_metas and not _is_trusted_embed(request) and not _has_login_session(request):',
     ).replace(
         cookie,

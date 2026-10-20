@@ -73,9 +73,9 @@
 
                 // --- CONFIGURAÇÃO DAS METAS (ARQUIVOS DEFINIDOS) ---
                 metasDisponiveis: [
-                    { id: 'meta_imv', nome: 'IMV', icon: 'fa-solid fa-person-falling-burst', arquivo: './data/arquivo_joson_meta_imv_subsetor.json' },
-                    { id: 'meta_icvpe', nome: 'ICVPe', icon: 'fa-solid fa-mask', arquivo: './data/arquivo_joson_meta_icvpe_subsetor.json' },
-                    { id: 'meta_icvpa', nome: 'ICVPa', icon: 'fa-solid fa-gun', arquivo: './data/arquivo_joson_meta_icvpa_subsetor.json' }
+                    { id: 'meta_imv', nome: 'IMV', icon: 'fa-solid fa-person-falling-burst', arquivo: '/data/arquivo_joson_meta_imv_subsetor.json' },
+                    { id: 'meta_icvpe', nome: 'ICVPe', icon: 'fa-solid fa-mask', arquivo: '/data/arquivo_joson_meta_icvpe_subsetor.json' },
+                    { id: 'meta_icvpa', nome: 'ICVPa', icon: 'fa-solid fa-gun', arquivo: '/data/arquivo_joson_meta_icvpa_subsetor.json' }
                 ],
 
                 // Banco de Dados Local
@@ -93,7 +93,7 @@
                     if (this.metasDisponiveis.some(m => m.id === indicador)) this.currentMeta = indicador;
                     await this.carregarDadosLocalmente(this.currentMeta);
                     try {
-                        const response = await fetch('./data/metas_plr.json');
+                        const response = await fetch('/data/metas_plr.json');
                         if (!response.ok) throw new Error('PLR indisponível');
                         const dados = await response.json();
                         for (const [id, lista] of Object.entries(dados)) {
@@ -409,7 +409,7 @@
     </script>
 
     <!-- Alpine.js -->
-    <script src="./vendor/xlsx.full.min.js" defer></script>
+    <script src="/vendor/xlsx.full.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.3/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
 </head>
