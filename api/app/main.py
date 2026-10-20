@@ -939,12 +939,14 @@ async def ui_gate(request: Request, call_next):
     is_html = method == "GET" and (path == "/" or path.endswith(".html"))
     if path == "/admin_users.html" and not _is_ui_admin(request):
         return RedirectResponse(url="/login?next=/admin_users.html", status_code=302)
-    if is_html and not _is_trusted_embed(request) and not _has_login_session(request):
+    # Consulta publica somente das metas desdobradas; nao concede sessao.
+    is_public_metas = path == "/gdo_unico_metas.html"
+    if is_html and not is_public_metas and not _is_trusted_embed(request) and not _has_login_session(request):
         nxt = path + (f"?{request.url.query}" if request.url.query else "")
         return RedirectResponse(url=f"/login?next={nxt}", status_code=302)
 
     response = await call_next(request)
-    if is_html and _is_trusted_embed(request) and not _has_valid_session_cookie(request):
+    if is_html and not is_public_metas and _is_trusted_embed(request) and not _has_valid_session_cookie(request):
         _set_session_cookie(response, settings.web_login_user or "embed", kind="embed")
     return response
 
