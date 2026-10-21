@@ -5,6 +5,10 @@ from pathlib import Path
 
 
 def enable_public_metas(source: str) -> str:
+    legacy_public = '    is_public_metas = path == "/gdo_unico_metas.html"'
+    if source.count(legacy_public) == 1:
+        source = source.replace(legacy_public + "\n", "", 1)
+        source = source.replace("if is_html and not is_public_metas and ", "if is_html and ")
     gate = "    if is_html and not _is_trusted_embed(request) and not _has_login_session(request):"
     cookie = "    if is_html and _is_trusted_embed(request) and not _has_valid_session_cookie(request):"
     if source.count(gate) != 1 or source.count(cookie) != 1:

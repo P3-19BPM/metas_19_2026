@@ -75,12 +75,17 @@
                 metasDisponiveis: [
                     { id: 'meta_imv', nome: 'IMV', icon: 'fa-solid fa-person-falling-burst', arquivo: '/data/arquivo_joson_meta_imv_subsetor.json' },
                     { id: 'meta_icvpe', nome: 'ICVPe', icon: 'fa-solid fa-mask', arquivo: '/data/arquivo_joson_meta_icvpe_subsetor.json' },
-                    { id: 'meta_icvpa', nome: 'ICVPa', icon: 'fa-solid fa-gun', arquivo: '/data/arquivo_joson_meta_icvpa_subsetor.json' }
+                    { id: 'meta_icvpa', nome: 'ICVPa', icon: 'fa-solid fa-gun', arquivo: '/data/arquivo_joson_meta_icvpa_subsetor.json' },
+                    { id: 'meta_imv_rural', nome: 'IMV Rural', icon: 'fa-solid fa-person-falling-burst', arquivo: '/data/metas_rurais_2026.json', rural: 'imv' },
+                    { id: 'meta_icvpe_rural', nome: 'ICVPe Rural', icon: 'fa-solid fa-mask', arquivo: '/data/metas_rurais_2026.json', rural: 'icvpe' },
+                    { id: 'meta_icvpa_rural', nome: 'ICVPa Rural', icon: 'fa-solid fa-gun', arquivo: '/data/metas_rurais_2026.json', rural: 'icvpa' },
+                    { id: 'meta_furtos_rural', nome: 'Furtos Rural', icon: 'fa-solid fa-tractor', arquivo: '/data/metas_rurais_2026.json', rural: 'furtos' }
                 ],
 
                 // Banco de Dados Local
                 dadosBase: {
-                    'meta_imv': [], 'meta_icvpe': [], 'meta_icvpa': [], 'meta_irtd': []
+                    'meta_imv': [], 'meta_icvpe': [], 'meta_icvpa': [], 'meta_irtd': [],
+                    'meta_imv_rural': [], 'meta_icvpe_rural': [], 'meta_icvpa_rural': [], 'meta_furtos_rural': []
                 },
 
                 // PLRs
@@ -109,7 +114,7 @@
                 },
                 montarExportacao() {
                     const meses = this.mesesLista.filter(m => this.mesesSelecionados.includes(m.id));
-                    const cabecalho = ['Indicador', 'Ano', 'Companhia', 'Código companhia', 'Pelotão', 'Código pelotão', 'Setor / Local', 'Código local', 'População', ...meses.map(m => m.label), 'Meta acumulada', 'Taxa por 100 mil habitantes'];
+                    const cabecalho = ['Indicador', 'Ano', 'Companhia', 'Código companhia', 'Pelotão', 'Código pelotão', this.ehRural ? 'Município' : 'Setor / Local', 'Código local', this.ehRural ? 'População rural' : 'População', ...meses.map(m => m.label), 'Meta acumulada', 'Taxa por 100 mil habitantes'];
                     const linhas = this.dadosFiltrados.flatMap(u => u.pelotoes.flatMap(p => p.setores.map(s => {
                         const acumulado = this.getValorAcumulado(s.dados);
                         return [this.getNomeMetaAtual(), 2026, u.unidade, String(u.id), p.nome, String(p.id), s.local, String(s.id), Number(s.dados.pop) || 0, ...meses.map(m => Number(s.dados[m.id] ?? s.dados[m.id.toUpperCase()] ?? 0)), acumulado, this.calcularTaxa(acumulado, s.dados.pop)];
@@ -179,6 +184,31 @@
                 },
 
                 // --- CARREGAMENTO ---
+                get ehRural() {
+                    return !!this.metasDisponiveis.find(m => m.id === this.currentMeta)?.rural;
+                },
+                get mesesVisiveis() {
+                    return this.mesesLista.filter(m => this.mesesSelecionados.includes(m.id));
+                },
+                organizarDadosRurais(json, indicador) {
+                    const unidades = new Map();
+                    for (const municipio of json.municipios) {
+                        const cia = municipio.codigo_companhia;
+                        const pel = municipio.codigo_pelotao;
+                        if (!unidades.has(cia)) unidades.set(cia, {
+                            id: cia, unidade: `${cia.split('.')[1]} CIA PM`, pelotoes: []
+                        });
+                        const unidade = unidades.get(cia);
+                        let pelotao = unidade.pelotoes.find(p => p.id === pel);
+                        if (!pelotao) {
+                            pelotao = {id: pel, nome: `${pel.split('.')[2]} PEL/${unidade.unidade}`, setores: []};
+                            unidade.pelotoes.push(pelotao);
+                        }
+                        pelotao.setores.push({id: municipio.codigo_local, local: municipio.municipio,
+                            dados: {pop: municipio.populacao_rural, ...municipio.metas[indicador]}});
+                    }
+                    return [...unidades.values()].sort((a, b) => Number(a.id.split('.')[1]) - Number(b.id.split('.')[1]));
+                },
                 async carregarDadosLocalmente(metaId) {
                     const metaInfo = this.metasDisponiveis.find(m => m.id === metaId);
                     if (!metaInfo || !metaInfo.arquivo) return;
@@ -192,9 +222,15 @@
                         if (!response.ok) throw new Error("Arquivo não encontrado.");
 
                         const jsonData = await response.json();
-                        this.dadosBase[metaId] = jsonData;
-
-                        if (jsonData.length > 0) this.expandedUnidades.push(jsonData[0].id);
+                        if (metaInfo.rural) {
+                            for (const meta of this.metasDisponiveis.filter(m => m.rural)) {
+                                this.dadosBase[meta.id] = this.organizarDadosRurais(jsonData, meta.rural);
+                            }
+                        } else {
+                            this.dadosBase[metaId] = jsonData;
+                        }
+                        const primeira = this.dadosBase[metaId][0];
+                        if (primeira && !this.expandedUnidades.includes(primeira.id)) this.expandedUnidades.push(primeira.id);
 
                     } catch (error) {
                         console.error("Erro:", error);
@@ -296,7 +332,7 @@
                     });
 
                     return {
-                        absoluto: Math.round(totalAbsoluto * 100) / 100,
+                        absoluto: this.ehRural ? totalAbsoluto : Math.round(totalAbsoluto * 100) / 100,
                         populacao: totalPop,
                         metaPLR: Math.round(totalMetaPLR * 100) / 100,
                         taxa: this.calcularTaxa(totalAbsoluto, totalPop)
@@ -314,7 +350,7 @@
                     });
 
                     return {
-                        absoluto: Math.round(totalAbsoluto * 100) / 100,
+                        absoluto: this.ehRural ? totalAbsoluto : Math.round(totalAbsoluto * 100) / 100,
                         populacao: totalPop,
                         taxa: this.calcularTaxa(totalAbsoluto, totalPop)
                     };
@@ -333,7 +369,7 @@
                     });
 
                     return {
-                        absoluto: Math.round(totalAbsoluto * 100) / 100,
+                        absoluto: this.ehRural ? totalAbsoluto : Math.round(totalAbsoluto * 100) / 100,
                         populacao: totalPop,
                         taxa: this.calcularTaxa(totalAbsoluto, totalPop)
                     };
@@ -350,7 +386,7 @@
                     });
 
                     return {
-                        absoluto: Math.round(totalAbsoluto * 100) / 100,
+                        absoluto: this.ehRural ? totalAbsoluto : Math.round(totalAbsoluto * 100) / 100,
                         populacao: totalPop,
                         taxa: this.calcularTaxa(totalAbsoluto, totalPop)
                     };
@@ -381,6 +417,10 @@
                     this.erroCarregamento = null;
                     this.erroExportacao = '';
                     if (meta.arquivo) this.carregarDadosLocalmente(meta.id);
+                },
+
+                destacarAbaAtual() {
+                    this.$nextTick(() => document.querySelector('nav [aria-current="page"]')?.scrollIntoView({block: 'nearest', inline: 'nearest'}));
                 },
 
                 toggleUnidade(id) {
@@ -435,14 +475,14 @@
     <div class="flex flex-1 overflow-hidden relative">
 
         <!-- SIDEBAR -->
-        <nav class="bg-white md:w-64 flex-none border-r border-gray-200 flex md:flex-col absolute md:static top-0 w-full z-20 md:z-auto shadow-md md:shadow-none overflow-x-auto">
+        <nav x-effect="currentMeta; destacarAbaAtual()" @resize.window.debounce.100ms="destacarAbaAtual()" aria-label="Indicadores de metas gerais e rurais" class="bg-white md:w-64 flex-none border-r border-gray-200 flex md:flex-col absolute md:static top-0 w-full z-20 md:z-auto shadow-md md:shadow-none overflow-x-auto md:overflow-y-auto">
             <div class="p-4 md:border-b border-gray-100 hidden md:block">
                 <span class="text-xs font-bold text-gray-400 uppercase">Tipos de Metas</span>
             </div>
 
             <template x-for="(meta, index) in metasDisponiveis" :key="index">
                 <button
-                    :disabled="loading" @click="mudarMeta(meta)"
+                    :disabled="loading" :aria-label="meta.nome" :aria-current="currentMeta === meta.id ? 'page' : null" @click="mudarMeta(meta)"
                     class="flex items-center gap-3 px-6 py-4 md:py-3 text-sm font-medium transition-all whitespace-nowrap md:whitespace-normal border-b-2 md:border-b-0 md:border-l-4 hover:bg-gray-50 flex-shrink-0"
                     :class="currentMeta === meta.id
                         ? 'border-pmmg-red text-pmmg-red bg-red-50'
@@ -468,14 +508,14 @@
                     <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
 
                         <!-- Lado Esquerdo: Título e Resumo BPM -->
-                        <div class="flex-1 flex flex-col md:flex-row gap-6 md:items-center">
+                        <div class="flex-1 min-w-0 flex flex-col xl:flex-row gap-6 xl:items-center">
                             <!-- Título -->
                             <div class="shrink-0">
                                 <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                                     <span x-text="getNomeMetaAtual()"></span>
                                     <span class="text-xs bg-pmmg-black text-pmmg-gold px-2 py-0.5 rounded uppercase">2026</span>
                                 </h2>
-                                <p class="text-sm text-gray-500 mt-1">Consulta pública por companhia, pelotão e local</p>
+                                <p class="text-sm text-gray-500 mt-1" x-text="ehRural ? 'Metas mensais por município rural' : 'Consulta pública por companhia, pelotão e local'"></p>
                             </div>
 
                             <!-- CARD DE RESUMO 19º BPM (NOVO) -->
@@ -486,8 +526,8 @@
                                 </div>
                                 <div class="h-8 w-px bg-gray-300"></div>
                                 <div class="text-center px-2">
-                                    <span class="text-[10px] text-blue-500 uppercase font-bold tracking-wide">Meta (PLR)</span>
-                                    <span class="block text-lg font-bold text-blue-600" x-text="temPLR() ? formatNumber(getTotaisBPM().metaPLR) : '-'"></span>
+                                    <span class="text-[10px] text-blue-500 uppercase font-bold tracking-wide" x-text="ehRural ? 'População rural' : 'Meta (PLR)'"></span>
+                                    <span class="block text-lg font-bold text-blue-600" x-text="ehRural ? formatNumber(getTotaisBPM().populacao) : (temPLR() ? formatNumber(getTotaisBPM().metaPLR) : '-')"></span>
                                 </div>
                                 <div class="h-8 w-px bg-gray-300"></div>
                                 <div class="text-center px-2">
@@ -546,17 +586,18 @@
                     </div>
                     <p x-show="!mesesSelecionados.length" class="text-sm text-gray-600 mt-2">Selecione pelo menos um mês para exportar.</p>
                     <p x-show="erroExportacao" x-text="erroExportacao" role="alert" class="text-sm text-red-700 mt-2"></p>
-                    <p x-show="avisoPLR" x-text="avisoPLR" role="status" class="text-sm text-amber-800 mt-2"></p>
+                    <p x-show="avisoPLR && !ehRural" x-text="avisoPLR" role="status" class="text-sm text-amber-800 mt-2"></p>
+                    <p x-show="ehRural" x-cloak class="text-sm text-gray-600 mt-3">Fonte: META_RURAL_2026.md. Metas rurais independentes das metas gerais. Taxas calculadas sobre a população rural; valores fracionários preservados nos dados e na exportação.</p>
                     <!-- Cards de Totais (Visão Filtrada) -->
                     <!-- Se uma unidade for selecionada, estes cards refletem o filtro. Se for "Todas", refletem o BPM -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+                    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
                         <div class="p-3 bg-gray-50 rounded border border-gray-100 hover:shadow-md transition">
                             <p class="text-xs text-gray-500 uppercase font-semibold">Meta (Filtro)</p>
                             <p class="text-2xl font-bold text-pmmg-black mt-1" x-text="formatNumber(getTotaisGerais().absoluto)"></p>
                         </div>
 
                         <div class="p-3 bg-gray-50 rounded border border-gray-100 hover:shadow-md transition">
-                            <p class="text-xs text-gray-500 uppercase font-semibold">População Coberta</p>
+                            <p class="text-xs text-gray-500 uppercase font-semibold" x-text="ehRural ? 'População Rural' : 'População Coberta'"></p>
                             <p class="text-2xl font-bold text-pmmg-black mt-1" x-text="formatNumber(getTotaisGerais().populacao)"></p>
                         </div>
 
@@ -661,8 +702,11 @@
                                                 <table class="w-full text-sm text-left text-gray-500">
                                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                                         <tr>
-                                                            <th class="px-4 py-3 rounded-tl-lg">Setor / Local</th>
-                                                            <th class="px-4 py-3 text-center w-32">População</th>
+                                                            <th class="px-4 py-3 rounded-tl-lg" x-text="ehRural ? 'Município' : 'Setor / Local'"></th>
+                                                            <th class="px-4 py-3 text-center w-32" x-text="ehRural ? 'População rural' : 'População'"></th>
+                                                            <template x-for="mes in (ehRural ? mesesVisiveis : [])" :key="mes.id">
+                                                                <th class="px-4 py-3 text-right whitespace-nowrap" x-text="mes.label"></th>
+                                                            </template>
                                                             <th class="px-4 py-3 text-center bg-pmmg-gold/10 text-pmmg-black w-32">Meta acumulada</th>
                                                             <th class="px-4 py-3 text-center bg-red-50 text-pmmg-red rounded-tr-lg w-32">Taxa (100k)</th>
                                                         </tr>
@@ -681,6 +725,9 @@
                                                                     <span x-text="formatNumber(parseFloat(setor.dados.pop))"></span>
                                                                 </td>
                                                                 <!-- Coluna Acumulado -->
+                                                                <template x-for="mes in (ehRural ? mesesVisiveis : [])" :key="mes.id">
+                                                                    <td class="px-4 py-3 text-right whitespace-nowrap" :title="String(setor.dados[mes.id])" x-text="formatNumber(setor.dados[mes.id])"></td>
+                                                                </template>
                                                                 <td class="px-4 py-3 text-center font-bold text-gray-800 bg-yellow-50/30">
                                                                     <span x-text="formatNumber(getValorAcumulado(setor.dados))"></span>
                                                                 </td>

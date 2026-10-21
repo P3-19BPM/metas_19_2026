@@ -1,8 +1,9 @@
 # Incremental release: preserve the application and data already in production.
-ARG BASE_IMAGE=mmpgnovaiscrud/painel-gdo-19bpm:v9.2.6@sha256:24c91cd7724a89b8742f6119b62f612c4934186613061a17c04d440d82eafcfe
+ARG BASE_IMAGE=mmpgnovaiscrud/painel-gdo-19bpm:v9.2.7@sha256:f80cd5dd556ecfa1d8319e095392cfb5affda7bb020d0ab8233632cc205b494a
 FROM ${BASE_IMAGE}
 
 COPY public/metas19 /app/public/metas19
+COPY public/data/metas_rurais_2026.json /app/public/data/metas_rurais_2026.json
 COPY public/vendor /app/public/vendor
 COPY scripts/release/enable_public_metas.py /tmp/enable_public_metas.py
 RUN python /tmp/enable_public_metas.py && rm /tmp/enable_public_metas.py
